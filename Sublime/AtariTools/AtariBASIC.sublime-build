@@ -1,0 +1,5 @@
+{
+  // Or use AtariBASIC-pipe.sh for Atari800MacX
+  "cmd": ["$packages/User/AtariTools/AtariBASIC-run.sh", "$file"],
+  "selector": "source.ataribasic"
+}

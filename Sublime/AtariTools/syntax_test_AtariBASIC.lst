@@ -1,0 +1,421 @@
+R. SYNTAX TEST "Packages/User/AtariTools/AtariBASIC"
+R.^comment
+
+
+REM Atari BASIC syntax color test!
+R.^keyword.rem
+R.  ^comment
+
+9.7 DIM F$(10),N$(12),C(1,A),E(9)
+R.<-constant.numeric.line-number
+R.  ^keyword.dim
+R.
+R.
+
+100 COM F$(10),N$(12),C(1,A),E(9)
+R.<-constant.numeric.line-number
+R.  ^keyword.dim
+R.
+R.
+
+100 ?"Hello World!";,:
+R.<-constant.numeric.line-number
+R.  ^keyword.print
+R.   ^punctuation.definition.string.open
+R.                 ^support.token.delimiter.concat
+R.                  ^support.token.delimiter.tab
+R.                   ^invalid.error.syntax
+
+100 A12=7:B=1+2+A12:C
+100 LET A$(2,3)="12"
+100 POP:B(5,4)=ASC("A")
+100 BYE:?"Hello"
+R.      ^invalid.warning.dead-code
+100 LET BYE$="GOOD"
+
+100 PRINT ABS(123) + 10 * 3 / 99 - -6.5 :.Comment
+R.  ^keyword.print
+R.        ^meta.function-call.abs
+100 PRIN. ATN(123)                      :.Comment
+R.  ^keyword.print
+R.        ^meta.function-call.atn
+100 PRI.  CLOG(123):END:?               :.Comment
+R.  ^keyword.print
+R.        ^meta.function-call.clog
+R.                      ^invalid.warning.dead-code
+R.                                        ^-invalid.warning.dead-code
+100 PR.   COS(123)                      :.Comment
+R.  ^keyword.print
+R.        ^meta.function-call.cos
+100 ?     EXP(123)                      :.Comment
+R.        ^meta.function-call.exp
+100 ?     INT(123)                      :.Comment
+R.        ^meta.function-call.int
+100 ?     LOG(123)                      :.Comment
+R.        ^meta.function-call.log
+100 ?     SGN(123)                      :.Comment
+R.        ^meta.function-call.sgn
+100 ?     SIN(123)                      :.Comment
+R.        ^meta.function-call.sin
+100 ?     SQR(123)                      :.Comment
+R.        ^meta.function-call.sqr
+100 ?     PEEK(123)                     :.Comment
+R.        ^meta.function-call.peek
+100 ?     USR(123,1,X,99)               :.Comment
+R.        ^meta.function-call.usr
+100 ?     RND(X)                        :.Comment
+R.        ^meta.function-call.rnd
+100 ?     FRE(X)                        :.Comment
+R.        ^meta.function-call.fre
+100 ?     LEN("1")                      :.Comment
+R.        ^meta.function-call.len
+100 ?     VAL("5")                      :.Comment
+R.        ^meta.function-call.val
+100 ?#1;  ADR("X")                      :.Comment
+R.        ^meta.function-call.adr
+R.                                      ^support.token.delimiter.statement
+R.                                       ^-comment
+R.                                        ^comment
+
+100 BYE     :?"NO"
+100 BY.     :?"NO"
+100 B.      :?"NO"
+R.  ^keyword.bye
+R.           ^invalid.warning.dead-code
+100 DOS     :?"NO"
+R.  ^keyword.dos
+R.           ^invalid.warning.dead-code
+100 DEG     :?"YES"
+100 RAD     :?"YES"
+
+100 CLR     :?"YES"
+100 POP     :?"YES"
+100 NEW     :?"NO"
+R.           ^invalid.warning.dead-code
+100 CONT    :?"YES"
+100 CON.    :?"YES"
+100 END     :?"NO"
+R.           ^invalid.warning.dead-code
+100 STOP    :?"NO"
+R.           ^invalid.warning.dead-code
+100 STO.    :?"NO"
+R.           ^invalid.warning.dead-code
+100 RESTORE :?"YES"
+100 RESTOR. :?"YES"
+100 RESTO.  :?"YES"
+100 REST.   :?"YES"
+100 RES.    :?"YES"
+100 RETURN  :?"NO"
+R.           ^invalid.warning.dead-code
+100 RETUR.  :?"NO"
+R.           ^invalid.warning.dead-code
+100 RETU.   :?"NO"
+R.           ^invalid.warning.dead-code
+100 RET.    :?"NO"
+R.           ^invalid.warning.dead-code
+
+ 99 DIM G$(10)
+R.^constant.numeric.line-number
+
+100 ? " > ";RND(X)      :.Comment
+102 ? " > ";FRE(X)      :.Comment
+104 ? " > ";ABS(-12.3)  :.Comment
+106 ? " > ";ATN(1)      :.Comment
+108 ? " > ";CLOG(1)     :.Comment
+110 ? " > ";COS(1)      :.Comment
+112 ? " > ";EXP(1)      :.Comment
+114 ? " > ";INT(1.5)    :.Comment
+116 ? " > ";LEN("Test") :.Comment
+116 ? " > ";LEN(X$)     :.Comment
+118 ? " > ";LOG(1)      :.Comment
+120 ? " > ";SGN(-23)    :.Comment
+122 ? " > ";SIN(1.68)   :.Comment
+124 ? " > ";SQR(2)      :.Comment
+126 ? " > ";VAL("17.2") :.Comment
+128 ? " > ";ADR(G$)     :.Comment
+130 ? " > ";PEEK(1)     :.Comment
+132 ? " > ";USR(A,N,3)  :.Comment
+134 ? " > ";ASC("0")    :.Comment
+136 F$=     CHR$(65)    :.Comment
+138 ? " > ";STR$(12.2)  :.Comment
+
+100 Q=3:? PADDLE(Q OR 2)
+110 N=0:? PTRIG(N/1)
+120 A=0:? STICK(A-1+1)
+130 B=1:? STRIG(B*1):END:? ""
+
+100 DATA 12.34,5678,:98:76,"Yes"
+100 DAT. 12.34 : More
+100 DA.  12.34
+100 D.   12.34
+110 READ A,B,C$,D$        :.Comment
+110 REA. A                :.Comment
+
+100 OPEN #1,4,0,"D:FILE"  :.Comment
+100 OPE. #1,4,0,"D:FILE"  :.Comment
+100 OP.  #1,4,0,"D:FILE"  :.Comment
+100 O.   #1,4,0,"D:FILE"  :.Comment
+100 CLOSE #1              :.Comment
+100 CLOS. #1              :.Comment
+100 CLO.  #1              :.Comment
+100 CL.   #1              :.Comment
+100 GET #1,A              :.Comment
+100 PUT #1,A+10-SIN(3.14) :.Comment
+100 POINT #1,A            :.Comment
+100 POIN. #1,A            :.Comment
+100 POI.  #1,A            :.Comment
+100 PO.   #1,A            :.Comment
+100 P.    #1,A            :.Comment
+100 INPUT #1,A,B$,C       :.Comment
+100 LPRINT "This";S1,A    :.Comment
+100 LPRIN. "This";S1,A    :.Comment
+100 LPRI.  "This";S1,A    :.Comment
+100 LPR.   "This";S1,A    :.Comment
+100 LP.    "This";S1,A    :.Comment
+100 NOTE #1,A             :.Comment
+100 NOT. #1,A             :.Comment
+100 NO.  #1,A             :.Comment
+100 PRINT #1,A,99         :.Comment
+100 ? #1;A;"YES",A=1      :.Comment
+
+100 STATUS #1,A           :.Comment
+110 STATU. #1,A           :.Comment
+120 STAT.  #1,A           :.Comment
+130 STA.   #1,A           :.Comment
+140 ST.    #1,A           :.Comment
+R.  ^keyword.status
+R.         ^support.token.iocb
+R.                        ^support.token.delimiter.statement
+R.                          ^comment
+
+100 XIO 33,#1,0,0,"D:DEL.TXT"
+
+100 CLOAD
+100 CSAVE
+100 CSAV.
+100 CSA.
+100 CS.
+R.  ^keyword.csave
+
+100 LIST "P:",100,120     :.Comment
+100 LIS.      100,120     :.Comment
+100 LI.       100
+100 L.
+100 L."D:THIS.BAS",100
+100 L."D:THIS.BAS",100,200
+R.  ^keyword.list
+R.    ^string.quoted
+R.                ^support.token.delimiter.list
+R.                 ^constant.numeric.float
+R.                    ^support.token.delimiter.list
+R.                     ^constant.numeric.float
+
+100 LOAD "D:THIS.BAS"  :? "The end"
+100 LOA. "D:THIS.BAS"
+100 LO.  "D:THIS.BAS"
+R.  ^keyword.load
+R.       ^string.quoted
+
+100 SAVE "D:THIS.BAS"  :? "The end"
+100 SAV. "D:THIS.BAS"
+100 SA.  "D:THIS.BAS"
+100 S.   "D:THIS.BAS"
+R.  ^keyword.save
+R.       ^string.quoted
+
+100 ENTER "K:"
+100 ENTE. "K:"
+100 ENT.  "K:"
+100 EN.   "K:"
+100 E.    "K:"
+R.  ^keyword.enter
+R.        ^string.quoted
+
+100 RUN "D:PROGRAM.BAS" :?"NO"
+100 RU. X$:?"NO"  :.comment
+100 RU.   :?"NO"  :.comment
+100 RUN   :?"NO" :RUN :?"MORE NO"
+
+100 FOR I=A TO(B+5) STEP1:?A,:NEXT I
+100 FO. I=A TO(B+5) STEP1:?A,:NEX. I
+100 F.  I=A TO(B+5) STEP1:?A,:NE.  I
+100 F.  I=-1TO  -5 STEP-1:?A,:N.   I
+
+100 TRAP 200  :?
+100 TRA. A+2
+100 TR.  A/2
+100 T.   A*2
+
+100 GOSUB 200+A   :.Comment
+100 GOSU. 200+A   :.comment
+100 GOS.  200+A   :.comment
+
+100 GOTO  100*A   :.comment
+100 GOT. (100+A)  :.comment
+100 GO.   100/A   :.comment
+100 G.    100-A   :.comment
+
+100 ON 5 GOSUB 5,7,22  :.Comment
+100 ON M$=":" GOTO 200 :.Comment
+
+100 IF A=32767 THEN 200:?"NO" :.Comment
+100 IF(A<-10.2)THEN ?"YES"    :.Comment
+
+100 COLOR X
+100 COLO. 65
+100 COL.  2
+100 CO.   Y+1
+100 C.    0
+
+100 DRAWTO X,Y
+100 DRAWT. 1,2
+100 DRAW.  3,4
+100 DRA.   5,6
+100 DR.   100+X,SQR(20*Y)
+
+100 GRAPHICS 0 :. 40 x 24 text
+100 GRAPHIC. 1 :. 20 x 24 text
+100 GRAPHI.  2 :. 20 x 12 text
+100 GRAPH.   3 :. 40 x 24 px
+100 GRAP.    4 :. 80 x 48 px
+100 GRA.     6 :.160 x 96 px
+100 GR.      8 :.320 x192 px
+
+100 LOCATE X,Y,C
+100 LOCAT. X,9,C
+100 LOCA.  7,Y,C
+100 LOC.   X,Y,C
+
+100 PLOT X,Y
+100 PLO. A,B
+100 PL.  I,J
+
+100 POSITION X,Y*1
+100 POSITIO. X,Y^2
+100 POSITI.  X,Y/3
+100 POSIT.   X,Y-4
+100 POSI.    X,Y+6
+100 POS.     X,NOT Y
+
+100 SETCOLOR C,H,L
+100 SETCOLO. C,H,L
+100 SETCOL.  C,H,L
+100 SETCO.   C,H,L
+100 SETC.    C,H,L
+100 SET.     C,H,L
+100 SE.      C,H,L
+
+100 POKE 82,0
+100 POK. 82,2
+
+100 P=31960/440
+100 SOUN. 2,P,D,V
+100 SOU.  3,P,10,V
+100 SO.   4,P,D,15-I
+
+
+.
+. Errors!
+.
+
+100 ?123+              :.Incomplete Expression
+R.     ^-invalid.error
+R.      ^invalid.error
+100 ?((123             :.Unclosed Parentheses
+R.   ^-invalid.error
+R.    ^invalid.error
+100 ?((123)  :.Unclosed Parentheses
+R.   ^-invalid.error
+R.           ^invalid.error
+100 ?(123))            :.Extra closing Parentheses
+R.       ^-invalid.error
+R.        ^invalid.error
+100 IF I=A 200 THEN 10 :.Missing operator
+R.        ^-invalid.error
+R.         ^invalid.error
+100 LET A =            :.Incomplete LET
+R.                     ^invalid.error
+100 LET A              :.Incomplete LET
+R.                     ^invalid.error
+100 A=                 :.Incomplete Implicit LET
+R.                     ^invalid.error
+100 A                  :.Incomplete Implicit LET
+R.                     ^invalid.error
+100 IF AX+ THEN 20     :.THEN is special
+R.         ^invalid.error
+100 IF A + THEN20      :.Incomplete Expression
+R.         ^invalid.error
+100 ?NOT NOT 1         :.Can't modify a modifier
+R.       ^invalid.error
+100 ?NOT -1            :.Ok, because -1 is a value
+R.       ^constant.numeric.float
+100 ?NOT --1           :.modifiers can't follow NOT
+R.       ^invalid.error
+100 ?-1                :.-1 is a value here
+R.   ^constant.numeric.float
+100 POKE 10            :.Incomplete POKE
+R.                     ^invalid.error
+100 POK.82,2,7         :.Too many parameters
+R.         ^-invalid.error
+R.          ^invalid.error
+100 SOUND 1,2          :.Incomplete SOUND
+R.                     ^invalid.error
+100 SO.C,P,D,V,X       :.Too many parameters
+R.           ^-invalid.error
+R.            ^invalid.error
+100 ON X GOTO 10,7,T+1 :.Numeric only
+R.                ^-invalid.error
+R.                 ^invalid.error
+100 ON X GOSUB 99,Q    :.Numeric only
+R.               ^-invalid.error
+R.                ^invalid.error
+
+
+
+
+
+100 D.123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789
+R.<-invalid.warning.line-too-long
+R.                                                                                                                                                                                                                                                            ^invalid.error.line-too-long
+
+
+
+
+D. A B C D E F G H I J K L
+D. å ∫ ç ∂   ƒ © ˙   ∆ ˚ ¬ µ
+D. Å ı Ç Î ´ Ï ˝ Ó ˆ Ô   Ò Â
+
+D. N O P Q R S T U V W X Y Z
+D. ñ ø π œ ® ß †   √ ∑ ≈ ¥ Ω
+D. Ñ Ø ∏ Œ ‰ Í ˇ ¨ ◊ „ ˛ Á ¸
+
+D. 1 2 3 4 5 6 7 8 9 0 - =
+D. ¡ ™ £ ¢ ∞ § ¶ • ª º – ≠
+D. ⁄   ‹ ›     ‡ ° · ‚ — ±
+
+D. [ ] \ ; ' , . /
+D. “ ‘ « … æ ≤ ≥ ÷
+D. ” ’ » Ú Æ ¯ ˘ ¿
+
+D. E Accents: Á É Í Ó Ú
+D.            á é í ó ú
+D. I Accents: Â Ê Î Ô Û
+D.            â ê î ô û
+D. U Accents: Ä Ë Ï Ö Ü Ÿ
+D.            ä ë ï ö ü ÿ
+D. ` Accents: À È Ì Ò Ù
+D.            à è ì ò ù
+D. N Accents: Ã     Õ
+D.            ã
+
+D. Curly Braces: { }
+D. Backtick:` Tilde:~
+
+D. −   ³ ž ¼ Ž       š � Š Ł ² ¾ ¹ ł   � þ
+D. ú     ô è   é Ç í Ç Ü ë Š Ł ² ò ó Ñ Å ì å
+
+D. ∞ ± ≤ ≥ ¥ µ ∂ ∑ ∏ π
+D. ¡ ¬ √ ƒ ≈ ∆ « » …   À Ã Õ
+D. Œ œ – — “ ” ‘ ’ ÷ ◊ ÿ Ÿ ⁄
+D. · ‚ „ ‰ Â Ê Á Ë È Í Î Ï Ì
+D. Ó Ô  Ò Ú Û Ù ı ˆ ˜ ¯ ˘ ˙
