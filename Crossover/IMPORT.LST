@@ -1,0 +1,102 @@
+0 . AtariBASIC
+0 .
+0 . IMPORT.BAS
+0 .
+0 . Import a file to Atari via Paste
+0 .
+10 DIM F$(14),N$(12),E$(1),K$(1),YN$(2):E$=CHR$(155)
+20 OPEN #2,4,0,"K:"
+
+30 ? CHR$(125)
+31 ? "< ATARI FILE IMPORT >"
+32 ? " USES K: TO GET TEXT"
+33 ? "FROM THE HOST SYSTEM."
+0 .
+0 . Get a filename
+0 .
+60 TRAP 70
+70 ? E$;"SAVE AS ";:INPUT N$
+0 .
+0 . Exit to menu?
+0 .
+75 IF N$="" THEN RUN "D:MENU.BAS"
+0 .
+0 . Decode?
+0 .
+80 ?"(P)lain (E)ncoded (H)ex?";:GOSUB 800:DECODE=K$="E":HEX=K$="H":IFNOTDECODE ANDNOTHEX ANDK$<>"P"THEN80
+0 .
+0 . Open 
+0 .
+90 TRAP 900
+91 F$="D:":F$(3)=N$:CLOSE #1:OPEN #1,8,0,F$:NT=0:LNG=0:HC=0
+0 .
+0 . How-to
+0 .
+100 ?E$;E$;"PASTE text.";E$;"Saves to ";N$
+101 ?"Don't press a key until it stops."
+102 ?"(A long pause helps.)"
+0 .
+0 . Get a character from K:
+0 .
+120 GET #2,C
+0 .
+0 . How long since the last char?
+0 . A very long pause means done.
+0 .
+121 GOS.700
+122 IF LNG AND T>LNG*10THEN400
+123 IF T>LNG THEN LNG=T:.?LNG
+
+0 .
+0 . Decode escaped?
+0 .
+130 IF NOT DECODE THEN 140
+131 IF DM AND C>=48 AND C<=57 THEN NC=NC*10+C-48:GOTO 120
+132 IF DM THEN PUT #1,NC:DM=0
+133 IF C=92 THEN DM=1:NC=0:G.120
+
+0 .
+0 . Decode HEXDUMP?
+0 .
+140 IF NOT HEX THEN 160
+141 IF (C>=48 AND C<=57) OR (C>=65 AND C<=70) THEN HC=HC+1:NC=NC*16+C:G.120
+142 IF HC=2 THEN C=NC:HC=0:G.160
+143 HC=0:G.120
+
+0 .
+0 . Store and loop
+0 .
+160 PUT #1,C
+0 .
+0 . Show activity
+0 .
+170 Q=Q+1:IF(Q>10)THEN?".";:Q=0
+180 G.120
+
+0 .
+0 . Done! Get another file...
+0 .
+400 CL.#1:?E$;"DONE (";T;")";E$;E$:G.60
+
+0 .
+0 . Decode encoded characters
+0 . in the form: '\123'
+0 .
+
+700 OT=NT:NT=PEEK(18)*65536+PEEK(19)*256+PEEK(20)
+701 IF OT=0 THEN T=5:POKE 18,0:POKE 19,0:POKE 20,0:RET.
+702 T=NT-OT:IF T>200 AND T<500 THEN T=20
+703 RET.
+0 .
+0 . Get a key
+0 .
+800 GET#2,K:K$=CHR$(K):RET.
+0 .
+0 . Open Error
+0 .
+900 ? "CAN'T OPEN":GOTO 60
+
+
+1000 DIM Q$(1):Q$=CHR$(34):? "S.";Q$;"D:IMPORT.BAS";Q$;":L.";Q$;"D:IMPORT.LST";Q$
+
+END

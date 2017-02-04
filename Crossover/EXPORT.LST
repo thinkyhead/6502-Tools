@@ -1,0 +1,44 @@
+. AtariBASIC
+.
+. EXPORT.BAS
+.
+10 DIM F$(14),N$(12),C$(1),E$(1):B=10
+20 C$=CHR$(125):E$=CHR$(155)
+30 ? C$;"< ATARI FILE EXPORT >"
+40 ? "USES P: TO SEND FILES"
+50 ? "TO THE HOST SYSTEM."
+.
+. Pipe the file to P:
+.
+60 TRAP 70
+70 ? E$;"FILE ";:INPUT N$
+75 IF N$="" THEN RUN "D:MENU.BAS"
+80 F$="D:":F$(3)=N$
+90 TRAP 150:CLOSE #1
+100 OPEN #1,4,0,F$:OPEN #2,8,0,"P:"
+110 ? "Sending ";N$;" to host...";
+115 TRAP 130
+.
+. Get a character. Encode if needed.
+.
+120 GET #1,C:IF (C<32 OR C=92 OR C=96 OR (C>122 AND C<>155)) THEN GOSUB 500
+125 PUT #2,C:GOTO 120
+130 CLOSE #1:CLOSE #2
+140 ? "DONE":GOTO 60
+150 ? "CAN'T OPEN":GOTO 60
+.
+. Encode the char in C
+.
+500 PUT #2,92:IF C=92 THEN RETURN 
+
+501 B2=B*B
+
+502 IF C>=B2 THEN I2=INT(C/B2):PUT #2,48+I2:C=C-I2*B2
+
+503 IF C>=B THEN I1=INT(C/B):PUT #2,48+I1:C=C-I1*B
+
+504 C=C+48:RETURN 
+.
+. Dev Support
+.
+1000 DIM Q$(1):Q$=CHR$(34):? "S.";Q$;"D:EXPORT.BAS";Q$;":L.";Q$;"D:EXPORT.LST";Q$
