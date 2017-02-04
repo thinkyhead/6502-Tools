@@ -1,0 +1,20 @@
+{
+	"bold_folder_labels": true,
+	"color_scheme": "Packages/Color Scheme - Default/Dawn.tmTheme",
+	"extensions":
+	[
+		"asm",
+		"s"
+	],
+	"fade_fold_buttons": false,
+	"font_size": 17,
+	"ignored_packages":
+	[
+		"SortTabs",
+		"Vintage"
+	],
+	"show_panel_on_build": true,
+	"tab_size": 8,
+	"translate_tabs_to_spaces": true,
+	"tree_animation_enabled": false
+}

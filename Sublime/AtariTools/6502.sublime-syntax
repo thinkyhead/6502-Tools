@@ -1,0 +1,664 @@
+%YAML 1.2
+---
+#
+# 6502 Assembly
+#
+# 6502 is fairly straightforward, but there are many
+# variants, not all of which are easy to take together.
+#
+#   - Code lines have only a few fields, separated by whitespace:
+#     - Hexdump (e.g., "1234 5C 7F ")
+#     - Label
+#     - Mnemonic or directive
+#     - Operand(s)
+#     - Comment
+#   - All fields are optional.
+#   - Comments start with ';' and take the rest of the line.
+#   - Old-style comments have '*' in the first column.
+#
+# This syntax is based on a couple of samples of code.
+#   - Atari 8-bit Assembly. Not yet supporting macro-assembler.
+#   - Apple ][ early DOS code. Very bare code with "inferred" comments.
+#
+# To help parse old-school code, mnemonics are grouped like so:
+#   - Mnemonics with no operands. All that follows is a comment.
+#   - Mnemonics with 0 or more operands. Apple's assembler requires ';'
+#     for comments on ambiguous mnemonics, so this syntax has a rule
+#     to capture expressions automatically:
+#       - Expression has its own context
+#       - Captures parentheses (first rule)
+#       - Non-operator where an operator should be? Set comment.
+#   - Unknown (3-letter) mnemonics are marked invalid.
+#   - Loose about other keywords rather than exhaustive.
+#
+# Notes on sublime-syntax:
+#   - Each character or group is scanned in order, individually,
+#     using the rules of the active context.
+#   - Matches are only within a single line (no CR/LF).
+#   - A successful match moves the scan-point after the match.
+#   - Only the active context applies, plus any includes.
+#
+# This is a first attempt, and far from elegant. Please help improve.
+#
+# 6502 addressing modes:
+#   - Accumulator         PLA ; ROL ; ROR A
+#   - Immediate           LDX #3
+#   - Implied             CLC, SED
+#   - Relative            BRA _there
+#   - Absolute/Zero-Page  STA $CE44   ; LDA $12
+#   - Absolute/ZP Indexed LDA $0600,X ; STX $44,Y
+#   - Indirect            JMP ($0600)
+#   - Indirect Indexed    LDA ($86),Y
+#   - Indexed Indirect    STA ($20,X)
+#
+name: 6502 Assembly
+file_extensions:
+  - [ dasm, asm, s, m65 ]
+scope: source.asm
+variables:
+  define:     '[.a-zA-Z_]\w*'  # define name (no dot allowed)
+  ext_define: '{{define}}(::{{define}})?'
+  label:      '{{define}}|\@\d+'      # an unbroken name or label string
+  std_s:      as[lr]\s*a|brk|cl[cdiv]|dec\s*a|(de|in)[xy]|eor\s*a|inc\s*a|ls[lr]\s*a|nop|p[hl][ap]|ro[lr]\s*a|rt[is]|se[cdi]|t(a[xy]|(sx|xs)|[yx]a)
+  std_d:      a(dc|nd|sl)|bit|c(mp|p[xy])|dec|eor|inc|j(mp|sr)|ld[axy]|ls[lr]|ora|ro[lr]|sbc|st[axy]
+  std_b:      b(c[cs]|eq|mi|ne|pl|v[cs])
+  added_s:    p[hl][xy]|t[rs]b
+  added_d:    stz
+  added_b:    bra
+  mos65C02_s: '[rs]mb|stp|wai'
+  mos65C02_b: bb[rs]
+  b_std_s:    (?i)\b({{std_s}})\b
+  b_std_d:    (?i)\b({{std_d}})\b
+  b_std_b:    (?i)\b({{std_b}})\b
+  b_added_s:  (?i)\b({{added_s}})\b
+  b_added_d:  (?i)\b({{added_d}})\b
+  b_added_b:  (?i)\b({{added_b}})\b
+  b_mos65C02_s: (?i)\b({{mos65C02_s}})\b
+  b_mos65C02_b: (?i)\b({{mos65C02_b}})\b
+  mnemonic: '[a-zA-Z]{3}'
+  dec: \d+
+  hex: \$\h+
+  bin: '%[01]+'
+
+contexts:
+  main:
+    - meta_content_scope: ctx.main
+    - match: ()
+      push: asm_column_1
+
+  asm_column_1:
+    - meta_content_scope: ctx.asm_column_1
+
+    # Comment in the first position?
+    - include: mixin_comment
+
+    # String in the first position?
+    # - include: mixin_string
+
+    # Match a define line, which may end with a comment
+    - match: ^({{define}})\b\s*(=|EQU|SET)
+      captures:
+        1: entity.name.constant.asm        # symbol
+        2: keyword.operator.assignment.asm # operator
+      set: asm_expression
+
+    # Alias directive first?
+    - match: (?i)^\s*(\.alias)\s+({{define}})\s+
+      captures:
+        1: keyword.directive.assignment.asm
+        2: entity.name.constant.asm
+      set: asm_expression
+
+    # .include?
+    - match: (?i)^\s*\.include\b
+      scope: keyword.directive.include.asm
+      set: asm_string_arg
+
+    # .org?
+    - match: (?i)^\s*\.org\b
+      scope: keyword.directive.org.asm
+      set: asm_expression
+
+    # .segment/SEGMENT ...
+    - match: (?i)^\s*\.segment\b
+      scope: keyword.directive.segment.asm
+      set: asm_string_arg
+
+    # .proc/PROC name
+    - match: (?i)(\.proc)\s*({{define}})
+      captures:
+        1: keyword.directive.proc.asm
+        2: entity.name.label.asm
+      set: auto_comment
+
+    # .endproc
+    - match: (?i)\.endproc
+      scope: keyword.directive.endproc.asm
+      set: auto_comment
+
+    # Match: ... IF <expr> ; comment
+    - match: ^\s+(IF)\s*
+      captures:
+        1: keyword.directive.conditional.asm        # IF
+      set: pre_condition
+
+    # Match: ... ELSE or ENDIF
+    - match: ^\s+(ELSE|ENDIF)\b
+      scope: keyword.directive.conditional.asm      # ELSE/ENDIF
+      set: asm_comment
+
+    # Match a line starting with a label
+    - match: ^({{label}})(:?)
+      captures:
+        1: entity.name.label.asm                    # label
+        2: punctuation.definition.label.colon.asm
+      set: asm_column_2
+
+    # Disassembled code with hex prefix? (And label.)
+    # This fails because it's hard to distinguish
+    # a label from a mnemonic.
+    - match: (?i)^(\$?\h{4}(\s*\h{2})+)\s*([.a-z_]\w{3,})
+      captures:
+        1: constant.disassembly.asm
+        3: entity.name.label.asm   # label
+      set: asm_column_2
+
+    # Disassembled code with hex prefix? (And label.)
+    # This fails because it's hard to distinguish
+    # a label from a mnemonic.
+    - match: (?i)^\$?\h{4}(\s*\h{2})+
+      scope: constant.disassembly.asm
+      set: asm_column_2
+
+    # Match a line starting with indentation
+    - match: ^\s
+      set: asm_column_2
+
+  # The line following the first indent.
+  # May be preceded by a label (i.e., when a symbol is not a define)
+  asm_column_2:
+    - meta_content_scope: ctx.asm_column_2
+
+    - include: mixin_comment
+
+    # *=$hhhh or * EQU ...
+    - match: (\*)\s*(=|EQU)\s*
+      captures:
+        1: support.builtin.origin.asm # *
+        2: keyword.operator.assignment.asm # =
+      set: asm_expression
+
+    # processor X
+    - match: (processor)\s*(\w+)
+      captures:
+        1: keyword.directive.processor.asm
+        2: constant.processor-option.asm
+      set: auto_comment
+
+    # .list/LIST X
+    - match: (?i)(\.?list)\s*({{label}})
+      captures:
+        1: keyword.directive.list.asm
+        2: constant.list-option.asm
+      set: auto_comment
+
+    # .page/PAGE
+    - match: (?i)\.?page\b
+      scope: keyword.directive.page.asm
+      set: auto_comment
+
+    # .title/TITLE
+    - match: (?i)\.?title\b
+      scope: keyword.directive.title.asm
+      set: asm_string_arg
+
+    # .proc/PROC name
+    - match: (?i)(\.?proc)\s*({{define}})
+      captures:
+        1: keyword.directive.proc.asm
+        2: entity.name.label.asm
+      set: auto_comment
+
+    # .org/ORG $hhhh (also .rorg/RORG)
+    - match: (?i)\.?r?org\b
+      scope: keyword.directive.org.asm
+      set: asm_data
+
+    # .res/RES $hhhh
+    - match: (?i)\.?res\b
+      scope: keyword.directive.res.asm
+      set: asm_data
+
+    # .obj/OBJ $hhhh
+    - match: (?i)obj\b
+      scope: keyword.directive.obj.asm
+      set: asm_data
+
+    # .segment/SEGMENT ...
+    - match: (?i)\.?segment\b
+      scope: keyword.directive.segment.asm
+      set: asm_string_arg
+
+    # .seg/SEG ...
+    - match: (?i)\.?r?seg\b
+      scope: keyword.directive.seg.asm
+      set: asm_data
+
+    # .proc/PROC name
+    - match: (?i)(\.?proc)\s*({{define}})
+      captures:
+        1: keyword.directive.proc.asm
+        2: entity.name.label.asm
+      set: auto_comment
+
+    # .endproc
+    - match: (?i)\.?endproc
+      scope: keyword.directive.endproc.asm
+      set: auto_comment
+
+    # BOUNDARY ...
+    - match: BOUNDARY\b
+      scope: keyword.directive.boundary.asm
+      set: asm_expression
+
+    # include path
+    - match: (include)\s+([^ ]*)
+      captures:
+        1: keyword.directive.include.asm # include
+        2: string.unquoted.path.asm   # file path
+
+    # .opcode followed by data
+    - match: (\.[a-zA-Z]+|D[BW])\b
+      scope: keyword.data.asm           # data opcode
+      set: asm_data
+
+    #
+    # Known assembler mnemonics
+    #
+
+    # 6502 single opcodes. All that follows is comment.
+    - match: '{{b_std_s}}'
+      scope: support.opcode.single.asm
+      set: auto_comment
+    - match: '{{b_added_s}}'
+      scope: support.opcode.single.added.asm
+      set: auto_comment
+    - match: '{{b_mos65C02_s}}'
+      scope: support.opcode.single.65C02.asm
+      set: auto_comment
+
+    # 6502 opcodes taking a relative operand
+    - match: '{{b_std_b}}'
+      scope: support.opcode.branch.asm
+      set: op_relative
+    - match: '{{b_added_b}}'
+      scope: support.opcode.branch.added.asm
+      set: op_relative
+    - match: '{{b_mos65C02_b}}'
+      scope: support.opcode.branch.65C02.asm
+      set: op_relative
+
+    # 6502 opcodes taking some other operand
+    - match: '{{b_std_d}}'
+      scope: support.opcode.double.asm
+      set: op_start
+    - match: '{{b_added_d}}'
+      scope: support.opcode.added.asm
+      set: op_start
+
+    # HEX abcd ...
+    - match: (HEX)\s+(\h+)
+      captures:
+        1: keyword.data.hex.asm # directive
+        2: constant.numeric.hex.asm # directive
+      set: asm_data
+
+    # abcd ...
+    - match: (END|[a-zA-Z]{4,}\b)
+      scope: keyword.directive.misc.asm # directive
+      set: asm_data
+
+    # Any other 3-letter mnemonic
+    - match: ({{mnemonic}}\b)
+      scope: invalid.illegal.opcode.asm # 6502 opcode
+      set: op_start
+
+    # Always exit line scope
+    - match: $
+      pop: true
+
+  auto_comment:
+    - meta_content_scope: ctx.auto_comment
+
+    - match: ;
+      scope: punctuation.definition.comment.eol.start
+      set: asm_comment
+    - match: (\S)
+      scope: character.auto-comment.asm
+      set: asm_comment
+    - match: $
+      pop: true
+
+  # Mark a comment. It ends with the line.
+  asm_comment:
+    - meta_scope: comment.asm
+    - match: $
+      pop: true
+
+  asm_string_arg:
+    - match: \s+
+
+    - match: (['"])
+      scope: punctuation.definition.string.open.asm
+      push: quoted_string
+
+    - match: ''
+      set: auto_comment
+
+  # Atoms of expressions: Strings, numbers, and names
+  mixin_value:
+    - include: mixin_string
+    - match: ({{hex}})|({{bin}})|({{dec}})|({{ext_define}})\b
+      captures:
+        1: constant.numeric.hex.asm
+        2: constant.numeric.bin.asm
+        3: constant.numeric.dec.asm
+        4: entity.name.asm
+
+  mixin_operators:
+    - match: \*\*|[-+*/!^]
+      scope: keyword.operator.math.asm
+
+    - match: <>|<<|>>|[<=>|&~]
+      scope: keyword.operator.binary.asm
+
+  # Comments begin with a ';' and finish at the end of the line.
+  # Old Apple ][ code uses asterisks, which doesn't conflict
+  # with anything else, so capture that too.
+  mixin_comment:
+    - match: ^(\*)|^\s*(;|//|\*\*\*)
+      captures:
+        1: comment.asm punctuation.definition.comment.line.start
+        2: comment.asm punctuation.definition.comment.line.start
+      set: asm_comment
+    - match: \s*(;|//|\*\*\*)
+      captures:
+        1: comment.asm punctuation.definition.comment.eol.start
+      set: asm_comment
+
+  # Strings begin and end with quotes and use backslash for escape.
+  # Cut off strings at the end of the line
+  mixin_string:
+    - match: \"
+      scope: punctuation.definition.string.open.asm
+      push: quoted_string
+    - match: (\'.)\s
+      captures:
+        1: constant.char.asm
+      set: auto_comment
+    - match: \'.
+      scope: constant.char.asm
+  quoted_string:
+    - meta_scope: string.quoted.asm
+    - match: $
+      pop: true
+    - match: \\.
+      scope: constant.character.escape.asm
+    - match: $1
+      scope: punctuation.definition.string.close.asm
+      pop: true
+
+  # Assembler directive condition. <> are logical, not low/hi operators
+  pre_condition:
+    - include: mixin_value
+    - match: =|<[>=]?|>=?
+      scope: keyword.operator.compare.asm
+    - match: \s*((;|//|\*\*\*).*)\s*
+      captures:
+        1: comment.asm
+        2: punctuation.definition.comment.eol.start
+      set: asm_line_done
+    - match: \s{3,}|$
+      pop: true
+
+  # Operand for an assembler command
+  op_start:
+    - match: \s+
+
+    # Immediate expression
+    - match: \#
+      scope: keyword.operator.immediate.asm
+      set: op_immediate
+
+    - match: \(
+      scope: punctuation.definition.indirect.start
+      set: op_indirect
+
+    # Other address expression
+    - match: ()
+      set: op_address
+
+  #
+  # Assembler Modes
+  #
+
+  # Immediate value operand
+  op_immediate:
+    - match: $
+      pop: true
+
+    - include: mixin_expression
+
+  # Relative, for branches only
+  op_relative:
+    - match: '{{label}}\b'
+      scope: entity.name.label.asm
+
+    - match: $
+      pop: true
+
+    - include: mixin_expression
+
+  # Indirect, Indirect Indexed, Indexed Indirect
+  op_indirect:
+    - meta_scope: ctx.op_indirect
+
+    - match: \)\s*(,[yY])
+      captures:
+        1: support.opcode.indirect-indexed.asm
+      set: auto_comment
+
+    - match: (\,[xX])\s*\)
+      captures:
+        1: support.opcode.indexed-indirect.asm
+      set: auto_comment
+
+    - match: \)
+      scope: punctuation.definition.indirect.end
+      set: auto_comment
+
+    - match: $
+      pop: true
+
+    - include: mixin_expression
+
+  # Non-immediate operand must be an address
+  op_address:
+    - match: ',[xX]'
+      scope: support.opcode.indexed-x.asm
+      set: auto_comment
+    - match: ',[yY]'
+      scope: support.opcode.indexed-y.asm
+      set: auto_comment
+
+    - match: $
+      pop: true
+
+    - include: mixin_expression
+
+  # Definitely an expression of some kind
+  asm_data:
+    - meta_content_scope: ctx.asm_data.asm
+
+    - match: \,
+      scope: punctuation.separator.data.asm
+
+    - match: $
+      pop: true
+
+    - include: mixin_expression
+
+  mixin_expression:
+    # Delimited comment always ends the line
+    - include: mixin_comment
+
+    # Enter parentheses with this context nested
+    - match: \(
+      scope: punctuation.definition.parentheses.open
+      push: expr_paren
+    - match: \)
+      scope: invalid.illegal.stray-paren-end
+
+    # Enter brace with this context nested
+    - match: \[
+      scope: punctuation.definition.brace.open
+      push: expr_brace
+    - match: \]
+      scope: invalid.illegal.stray-brace-end
+
+    # String in a value position
+    - include: mixin_string
+
+    # Scope the next value in the expression
+    #
+    - match: (\*)|({{hex}})|({{bin}})|({{dec}})|({{ext_define}})\b
+      captures:
+        1: entity.address.here.asm
+        2: constant.numeric.hex.asm
+        3: constant.numeric.bin.asm
+        4: constant.numeric.dec.asm
+        5: entity.name.asm
+      push: expr_needs_operator
+
+    # Mark the next operator
+    - include: mixin_operators
+
+  #
+  # asm_expression - A single datum (or list)
+  #
+  # - A comment marker ends the line
+  # - Push paren or brace, if one
+  # - Consume a string.
+  # - Consume a value and push a rule to match
+  #   a value pattern. It won't return if it passes.
+  # - Consume an operator.
+  #
+  asm_expression:
+    - meta_content_scope: ctx.asm_expression.asm
+
+    # Expression context ends with line
+    - match: $
+      pop: true
+
+    - match: ''
+      push: expr_needs_value
+
+  #
+  # expr_needs_value <- asm_data(match(value))
+  # 
+  # - Consume spaces
+  # - End on a comment marker
+  # - Set to 'comment' if a non-operator follows
+  # - Pop for anything else (an unconsumed non-operator)
+  # 
+  expr_needs_value:
+    - meta_content_scope: ctx.expr_needs_value.asm
+
+    # Consume whitespace
+    - match: \s+
+
+    - include: mixin_comment
+
+    # Enter parentheses with this context nested
+    - match: \(
+      scope: punctuation.definition.parentheses.open
+      push: expr_paren
+
+    # Enter brace with this context nested
+    - match: \[
+      scope: punctuation.definition.brace.open
+      push: expr_brace
+
+    - match: '[\])]'
+      pop: true
+
+    - match: (\*)|({{hex}})|({{bin}})|({{dec}})|({{ext_define}})\b
+      captures:
+        1: entity.address.here.asm
+        2: constant.numeric.hex.asm
+        3: constant.numeric.bin.asm
+        4: constant.numeric.dec.asm
+        5: entity.name.asm
+      set: expr_needs_operator
+
+    - match: ''
+      set: asm_comment
+
+  #
+  # expr_needs_operator <- asm_data(match(value))
+  # 
+  # - Consume spaces
+  # - End on a comment marker
+  # - Set to 'comment' if a non-operator follows
+  # - Pop for anything else (an unconsumed non-operator)
+  # 
+  expr_needs_operator:
+    - meta_content_scope: ctx.expr_needs_operator.asm
+
+    # Consume whitespace
+    - match: \s+
+
+    - include: mixin_comment
+
+    # If a non-operator is found, the expression is done.
+    # Note: comments beginning with an operator may be missed
+    - match: ([^-+*/,!<>|&^~)\]])
+      scope: character.auto-comment.asm
+      set: asm_comment
+
+    - match: '[-+*/^]'
+      scope: keyword.operator.math.asm
+      set: expr_needs_value
+
+    - match: '[&|~]|<<|>>'
+      scope: keyword.operator.binary.asm
+      set: expr_needs_value
+
+    - match: '[!<>=]'
+      scope: keyword.operator.logical.asm
+      set: expr_needs_value
+
+    - match: ''
+      set: asm_comment
+
+  # Start a parenthesized expression.
+  # After the closing parenthesis, an operator should be required
+  expr_paren:
+    # Override the close-paren from asm_data
+    - match: \)
+      scope: punctuation.definition.parentheses.close
+      pop: true
+
+    # Continue with asm_data
+    - include: asm_data
+
+  expr_brace:
+    - match: \]
+      scope: punctuation.definition.brace.close
+      pop: true
+    - include: asm_data
+
+  # Done interpreting to the end of the line
+  asm_line_done:
+    - match: \s*$
+      pop: true
