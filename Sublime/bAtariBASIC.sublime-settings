@@ -1,0 +1,6 @@
+{
+  "extensions": [ "BAS" ],
+  "word_wrap": "false",
+  "indent_subsequent_lines": true,
+  "color_scheme": "Packages/User/AtariTools/Atari800.tmTheme"
+}

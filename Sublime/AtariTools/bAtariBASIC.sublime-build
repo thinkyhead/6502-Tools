@@ -1,0 +1,4 @@
+{
+  "cmd": ["$packages/User/AtariTools/bAtariBASIC-build.sh", "$file"],
+  "selector": "source.batari"
+}

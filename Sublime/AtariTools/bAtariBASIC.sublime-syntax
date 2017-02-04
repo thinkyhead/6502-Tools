@@ -1,0 +1,607 @@
+%YAML 1.2
+---
+#
+# =================>-------------<=================
+# =================( bAtariBASIC )=================
+# =================>-------------<=================
+#
+# bAtari Basic is a lightweight BASIC-like compiled language
+# specifically for programming the Atari 2600. Since it compiles
+# for the very simple 6502 processor it comes with some limitations.
+# This syntax is good at catching obvious errors, but it's more
+# permissive than bB when it comes to expressions, symbol usage, etc.
+# An absence of errors doesn't guarantee the code will compile.
+#
+# bAtari compiles into assembler code that then needs to be
+# assembled with dasm, cc65, or whatever is most preferred.
+#
+# This syntax differentiates between various entities:
+# TIA registers, Advanced TIA registers, game globals
+#
+#
+name: bAtariBASIC
+file_extensions:
+  - [bas]
+first_line_match: ' (rem|set) .*'
+scope: source.batari
+variables:
+  atoz: \b[a-z]\b
+  name: \b[a-zA-Z_][a-zA-Z0-9_]+\b
+  tia1: \b(AUD([CFV][01])|COLU(BK|P[01F])|CTRLPF|NUSIZ[01]|PF0|REFP[01])\b
+  tia2: \b(CX(BLPF|CLR|M([01](FB|P))|P([01]FB|PMM))|ENA(BL|M0|M1)|GRP[01]|HM(BL|CLR|[MP][01]|OVE)|INPT[0-5]|INTIM|PF[12]|RES(BL|(MP|M|P)[01])|RSYNC|SW([AB]CNT|CH[AB])|T1024T|TIA_BASE_(READ_|WRITE_)?ADDRESS|TIM(1|64|8|IN)T|VBLANK|VDEL(BL|P[01])|VERSION_VCS|[VW]SYNC)\b
+  prop: \b(ball(height|x|y)|currentpaddle|dpcspritemax|joy[01](down|fire|left|right|up)|lives|missile[01](height|x|y)|pfscore(1|2|color)|play(er[01][xy]|er[0-9]height|fieldpos)|rand|score(|color|fade)|statusbar(color|length)|switch(bw|leftb|reset|rightb|select))\b
+  func: \bcollision\b
+  opts: (no|pf)score|pf(res|rowheight)|scorefade
+  kern: \b(readpaddle|(pf|player1?)colors|no_blank_lines|pfheights|background)\b
+  builtin: '{{tia1}}|{{tia2}}|{{prop}}|{{opts}}'
+  num: \d+\.\d*|\.\d+
+  flt: '[-+]?{{num}}'
+  int: '[-+]?\d+'
+
+contexts:
+
+  prototype:
+    - match: \s+
+
+    - match: $
+      pop: true
+
+  main:
+    - meta_include_prototype: false
+
+    - meta_content_scope: ctx.main.batari
+
+    - match: \s+
+      set: bas_line
+
+    - match: ^({{name}})
+      scope: entity.name.label.batari
+
+  bas_line:
+    - meta_content_scope: ctx.bas_line.batari
+
+    - match: rem\b
+      scope: keyword.rem.batari
+      set: bas_rem
+
+    - match: dim\b
+      scope: keyword.dim.batari
+      set: bas_dim
+
+    - match: (include)\s+(.*?)\s*$
+      captures:
+        1: keyword.include.batari
+        2: string.unquoted.include-path.batari
+
+    - match: (def)\s+({{name}})\s*(=)\s*(.*?)\s*$
+      captures:
+        1: keyword.def.batari
+        2: entity.name.define.batari
+        3: string.unquoted.substitution.batari
+
+    - match: (goto)\s+({{name}})
+      captures:
+        1: keyword.goto.batari
+        2: entity.name.label.batari
+      set: line_and_statement_should_end
+
+    - match: if\b
+      scope: keyword.if.batari
+      push: bas_if
+
+    - match: (set)\s+(kernel_options)\b
+      captures:
+        1: keyword.set.batari
+        2: support.name.builtin.batari
+      push: bas_opts
+
+    - match: (set)\s+({{name}})\s+({{name}})$
+      captures:
+        1: keyword.set.batari
+        2: support.name.builtin.batari
+        3: constant.enum.batari
+
+    - match: asm\b(\s*$)?
+      scope: keyword.asm.batari
+      set: bas_asm
+
+    # drawscreen, pfclear, reboot
+    - match: ((drawscreen)|(pfclear)|(reboot))\b
+      captures:
+        2: keyword.drawscreen.batari
+        3: keyword.pfclear.batari
+        4: keyword.reboot.batari
+      push: cmd_done
+
+    # bank <2-8>
+    - match: bank\b
+      scope: keyword.bank.batari
+      push: one_expr
+
+    # pfhline <x> <y> <endx/y> <on|off|flip>
+    - match: ((pfhline)|(pfvline))\b
+      captures:
+        2: keyword.pfhline.batari
+        3: keyword.pfvline.batari
+      # push: bas_pfline
+
+    # pfpixel <x> <y> <on|off|flip>
+    - match: pfpixel\b
+      scope: keyword.pfpixel.batari
+      # push: bas_pfpixel
+
+    # pfscroll <dir>
+    - match: (pfscroll)\s+(left|right|up(up)?|down(down)?)
+      captures:
+        1: keyword.pfscroll.batari
+        2: support.name.builtin.batari
+      push: cmd_done
+
+    - match: data\b
+      scope: keyword.data.batari
+      set: bas_data
+
+    - match: 'player[01]color:'
+      scope: keyword.playerNcolor.batari
+      push: bas_playercolor
+
+    - match: 'player[01]:'
+      scope: keyword.playerN.batari
+      push: bas_player
+
+    - match: 'lives:'
+      scope: keyword.lives.batari
+      push: bas_lives
+
+    - match: 'playfield:'
+      scope: keyword.playfield.batari
+      push: bas_playfield
+
+    - match: const\b
+      scope: keyword.const.batari
+      push: bas_let
+
+    - match: dec\b
+      scope: keyword.dec.batari
+      push: bas_let
+
+    - match: let\b
+      scope: keyword.let.batari
+      push: bas_let
+
+    - match: ''
+      push: bas_let
+
+  bas_opts:
+    - match: '{{kern}}'
+      scope: constant.enum.batari
+
+    - match: ''
+      set: syntax_error
+
+  bas_rem:
+    - meta_scope: comment.batari
+
+  bas_asm:
+    - meta_include_prototype: false
+
+    - match: $
+      push: 6502.sublime-syntax
+      with_prototype:
+        - match: ^(?=end)
+          pop: true
+
+    - match: ^end\b
+      scope: keyword.end.batari
+      pop: true
+
+    - match: ''
+      pop: true
+
+  bas_let:
+    - match: '{{builtin}}'
+      scope: support.name.builtin.batari
+      set: bas_let_equals
+
+    - match: '{{atoz}}\{\d+\}'
+      scope: variable.int.batari
+      set: bas_let_equals
+
+    - match: '{{name}}\{\d+\}'
+      scope: variable.alias.batari
+      set: bas_let_equals
+
+    - match: '{{atoz}}'
+      scope: variable.int.batari
+      set: bas_let_equals
+
+    - match: '{{name}}'
+      scope: variable.alias.batari
+      set: bas_let_equals
+
+    - match: ''
+      set: syntax_error
+
+  bas_let_equals:
+    - match: =
+      scope: keyword.operator.assignment.batari
+      set: one_expr
+
+    - match: ''
+      set: syntax_error
+
+  bas_if:
+    - meta_scope: ctx.cmd_if.batari
+
+    # End before expression?
+    - match: \s*:|$
+      set: syntax_error
+
+    # Pops on then/goto/gosub
+    - include: real_expr
+
+  mixin_bitmap:
+    - match: ^end\b
+      scope: keyword.end.batari
+      pop: true
+
+    - match: \d+
+      scope: constant.numeric.decimal.batari
+      push: cmd_done
+
+    - match: \$[0-9a-fA-F]+
+      scope: constant.numeric.hex.batari
+      push: cmd_done
+
+    - match: \%[01]+
+      scope: constant.numeric.binary.batari
+      push: cmd_done
+
+  bas_data:
+    - meta_include_prototype: false
+    - meta_content_scope: ctx.bas_data.batari
+
+    - match: \s*({{name}})\s*$
+      captures:
+        1: entity.name.label.batari
+      set: bas_data_lines
+
+    - match: ''
+      set: syntax_error
+
+  bas_data_lines:
+    - meta_include_prototype: false
+    - meta_content_scope: ctx.bas_data_lines.batari
+
+    - match: ^end\b
+      scope: keyword.end.batari
+      pop: true
+
+    - match: (.+)$
+      scope: support.debug.batari
+
+    - match: \s+
+    - match: $
+
+    - match: \,
+      scope: support.token.delimiter.list.ataribasic
+
+    # - include: real_expr
+
+  bas_playercolor:
+    - meta_include_prototype: false
+
+    - meta_content_scope: ctx.bas_playercolor.batari
+
+    - include: mixin_bitmap
+
+  bas_player:
+    - meta_include_prototype: false
+
+    - meta_content_scope: ctx.bas_player.batari
+
+    - include: mixin_bitmap
+
+  bas_lives:
+    - meta_include_prototype: false
+
+    - meta_content_scope: ctx.bas_lives.batari
+
+    - include: mixin_bitmap
+
+  bas_playfield:
+    - meta_include_prototype: false
+
+    - meta_content_scope: ctx.bas_playfield.batari
+
+    - match: ^end\b
+      scope: keyword.end.batari
+      pop: true
+
+    - match: '[\.X]+'
+      scope: constant.numeric.binary.batari
+      push: cmd_done
+
+
+  bas_assign:
+    - meta_scope: ctx.bas_assign.batari
+
+    - match: ''
+      captures:
+        1: todo.expression.batari
+
+  bas_dim:
+    - match: '{{name}}'
+      scope: entity.name.alias.batari
+      set: bas_dim_equals
+
+    - match: ''
+      set: syntax_error
+
+  bas_dim_equals:
+    - match: =
+      scope: keyword.operator.assignment.batari
+      set: bas_dim_expr
+
+    - match: ''
+      set: syntax_error
+
+  bas_dim_expr:
+    - match: (({{atoz}})|({{name}}))(\.)(({{atoz}})|({{name}}))
+      captures:
+        2: variable.int.batari
+        3: variable.alias.batari
+        4: keyword.operator.fixed-point.batari
+        6: variable.int.batari
+        7: variable.alias.batari
+
+    - match: '{{atoz}}'
+      scope: variable.int.batari
+      set: mixin_statement_end
+
+    - match: ''
+      set: syntax_error
+
+  one_expr:
+    - meta_content_scope: ctx.one_expr.batari
+
+    # Statement ends before... anything?
+    - match: '\s*([,;:]|$)'
+      set: syntax_error
+
+    - match: ''
+      set: real_expr
+
+  # real_expr Wants a proper expression or it throws syntax error
+  # So we start an expression, first we want a modifier or a value.
+  # If we don't find either of those then the expression is moot.
+  # However, if we do find them, then we must mark them here also,
+  # and change the context so that an operator is next required.
+  # (Later it will be possible to tell whether strings in a float
+  #  context are converting to float).
+  real_expr:
+    - meta_content_scope: ctx.real_expr.batari
+
+    - include: mixin_statement_end
+
+    - match: ''
+      push: expr_eat_modifier
+
+  # Tag a modifier
+  expr_eat_modifier:
+    - meta_content_scope: ctx.expr_eat_modifier.batari
+
+    - match: ({{flt}})|({{int}})
+      captures:
+        1: constant.numeric.fixed-point.batari
+        2: constant.numeric.int.batari
+      set: expr_wants_operator
+
+    - match: (!)|(-)|(\+)
+      captures:
+        1: keyword.operator.not.batari
+        2: keyword.operator.negative.batari
+        3: keyword.operator.positive.batari
+      set: expr_2nd_modifier
+
+    - match: ''
+      set: expr_wants_value
+
+  expr_2nd_modifier:
+    - meta_content_scope: ctx.expr_2nd_modifier.batari
+
+    - match: ({{flt}})|({{int}})
+      captures:
+        1: constant.numeric.fixed-point.batari
+        2: constant.numeric.int.batari
+      set: expr_wants_operator
+
+    - match: '[!-+]'
+      set: syntax_error
+
+    - match: ''
+      set: expr_wants_value
+
+  # Expression wants a value
+  expr_wants_value:
+    - meta_content_scope: ctx.expr_wants_value.batari
+
+    - meta_include_prototype: false
+
+    - match: \(
+      scope: support.paren.open.batari
+      set: expr_till_close
+
+    - match: \"
+      scope: punctuation.definition.string.open.batari
+      set: expr_eat_string
+
+    - match: ({{flt}})|({{int}})
+      captures:
+        1: constant.numeric.fixed-point.batari
+        2: constant.numeric.int.batari
+      set: expr_wants_operator
+
+    # Flag these variable names as errors, as the
+    # BASIC parser also does so (in expression context)
+    - match: then|goto|gosub
+      scope: invalid.error.reserved-word.batari
+      set: syntax_error
+
+    - match: '{{builtin}}'
+      scope: support.name.builtin.batari
+      set: expr_wants_operator
+
+    - match: '{{atoz}}\{\d+\}'
+      scope: variable.int.batari
+      set: expr_wants_operator
+
+    - match: '{{name}}\{\d+\}'
+      scope: variable.alias.batari
+      set: expr_wants_operator
+
+    - match: '{{atoz}}'
+      scope: variable.int.batari
+      set: expr_wants_operator
+
+    - match: '{{name}}'
+      scope: variable.alias.batari
+      set: expr_wants_operator
+
+    - match: ''
+      set: syntax_error
+
+  # Expression wants an operator
+  # If one is not found the expression is done, so pop
+  expr_wants_operator:
+    - meta_content_scope: ctx.expr_wants_operator.batari
+
+    - match: (<>|[<>]=|[-+*/^<=>]|&&|\|\|)\s*(:|$)
+      set: syntax_error
+
+    - match: '[-+*/^]'
+      scope: keyword.operator.math.batari
+      set: expr_eat_modifier
+
+    - match: <>|[<>]=?|=|&&|\|\|
+      scope: keyword.operator.logic.batari
+      set: expr_eat_modifier
+
+    - match: then
+      scope: keyword.then.batari
+      set: bas_line
+
+    # For the ON keyword, experimenting with
+    # pushing and popping. The goto/gosub pattern
+    # is very simple. In fact, in sum:
+    # ((GOTO)|(SUB))\s*({{name}})(\s*(,)\s*({{name}}))*\s*(:|$)
+    - match: (goto)|(gosub)
+      captures:
+        1: keyword.goto.batari
+        2: keyword.gosub.batari
+      pop: true
+
+    - match: ({{name}})|({{flt}})|({{int}})|\(
+      set: syntax_error
+
+    - match: ''
+      pop: true
+
+  # An enclosed expression. Comma delimited. No items limit.
+  expr_till_close:
+    - meta_content_scope: ctx.expr_till_close.batari
+
+    - match: '[^)]*(;:|$)'
+      set: syntax_error
+
+    # Return if the statement ends
+    - include: mixin_statement_end
+
+    # Closing the group? Then an operator is next.
+    - match: \)
+      scope: support.paren.close.subscript.batari
+      set: expr_wants_operator
+
+    # Expression followed by a comma? Tag it.
+    - match: \,
+      scope: support.token.delimiter.subscripts.batari
+
+    # Push the expression chain so it pops back here.
+    - match: ''
+      push: expr_eat_modifier
+
+  # Consume the subscript on a variable
+  expr_eat_subscript:
+    - meta_content_scope: ctx.expr_eat_subscript.batari
+
+    - match: \s*(\()
+      captures:
+        1: support.paren.open.subscript.batari
+      set: expr_till_close
+
+    - match: ''
+      set: expr_wants_operator
+
+  # Consume the subscript on a variable
+  expr_eat_string:
+    - meta_scope: string.quoted.batari
+
+    - match: $
+      pop: true
+
+    - match: '[^"]*(")'
+      captures:
+        1: punctuation.definition.string.close.batari
+      set: expr_wants_operator
+
+    - match: ''
+      set: syntax_error
+
+  # A statement might also want to end the line
+  line_and_statement_should_end:
+    - match: ':'
+      scope: support.token.delimiter.statement.batari
+      set: dead_code
+
+    - match: ''
+      set: syntax_error
+
+  # Mix-in to pop the context if the statement ends.
+  mixin_statement_end:
+    # Stray statement delimiter is an error
+    - match: :\s*$
+      set: syntax_error
+
+    # Statement end? Return.
+    - match: ':'
+      scope: support.token.delimiter.statement.batari
+      pop: true
+
+  # Other than REM lines, mark the background with "warning" color.
+  dead_code:
+    - meta_include_prototype: false
+
+    - match: ':'
+      scope: support.token.delimiter.statement.batari
+
+    - match: ''
+      set: marked_dead
+
+  marked_dead:
+    - meta_scope: invalid.warning.dead-code.batari
+
+    - include: bas_line
+
+  # A statement known to be completed is marked broken
+  # if any tokens follow before a new statement.
+  cmd_done:
+    - include: mixin_statement_end
+    - match: ''
+      set: syntax_error
+
+  # Everything after this point is broken by a syntax error
+  syntax_error:
+    - meta_scope: invalid.error.syntax.batari
+
+    - match: .*$
+      pop: true
