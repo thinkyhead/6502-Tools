@@ -1,0 +1,20 @@
+0 .
+0 . AtariBASIC
+0 .
+0 . MENU.BAS
+0 .
+
+0 DIM E$(1),K$(1),N$(8),F$(14)
+10?"(B) BDOS"
+11?"(E) Export"
+12?"(I) Import"
+13?"(Q) Quit"
+14?:?">";
+20OP.#1,4,0,"K:":GET#1,K:CL.#1:K$=CHR$(K)
+30IFK$="Q"THEN?CHR$(125):DOS
+40RES.:T.70
+50REA.N$:IFK$=N$(1,1)THENF$="D:":F$(3)=N$:F$(LEN(F$)+1)=".BAS":?CHR$(125):RUNF$
+60G.50
+70?CHR$(K);"";:G.20
+500D.BDOS,EXPORT,IMPORT
+1000S."D:MENU.BAS":L."D:MENU.LST"

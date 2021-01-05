@@ -1,0 +1,5 @@
+1 .
+2 . Test Joysticks
+3 .
+5GR.2+16:DIMH$(16):H$=""
+10F.S=0TO3:J=STICK(S):POS.7,S+4:?#6;S;":";H$(J+1,J+1);" ";STRIG(S);:N.S:G.10

@@ -1,0 +1,16 @@
+1 . MAKEASCI
+2 .            
+3 . Writes out a BASIC program with
+4 . all printable ATASCII characters.
+5 . The EOL 155 (9B) is omitted
+6 . because it can't be distinguished
+7 . from line end.
+8 .
+10 DIMOUT$(13),Q$(1):OUT$="H:ATASCII.LST":Q$=CHR$(34)
+20 O.#1,8,0,OUT$
+30 ?#1;"1 D.";:F.I=0TO127:?#1;CHR$(I);:N.I:?#1
+40 ?#1;"2 D.";:F.I=0TO127:A=I
+50 IFI=27THENA=ASC("_")
+60 ?#1;CHR$(A+128);:N.I:?#1
+70 CL.#1
+80 ?"NEW":?:?:?"E.";Q$;OUT$;Q$:?:?:?"L.";Q$;"P:";Q$

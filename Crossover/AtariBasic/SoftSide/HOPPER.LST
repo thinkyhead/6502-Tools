@@ -1,0 +1,335 @@
+0 . SS SS SS SS SS SS SS SS SS SS SS
+0 . SS                            SS
+0 . SS        ATARI BASIC         SS
+0 . SS          'HOPPER'          SS
+0 . SS    AUTHOR: HOWARD WOLKOW   SS
+0 . SS    TRAN5L: RICH BOUCHARD   SS
+0 . SS        AND ALAN J. ZETT    SS
+0 . SS      COPYRIGHT (C) 1982    SS
+0 . SS SOFTSIDE PUBLICATIONS, INC SS
+0 . S5                            SS
+0 . SS SS SS SS SS SS SS SS SS SS SS 
+
+0 . Program Initialization. 
+
+10GOS.10000:GOS.11000:GOS.12000:GOS.13000:GOS.30000:GOS.15000 
+
+
+0 . Draw background.
+
+100GOS.2300
+
+0 . Draw logs and cars, prepare for next frog.
+
+110 GOS.2400
+
+0 . Check for joystick movement.
+
+120 A9=STICK(N0):A1=N0:A2=N0
+130 U=USR(ADR(MOVE$)):ONA9 GOTO200,200,200,200,200,200,140,200,200,200,150,200,160,170,200
+140 A1=N2:G.200
+150 A1=-N2:G.200
+160 A2=UP(YP+N1):G.200
+170 A2=-UP(YP)
+
+0 . Move frog, and check for frog death.
+
+200 XP=XP+A1+SP(YP)*(A2=N0):YP=YP+A2:IFXP<N2 ORXP>37THEN1200
+203 IF A1 OR A2 THENSO.N0,210,10,10
+205 A=PEEK(SC+VP*40+XP):A3=PEEK(SC+YP*40+XP+N1)
+210 IFA2<N0 THENU=USR(ADR(UP$),PM+528):IFA2=-N2 THENU=USR(ADR(UP$),PM+528)
+220 IFA2>N0 THENU=USR(ADR(DOWN$),PM+528):IFA2=N2 THENU=USR(ADR(DOWN$),PM+528)
+225 IFA1 ORA2 THENSO.N0,120,N10,10
+230 IFVP>=13ANDVP<=19AND(A<>90ORA3<>90)THENSO.N0,N0,N0,N0:G.1200
+240 SO.N0,N0,N0,N0:IFYP>=N3 ANDYP<=19AND(A=90ORA3=90ORA=80ORA3=80ORA=83ORA3=83)THEN1200
+250 IF YP<FP THENFP=VP:S=S+20:POS.N9,N0:?S;:IFYP=N2 THEN1000
+260 POK.PX,47+XP*N4:SO.N3,S(YP),S1(YP),N2
+
+0 . Decrease time remaining.
+
+270 MI=MI-NI:IFMI<>N0 THEN120
+280 SO.N2,200-150*(M<5),12,N8+N6*(M<N5):M1=M2:POK.SC+917-M,N0:M=M-N1:SO.N2,N0,N0,N0:IFM<>N0 THEN120
+285 SO.N2,200,12,14:FORJ=N1 TO250:NEXTJ:SO.N2,N0,N0,N0
+290 G.1400
+
+0 . Frog safely in bunker.
+
+
+1000 SO.N3,N0,N0,N0:IFA<>113ORA3<>113THEN1200
+1010 POK.PX,N0:XP=INT((XP+N3)/N7)*N7-N1:POS.XP,YP:?"uv";
+1020 S=S+250+M*N10:GOS.2480
+1030 H=H+N1
+1040 F.T=40TON10 STEP-10:SO.N3,T,N10,N10:SO.N3,N0,N0,N0:F.I=N1 TO15:N.J:N.T
+1050 IFH<>N5 THENF.I=N1 TO100:N.I:G.110
+
+0 . All five frogs safely home. 
+
+1100 POS.N2,N0:?"congratulations!":F.J=N1 TO400:N.J
+1110 F.J=N2 TON5:POS.J*7-N1,N2:?"qq";:S=S+400:GOS.2480
+1120 F.J1=N0 TON8 STEP1.2:SO.N0,20-J1,N10,N8-J1:SO.N0,80-J1,N10,N8-J1:N.J1:SO.N0,N0,N0,N0
+1130 F.J1=N0 TO20:N.J1:SO.N0,20,N2,N4:SO.N1,80,N10,N2:F.J1=N1 TO20:N.J1
+1140 SO.N0,N0,N0,N0:SO.N1,N0,N0,N0:N.J:F.J=N1 TO200:N.J:H=N0:IFB<MB THENB=B+N1:GOS.2500
+1150 G.110
+
+0 . Frog is dead. Determine which death routine to use.
+
+1200 IFYP>N9 AND (XP<N2 ORXP>37)THENSO.N3,200,14,N10:XP=XP-A1:SO.N3,N0,N0,N0:G.205
+1202 IFYP=N2 THEN1400
+1205 IFYP>11 THEN1300
+
+0 . Splashed in river or onto snake's mouth
+
+1210 A1=N1:IFXP>=N2 ANDXP<36 ANDA<>80 ANDA3<>80 ANDA<>83 ANDA3<>B3 THENA1=N0
+1220 POK.PX,N0:F.J=N1 TON4
+1225 SO.N3,N3,N8,12-J*N2
+1230 IFXP<N2 THENXP=37
+1240 IFXP>37 THENXP=N2
+1250 A=PEEK(SC+YP*40+XP):A3=PEEK(SC+YP*40+XP+N1):POS.XP,YP:?DEATH$(J*N2-N1,J*N2)
+1260 F.I=N1 TO30:N.I
+1270 SO.N3,N0,N0,N0:POK.SC+YP*40+XP,A:POK.SC+Y*40+XP+N1,A3:U=USR(ADR(MOVE$))
+1280 XP=XP+SP(YP)*A1:N.J
+
+0 . Run over by a car or truck.
+
+1300 F.J=N0 TON4:SO.N3,200,N4,N10-J*N2:IFJ<>N2 ANDJ<>N4 THENPOK.53256,J:POK.PX,47+XP*N4-J*N4
+1310 F.J1=N0 TO23:IFJ1/N8=INT(J1/N8)THENU=USR(ADR(MOVE$))
+1320 N.J1:N.J:POK.PX,N0:POK.53256,N0:SO.N3,N0,N0,N0:G.1500
+
+0 . Out of time, or missed bunker.
+
+1400 F.J=40TO245STEPN5:F.J1=N0 TON8 STEPN2:SO.M3,J+J1,N10,N10:POK.704,J+J1:N.J1:N.J
+1410 SO.N3,N0,N0,N0:POK.704,24:F.J=N1 TO200:N.J:POK.PX,N0
+
+0 . Subtract one life from player, and
+0 . continue game unless there are no
+0 . more lives remaining
+
+1500 FR=FR-N1:POS.N4+FR*N2,22:?"  ";
+
+0 . Get high scoring player's name
+
+1510 IFFR>N0 THEN110
+1520 GOS.2200:POS.N1,N0:?SP$(N1,20);
+1525 POS.5-INT(LOG(S+N1)/LOG(N10)/N2),N0:?"SCORE: ";S;SP$(N1,N10);
+1530 ?:?:F.A=N1 TON5:IFS<HS(A)THENN.A:G.1600
+1540 ?"CONGRATULATIONS!  YOUR SCORE IS THE   ";RA$(A*N3-N2,A*N3);" HIGHEST SCORE TODAY.":?:T.1520
+1550 ?"PLEASE ENTER YOUR NAME,":?"(UP TO EIGHT CHARACTERS LONG).":?"   >";:I.A$
+1560 T.N0:A1$=SP$
+1570 IFA=N1 THENA1$(N1,N8)=A$:A1$(N9,40)=HS$(N1,32):G.1590
+1580 A1$(N1,A*N8-N8)=HS$(N1,A*N8-N8):A1$(A*N8+N1,40)=HS$(A*N8-N7,32)
+1590 HS$=A1$:F.J=N5 TOA+N1 STEP-N1:HS(J)=HS(J-N1):N.J:HS(A)=S
+
+0 . Display high scores and allow another game to be played.
+
+1600 GOS.2200:POS.14,N2:?"HIGH SCORES"
+1610 F.J=N1 TON5:IFHS(J)>N0 THENPOS.11,N3+J:?J;". ";HS$(J);:POS.21,N3+J:?HS$(J*N8-N7,J*N8)
+1620 N.J
+1630 POS.N6,14:?"MOVE JOYSTICK TO EXIT GAME,":?"   OR PRESS BUTTON TO PLAY AGAIN."
+1640 IFSTICK(N0)<>15THEN1700
+1650 IFSTRIG(N0)=N1 THEN1640
+1660 POS.N2,N0:?SP$(N1,20);:GOS.2200:G.100
+1700 T.1600
+1710 POS.N4,17:?"ARE YOU SURE YOU WISH TO EXIT";:INPUTA$
+1720 T.N0:IFA$(N1,N1)<>"Y"THEN1600
+1730 GR.0:STOP
+
+0 . Subroutine to read BYTE$ from data, and
+0 . convert it into a one byte value in A$.
+
+2000 REA.BYTE$:A1=ASC(BYTE$)-48:IFA1>N10 THENA1=A1-N7
+2010 A2=ASC(BYTE$(N2,N2))-48:IFA2>N10 THENA2=A2-N7
+2020 A$=CHR$(A1*16+A2):RET.
+
+0 . Subroutine used to initialize pointer for
+0 . Machine Language scroll routine.
+
+2100 F.J=N0 TON3:A2=INT(A1/256):A3=A1-A2*256:POK.A,A2:POK.A+N1,A3
+2120 A=A+N3:A1=A1+80:N.J:RET.
+
+0 . Subroutine to clear video screen.
+
+2200 CO.32:F.J=N1 TO23:PL.N1,J:DR.39,J:N.J:POS.N0,N0:RET.
+
+0 . Subroutine called at the beginning of every
+0 . game to set up unchanging screen display and
+0 . to initialize variables.
+
+2300 POS.N2,N1:?"rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrqqqqrrrqqqqrrrqqqqrrrqqqqrrrqqqqrrr"
+2310 F.J=14TO18STEPN2:POS.N2,J:?"oo oo oo oo oo oo oo oo oo oo oo oo oo";:N.J
+2320 POS.N2,21:?"abbbbbbbbbbbbabbbbbbbbbbbbbbbbbbbbbbc"
+2330 ?"s            s                      t":?"deeeeeeeeeeeedeeeeeeeeeeeeeeeeeeeeeef";
+2340 POS.N4,22:?F$;F$;F$;F$;F$:FR=5
+2350 B=N1:S=N0:H=N0
+2360 GOS.2500
+2390 RET.
+
+0 . Subroutine called at the beginning of every
+0 . frog, to draw logs and cars and to initialize
+0 . some variabled.
+
+2400 XP=14+INT(RND(N0)*N10):YP=20:FP=YP:GOS.12030
+2410 POS.17,22:?"rrrrrrrrrrrrrrrrrrrrq";:M=20:M2=INT(3.5+B/N2):M1=M2
+2430 RES.14000+B*100
+2440 C.26:F.J=N3 TO19STEPN2
+2445 IFJ<>11THENPL.N0,J:DR.39,J:REA.A$:A=37-LEN(A$):POS.N2+INT(RND(N0)*A),J:?A$;
+2450 POK.SC+J*40+39,90:N.J
+2460 SO.N3,50,N10,N10:F.J=N1 TON5:N.J:SO.N3,N0,N0,N0
+2480 POS.N2,N0:?"SCORE: ";S;SP$(N1,20)
+2490 POK.77,N0:RET.
+
+0 . Subroutine to read in data about the speed of
+0 . each line in each new board.
+
+2500 RES.14900+B*N10
+2520 F.J=N1 TON8:REA.A:POK.1663+J*N3,A:N.J
+2530 IFB=N1 THENSP(N3)=N1:SP(N9)=-N1
+2540 IFB=N4 THENSP(N9)=-N2
+2550 IFB=N5 THENSP(N3)=N2
+2590 RET.
+
+0 . Subroutine to initialize constants, some
+0 . variables, and arrays.
+
+10000 N0=0:N1=1:N2=2:N3=3:N4=4:N5=5:N6=6:N7=7:N8=8:N9=9:N10=10
+10010 DIMBYTE$(N2),MOVE$(200),A$(40),UP$(28),DOWN$(28),SP$(40),F$(N2),DEATH$(N8),HS$(40),RA$(15),A1$(40)
+10020 DIMSP(24),UP(24),HS(N5),S(24),S1(24)
+10030 SP$="                                        ":HS$=SP$:A1$=SP$
+10040 RES.
+10050 F$=CHR$(10):F$(N2,N2)=CHR$(11):DEATH$="ghijklmn":RA$="1ST2ND3RD4TH5TH"
+10060 PX=53248:MB=N5
+10070 F.J=N1 TO24:S(J)=N0:S1(J)=N1:N.J:F.J=N3 TON9 STEPN2:S(J)=N3+INT(J/N2):S1(J)=N8:N.J
+10080 F.J=13TO19STEPN2:S(J)=93+INT(J/N2):S1(J)=N2:N.J
+10100 F.J=N1 TO24:SP(J)=N0:N.J
+10110 SP(N3)=N1:SP(N5)=-N1:SP(7)=N1:SP(9)=-N1
+10120 F.J=N4 TO19:UP(J)=N2:N.J:UP(20)=N1:UP(21)=N0:UP(N3)=N1
+10130 F.J=N1 TON5:HS(J)=N0:N.J
+10990 RET.
+
+0 . Subroutine to set up display list.
+
+11000 GR.21:POK.752,N1:C=N0:POK.87,N0
+11010 DL=PEEK(560)+PEEK(561)*256+N4
+11020 MEM=PEEK(DL)+PEEK(DL+1)*256+40
+11030 MH=INT(MEM/256):ML=MEM-MH*256
+11040 POK.559,N0:POK.DL-N1,198
+11050 POK.DL+N2,66:POK.DL+N3,ML
+11060 POK.DL+N4,MH
+11070 F.J=N5 TO26:POK.DL+J,N2:N.J
+11080 POK.DL+12,130:POK.DL+15,130
+11090 POK.DL+22,130:POK.DL+27,65
+11100 POK.DL+28,PEEK(560)
+11110 POK.DL+29,PEEK(561)
+11120 REA.A:IFA=999THEN11140
+11130 POK.1744+C,A:C=C+N1:G.11120
+11140 POK.513,208:POK.513,N6
+11150 POK.1774,176:POK.1775,180
+11160 POK.1776,N0:POK.1777,144
+11170 POK.1778,N0:POK.54286,192
+11180 POK.559,34
+11190 D.72,138,72,174,242,6,189,238,6,141,10,212,141,24,208,232
+11200 D.224,4,144,2,162,0,138,141
+11210 D.242,6,104,170,104,64,999
+11220 POK.710,0:POS.N2,N0:?"INITIALIZING..."
+11990 RET.
+
+0 . Subroutine to set up player graphic.
+
+12000 A=PEEK(106)-N8:POK.54279,A:PM=256*A:POK.106,A:XP=-N10:POK.623,0
+12020 POK.559,46:POK.53277,N3
+12025 POK.704,24
+12030 F.I=PM+512TOPM+640:POK.I,N0:N.I
+12040 RES.12050:F.J=PM+608TOPM+611:REA.A:POK.J,A:N.J
+12050 D.8,93,62,93
+12060 POK.PX,47+XP*N4
+12070 RET.
+
+0 . Subroutine to initialize machine
+0 . language routine in MOVE$, UP$, AND
+0 . DOWN$
+
+13000 F.J=N1 TO171:GOS.2000:MOVE$(J,J)=A$:N.J
+13010 SC=PEEK(88)+PEEK(89)*256:A=1664
+13020 A1=SC+N2+40*N3:GOS.2100
+13020 A1=SC+N2+40*13:GOS.2100
+13040 POK.A,N0
+
+13045 D.D8,A9,80,85,CD,A9,06,85,CE
+13050 D.38,B0,3D,60,A0,00,B1,CB
+13055 D.48,A2,25,C8,B1,CB,88,91
+13060 D.CB,C8,CA,D0,F6,68,A0,25
+13065 D.91,CB,38,B0,27,A0,00,B1
+13070 D.CB,48,C8,B1,CB,48,A2,24
+13075 D.C8,B1,CB,88,88,91,CB,C8
+13080 D.C8,CA,D0,F4,68,A0,25,91
+13085 D.CB,68,88,91,CB,38,B0,04
+13090 D.D8,68,C6,CD,E6,CD,A0,00
+13095 D.B1,CD,F0,B7,85,CC,E6,CD
+13100 D.B1,CD,85,CB,E6,CD,B1,CD,F0,0C
+13105 D.C9,01,EA,F0,20,C9,02,EA
+13110 D.F0,A0,D0,B7,A0,25,B1,CB
+13115 D.48,A2,25,88,B1,CB,C8,91
+13120 D.CB,88,CA,D0,F6,68,A0,00
+13125 D.91,CB,38,B0,C5,A0,25,B1
+13130 D.CB,48,88,B1,CB,48,A2,24
+13140 D.88,B1,CB,C8,C8,91,CB,88,88,CA
+13145 D.D0,F4,68,A0,00,91,CB,68
+13150 D.C8,91,CB,38,B0,A2
+
+13200 F.J=N1 TO28:GOS.2000:UP$(J,J)=A$:N.J
+13210 D.68,68,85,CC,68,85,CB,A2
+13220 D.60,A0,00,C8,C8,C8,C8,B1
+13230 D.CB,88,88,88,88,91,CB,C8
+13240 D.CA,D0,F0,60
+13300 DOWN$=UP$
+13310 DOWN$(11,11)=CHR$(94):F.J=12TO15:DOWN$(J,J)=CHR$(136):N.J
+13320 F.J=18TO21:DOWN$(J,J)=CHR$(200):N.J:DOWN$(24,24)=CHR$(136)
+13990 RET.
+
+0 . Data for graphics display of each board.
+
+14100 D.
+14110 D.
+14120 D.
+14130 D.
+14140 D.
+14150 D.
+14160 D.
+14170 D.
+14200 D.
+14210 D.
+14220 D.
+14230 D.
+14240 D.
+14250 D.
+14260 D.
+14270 D.
+14300 D.
+14310 D.
+14320 D.
+14340 D.
+14350 D.
+14360 D.
+14370 D.
+14400 D.
+14410 D.
+14420 D.
+14430 D.
+14440 D.
+
+
+
+
+0 . Data for graphics display of each board.
+
+
+14570 D.
+
+0 . Data for the speed on each line on each board.
+
+14910 D.0,2,0,2,0,2,0,2
+14920 D.0,2,0,2,0,2,0,2
+14930 D.0,2,0,2,0,3,0,2
+14940 D.0,2,0,3,0,3,0,2
+14950 D.1,2,0,3,0,3,1,2
+
+0

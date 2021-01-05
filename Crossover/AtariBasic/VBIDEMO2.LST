@@ -1,0 +1,11 @@
+11 GO=ADR("h$%h%h$h")
+12 STP=ADR("h$%")
+13 VBI=ADR("HTU<TU)JJJh(l")
+14 INV=ADR("hhhhhI")
+100 END 
+200 A=USR(GO,VBI):END 
+201 A=USR(STP):END 
+202 DIM A$(10):A$="INVERT"
+203 FOR I=1 TO 10
+204 A=USR(INV,ADR(A$),LEN(A$)):? A$
+205 NEXT I

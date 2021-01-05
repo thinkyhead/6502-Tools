@@ -6,7 +6,10 @@
 
 10 CLR:L=4:N=6:DIM K$(1),G$(L),A$(L),UG(L),UA(L)
 
-20 ?CHR$(125);"MASTERMIND":?
+20 ?CHR$(125);"MASTERMIND"
+21 ?"I'm thinking of a ";L;"-digit number"
+22 ?" using the digits 1 to ";N;"."
+23 ?" Good luck!":?
 
 0 .New Sequence: L length using N digits
 30 TURN=0:A$="":F.I=1TOL:V=INT(RND(0)*N):A$(I,I)=CHR$(49+V):N.I
@@ -30,13 +33,13 @@
 0 .How did you do? Keep playing till you win.
 70 ?"(";XM;"|";PM;")":IFXM<L THEN40
 
-80 ?"You won in ";TURN;" moves!":?:G.30
+80 ?"You won in ";TURN;" moves!":?:G.21
 
 0 .Get a key
 100 OPEN #1,4,0,"K:":GET #1,K:CL.#1:K$=CHR$(K):RET.
 
 0 .Cheat
-150 ?:?"Answer is ";A$:?:G.30
+150 ?:?"Answer is ";A$:?:G.21
 
 0 .Quit
 200 ?:?"QUIT":END
