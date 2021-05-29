@@ -68,7 +68,8 @@ Context-aware syntax coloring of bAtariBASIC 1.1 syntax with built-in error-chec
   - [Atom](http://atom.io) - A powerful modular editor. May run sluggishly on older systems.
   - [atari800](https://sourceforge.net/projects/atari800/files/atari800/) - A good, working Atari emulator that fails much of the acid test but runs pretty well. (Use F1 for settings!) Also available via package managers like MacPorts and Homebrew.
   - [Atari800MacX](https://github.com/atarimacosx/Atari800MacX/releases) - The latest version seems reliable, but if you experience any crashing try **disabling sound** as a workaround.
-  - [Atari Classic Fonts](http://members.bitstream.net/marksim/atarimac/fonts.html) - Regular, Chunky, Smooth, and ExtraSmooth - especially for use with `Atari800.tmTheme`. The newest all-in-one font is preferred, because it has full ATASCII support.
+  - [Atari Classic Fonts](http://members.bitstream.net/marksim/atarimac/fonts.html) - Regular, Chunky, Smooth, and ExtraSmooth - especially for use with `Atari800.tmTheme`. The newest all-in-one font is preferred, because it has full ATASCII support through extended Unicode.
+  - [Eightbit-Atari-Fonts](https://github.com/TheRobotFactory/EightBit-Atari-Fonts) - Many more Atari custom fonts for use with `Atari800.tmTheme`.
   - [dasm](http://dasm-dillon.sourceforge.net) - A 6502 cross-assembler most commonly used to build Atari 2600 code. Also included with bAtariBASIC.
   - [cc65](https://github.com/cc65/cc65) - A C cross-compiler for many 6502 platforms. A rich set of libraries is included.
   - [ca65](https://github.com/cc65/cc65) - A 6502 macro-assembler, also including headers for many 6502 platforms.

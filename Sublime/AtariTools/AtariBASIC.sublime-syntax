@@ -10,12 +10,12 @@
  # Best with "Atari800.tmTheme" + "AtariClassic-Regular" font.
  #
  # AtariBASIC is a flat language with no blocks.
- # 
+ #
  # Since there's no standard for displaying Atari's special
  # ATASCII characters, they should be entered into strings as
  # decimal escape codes like \125. EXPORT.BAS and IMPORT.BAS
  # (included with 6502-Tools) will escape/unescape the code.
- # 
+ #
  # I'm working on a Unicode-based solution that will make it
  # possible to view and enter ATASCII special characters, and
  # have them converted as part of the build script.
@@ -31,7 +31,7 @@
  # even binary operators. For any serious retro-programming on
  # the Atari I recommend using 6502 Assembly Language!
  #
-#  =============== AtariBASIC quirks ===============
+ #  =============== AtariBASIC quirks ===============
  #
  # The tokenizer is not very deep, so some things that seem
  # natural in modern languages may seem "broken" in BASIC.
@@ -48,14 +48,14 @@
  # negation. Then the next token "must" be a value. If it then sees
  # an operator, it throws an error. It's not an error, per se, but a
  # limitation of the parser.
- # 
+ #
  # The limitations of the AtariBASIC parser make the language a
  # perfect fit for the Sublime/TextMate syntax system. This system
  # also has no lookahead, a single context, and can only go forward.
  # So when the Sublime parser hits a dead end due to some ambiguity,
  # we know AtariBASIC will hit the same dead end and throw an error.
  #
-#  ============== AtariBASIC keywords ==============
+ #  ============== AtariBASIC keywords ==============
  #
  # Operators:
  # AND       Logical conjunction
@@ -97,7 +97,7 @@
  # Trig modes:
  # DEG       Switches trigonometric functions to compute in degrees (radians is the default mode) (see RAD)
  # RAD       Switches trigonometric functions to compute in radians (see DEG)
- # 
+ #
  # I/O Commands:
  # CL.OSE #  Terminates pending transfers (flush) and closes an I/O channel
  # GET #     Reads one byte from an I/O channel (see PUT)
@@ -170,7 +170,7 @@
  # Code:
  # R.EM      Marks a comment in a program
  #
-#  ============== AtariBASIC entities ==============
+ #  ============== AtariBASIC entities ==============
  #
  # Values:
  #   - Literal (float)          1.23
@@ -200,7 +200,7 @@
  #     cannot be followed by anything other than an
  #     operator, or an error is thrown.
  #
-#
+ #
 name: AtariBASIC
 file_extensions:
   - [lst]

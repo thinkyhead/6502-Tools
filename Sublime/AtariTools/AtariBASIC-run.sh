@@ -30,6 +30,9 @@ FLOPPY2= # $ATARI_HOME/Disks/floppy2.atr
 # The exported code
 OUTFILE=SUBLIME.LST
 
+# This may be automated:
+ATARI_800_VERSION=420
+
 # Make the HD folder if it doesn't exist
 mkdir -p "$HDD"
 
