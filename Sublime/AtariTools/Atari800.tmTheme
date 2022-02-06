@@ -38,8 +38,6 @@
 			<string>punctuation - (punctuation.definition.string | punctuation.definition.comment)</string>
 			<key>settings</key>
 			<dict>
-				<key>fontStyle</key>
-				<string></string>
 				<key>foreground</key>
 				<string>#6EA6D9</string>
 			</dict>
@@ -51,8 +49,6 @@
 			<string>constant</string>
 			<key>settings</key>
 			<dict>
-				<key>fontStyle</key>
-				<string></string>
 				<key>foreground</key>
 				<string>#FFFB</string>
 			</dict>
@@ -64,8 +60,6 @@
 			<string>entity</string>
 			<key>settings</key>
 			<dict>
-				<key>fontStyle</key>
-				<string></string>
 				<key>foreground</key>
 				<string>#EEBC</string>
 			</dict>
@@ -77,8 +71,6 @@
 			<string>keyword.operator</string>
 			<key>settings</key>
 			<dict>
-				<key>fontStyle</key>
-				<string></string>
 				<key>foreground</key>
 				<string>#9EC9E6D0</string>
 			</dict>
@@ -90,8 +82,6 @@
 			<string>keyword</string>
 			<key>settings</key>
 			<dict>
-				<key>fontStyle</key>
-				<string></string>
 				<key>foreground</key>
 				<string>#9EE6C9D0</string>
 			</dict>
@@ -103,8 +93,6 @@
 			<string>storage</string>
 			<key>settings</key>
 			<dict>
-				<key>fontStyle</key>
-				<string></string>
 				<key>foreground</key>
 				<string>#6EA6D9</string>
 			</dict>
@@ -116,8 +104,6 @@
 			<string>support.token.delimiter.statement</string>
 			<key>settings</key>
 			<dict>
-				<key>fontStyle</key>
-				<string></string>
 				<key>foreground</key>
 				<string>#003560</string>
 			</dict>
@@ -129,8 +115,6 @@
 			<string>string -string.unquoted.old-plist -string.unquoted.heredoc, string.unquoted.heredoc string</string>
 			<key>settings</key>
 			<dict>
-				<key>fontStyle</key>
-				<string></string>
 				<key>foreground</key>
 				<string>#6EA6D9</string>
 			</dict>
@@ -142,8 +126,6 @@
 			<string>comment, keyword.rem</string>
 			<key>settings</key>
 			<dict>
-				<key>fontStyle</key>
-				<string></string>
 				<key>foreground</key>
 				<string>#182441</string>
 			</dict>
@@ -155,8 +137,6 @@
 			<string>support</string>
 			<key>settings</key>
 			<dict>
-				<key>fontStyle</key>
-				<string></string>
 				<key>foreground</key>
 				<string>#999</string>
 			</dict>
@@ -168,8 +148,6 @@
 			<string>variable</string>
 			<key>settings</key>
 			<dict>
-				<key>fontStyle</key>
-				<string></string>
 				<key>foreground</key>
 				<string>#EEBC</string>
 			</dict>
@@ -181,8 +159,6 @@
 			<string>variable.language</string>
 			<key>settings</key>
 			<dict>
-				<key>fontStyle</key>
-				<string></string>
 				<key>foreground</key>
 				<string>#6EA6D9</string>
 			</dict>
@@ -240,8 +216,6 @@
 			<dict>
 				<key>background</key>
 				<string>#223545</string>
-				<key>fontStyle</key>
-				<string></string>
 				<key>foreground</key>
 				<string>#6EA6D9</string>
 			</dict>
@@ -266,8 +240,6 @@
 			<string>string.quoted source</string>
 			<key>settings</key>
 			<dict>
-				<key>fontStyle</key>
-				<string></string>
 				<key>foreground</key>
 				<string>#6EA6D9</string>
 			</dict>
@@ -312,8 +284,6 @@
 			<string>support.function</string>
 			<key>settings</key>
 			<dict>
-				<key>fontStyle</key>
-				<string></string>
 				<key>foreground</key>
 				<string>#79F</string>
 			</dict>
@@ -325,8 +295,6 @@
 			<string>support.constant</string>
 			<key>settings</key>
 			<dict>
-				<key>fontStyle</key>
-				<string></string>
 				<key>foreground</key>
 				<string>#6EA6D9</string>
 			</dict>
@@ -483,8 +451,6 @@
 			<dict>
 				<key>background</key>
 				<string>#000E1A</string>
-				<key>fontStyle</key>
-				<string></string>
 				<key>foreground</key>
 				<string>#FF0</string>
 			</dict>
