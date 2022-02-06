@@ -22,14 +22,14 @@ SCR3:   .res 2
 
 InvertString:
         pla
-        cmp #2
+        cmp #2          ; 2 arguments required
         bne _fail
-        pla
+        pla             ; stringAddr HI
         sta SCR1+1
-        pla
+        pla             ; stringAddr LO
         sta SCR1
-        pla
-        pla             ; only 255 length
+        pla             ; length high ignored
+        pla             ; only up to 255 length
         beq _fail
         tay
 
