@@ -1,5 +1,10 @@
 {
-  // Or use AtariBASIC-pipe.sh for Atari800MacX
-  "cmd": ["$packages/User/AtariTools/AtariBASIC-run.sh", "$file"],
-  "selector": "source.ataribasic"
+  "selector": "source.ataribasic",
+  "cmd": ["$packages/User/AtariTools/helper/AtariBASIC-run.sh", "$file"],
+  "variants": [
+    { "name":"Run in atari800",            "cmd":["$packages/User/AtariTools/helper/AtariBASIC-run.sh",           "$file"] },
+    { "name":"Run in atari800 (joystick)", "cmd":["$packages/User/AtariTools/helper/AtariBASIC-run.sh",  "joy",   "$file"] },
+    { "name":"Run in atari800 (turbo)",    "cmd":["$packages/User/AtariTools/helper/AtariBASIC-run.sh",  "turbo", "$file"] },
+    { "name":"Run in Atari800MacX",        "cmd":["$packages/User/AtariTools/helper/AtariBASIC-run.sh",  "macx",  "$file"] },
+  ]
 }
