@@ -1,0 +1,4 @@
+{
+  "cmd": ["$packages/User/AtariTools/helper/AtariVCS-build.sh", "$file"],
+  "selector": ["source.asm", "source.s"]
+}
