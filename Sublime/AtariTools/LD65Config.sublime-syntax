@@ -1,0 +1,159 @@
+%YAML 1.2
+---
+#
+# LD65 LNK syntax
+#
+# Configuration files used with ld65 -C to specify linking behavior
+#
+name: LD65 Configuration
+file_extensions:
+  - [ lnk ]
+scope: source.lnk
+variables:
+  dec: \d+
+  hex: \$\h+
+  bin: '%[01]+'
+
+contexts:
+  main:
+    - meta_scope: ctx.main
+
+    - include: mixin_comment
+
+    - match: (MEMORY)\s*({)
+      captures:
+        1: keyword.section.memory.lnk
+        2: punctuation.section.open.lnk
+      push: lnk_section_memory
+
+    - match: (SEGMENTS)\s*({)
+      captures:
+        1: keyword.section.segments.lnk
+        2: punctuation.section.open.lnk
+      push: lnk_section_segments
+
+    - match: (FILES)\s*({)
+      captures:
+        1: keyword.section.files.lnk
+        2: punctuation.section.open.lnk
+      push: lnk_section_files
+
+    - match: (FORMATS)\s*({)
+      captures:
+        1: keyword.section.formats.lnk
+        2: punctuation.section.open.lnk
+      push: lnk_section_formats
+
+    - match: (FEATURES)\s*({)
+      captures:
+        1: keyword.section.features.lnk
+        2: punctuation.section.open.lnk
+      push: lnk_section_features
+
+    - match: ([a-zA-Z0-9_]+)\s*({)
+      captures:
+        1: keyword.section.other.lnk
+        2: punctuation.section.open.lnk
+      push: lnk_section_other
+
+    - match: .+
+      push: lnk_error
+
+  lnk_section_memory:
+    - meta_content_scope: ctx.section.memory.lnk
+    - include: lnk_section
+
+  lnk_section_segments:
+    - meta_content_scope: ctx.section.segments.lnk
+    - include: lnk_section
+
+  lnk_section_files:
+    - meta_content_scope: ctx.section.files.lnk
+    - include: lnk_section
+
+  lnk_section_formats:
+    - meta_content_scope: ctx.section.formats.lnk
+    - include: lnk_section
+
+  lnk_section_features:
+    - meta_content_scope: ctx.section.features.lnk
+    - include: lnk_section
+
+  lnk_section_other:
+    - meta_content_scope: ctx.section.other.lnk
+    - include: lnk_section
+
+  lnk_section:
+    - match: \s*
+
+    - match: \}
+      scope: punctuation.section.close.lnk
+      pop: true
+
+    - match: (BSS|CODE|DATA|RODATA|VECTORS)(:)\s*
+      captures:
+        1: keyword.option.segment.lnk
+        2: punctuation.colon.lnk
+      push: lnk_parameters
+
+    - match: (R[AO]M\d|STACK)(:)\s*
+      captures:
+        1: keyword.option.memory.lnk
+        2: punctuation.colon.lnk
+      push: lnk_parameters
+
+    - include: mixin_comment
+
+  # Mark a comment. It ends with the line.
+  lnk_parameters:
+    - meta_scope: ctx.parameters.lnk
+
+    - match: '[ \t]+'
+
+    - match: \n
+      scope: punctuation.separator.parameter.lnk
+
+    - match: ([a-z]+)\s*(=)\s*([\$a-z0-9A-Z_]+)
+      captures:
+        1: keyword.parameter.name.lnk
+        2: keyword.operator.equals.parameter.lnk
+        3: support.constant.parameter.lnk
+
+    - match: ','
+      scope: punctuation.separator.parameter.lnk
+
+    - match: ;
+      scope: punctuation.eol.parameter.lnk
+      set: lnk_line_done
+
+  # Mark a comment. It ends with the line.
+  lnk_comment:
+    - meta_scope: ctx.comment.lnk
+
+    - match: $
+      pop: true
+
+  # Comments begin with a '#' and finish at the end of the line.
+  mixin_comment:
+    - match: \s*
+
+    - match: '#'
+      scope: punctuation.comment.start
+      push: lnk_comment
+
+  # Done interpreting to the end of the line
+  lnk_line_done:
+    - match: \s*
+
+    - match: $
+      pop: true
+
+    - include: mixin_comment
+
+    - match: ()
+      push: lnk_error
+
+  lnk_error:
+    - meta_scope: invalid.error.syntax.lnk
+    - match: \s*$
+      pop: true

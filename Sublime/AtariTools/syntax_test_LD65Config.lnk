@@ -1,0 +1,93 @@
+# SYNTAX TEST "Packages/User/AtariTools/LD65Config"
+# <-source.lnk
+# <-punctuation.comment.start
+
+#
+# Comments are totally fine here
+#
+
+MEMORY { # here too...
+# ^keyword.section.memory
+#       ^ctx.section.memory
+#        ^punctuation.comment.start
+#         ^ctx.comment
+    RAM1:  start = $0800, size = $9800; # and also here
+#   ^keyword.option.memory
+#       ^punctuation.colon
+#          ^keyword.parameter.name
+#                ^keyword.operator.equals.parameter
+#                  ^support.constant.parameter
+#                       ^punctuation.separator.parameter
+#                         ^keyword.parameter.name
+#                              ^keyword.operator.equals.parameter
+#                                ^support.constant.parameter
+#                                     ^punctuation.eol.parameter
+#                                      ^-ctx.parameters.lnk
+#                                       ^punctuation.comment.start
+#                                        ^ctx.comment
+    ROM1:  start = $A000, size = $2000;
+#   ^keyword.option.memory
+#       ^punctuation.colon
+#          ^keyword.parameter.name
+#                ^keyword.operator.equals.parameter
+#                  ^support.constant.parameter
+#                       ^punctuation.separator.parameter
+#                         ^keyword.parameter.name
+#                              ^keyword.operator.equals.parameter
+#                                ^support.constant.parameter
+#                                     ^punctuation.eol.parameter
+
+# <-ctx.section.memory
+
+    RAM2:  start = $C000, size = $1000;
+#   ^keyword.option.memory
+#       ^punctuation.colon
+#          ^keyword.parameter.name
+#                ^keyword.operator.equals.parameter
+#                  ^support.constant.parameter
+#                       ^punctuation.separator.parameter
+#                         ^keyword.parameter.name
+#                              ^keyword.operator.equals.parameter
+#                                ^support.constant.parameter
+#                                     ^punctuation.eol.parameter
+    ROM2:  start = $E000, size = $2000;
+}
+
+SEGMENTS {
+# ^keyword.section.segments
+#         ^ctx.section.segments
+    CODE:   load = RAM1, type = ro;
+#   ^keyword.option.segment
+#       ^punctuation.colon
+#           ^keyword.parameter.name
+#                ^keyword.operator.equals.parameter
+#                  ^support.constant.parameter
+#                      ^punctuation.separator.parameter
+#                         ^keyword.parameter.name
+#                             ^keyword.operator.equals.parameter
+#                               ^support.constant.parameter
+#                                 ^punctuation.eol.parameter
+    RODATA:
+#   ^keyword.option.segment
+#         ^punctuation.colon
+      load = RAM1
+#     ^keyword.parameter.name
+#          ^keyword.operator.equals.parameter
+#            ^support.constant.parameter
+#                ^punctuation.separator.parameter
+      type = ro;
+#     ^keyword.parameter.name
+#          ^keyword.operator.equals.parameter
+#            ^support.constant.parameter
+#              ^punctuation.eol.parameter
+
+# <-ctx.section.segments
+
+    DATA:   load = RAM1, type = rw;
+    BSS:    load = RAM1, type = bss; syntax error
+                                   # ^invalid.error
+}
+
+Otherwise an error
+# <-invalid.error
+
