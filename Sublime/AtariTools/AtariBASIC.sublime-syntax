@@ -42,7 +42,7 @@
  #     Good: -(NOT 1)
  #      Bad: - NOT 1
  #
- # Quirks like these come from AtariBASIC's tokenizer which has a
+ # Quirks like these come from AtariBASIC's tokenizer which has
  # a single current context. When it sees a minus sign after an
  # operator, where it expects a value or function, it "must" be
  # negation. Then the next token "must" be a value. If it then sees
@@ -137,22 +137,26 @@
  # IF .      Executes code depending on whether a condition is true or not
  #     THEN  Indicates the statements to execute if the condition is true in an IF statement
  #
+ # Meta control
  # B.YE      Transfers control to the internal "Self Test" program ("Memo Pad" on early models)
  # DOS       Transfers control to the Disk Operating System (DOS); if DOS was not loaded, same as BYE
  # CON.T     Resumes execution of a program after a STOP at the next line number (see STOP)
  # END       Finishes execution of the program, closes open I/O channels and stops any sound
  # STO.P     Stops the program, allowing later resumption (see CONT)
  #
+ # Variable allocation
  # CLR       Clears variables' memory and program stack
  # COM       Implementation of MS Basic's COMMON was cancelled. Recognized but the code for DIM is executed instead
  # DIM       Defines the size of a string or array (see COM)
- # LET       Assigns a value to a variable. LET can be omitted
+ # LE.T      Assigns a value to a variable. LET can be omitted
  # NEW       Erases the program and all the variables from memory; automatically executed before a LOAD or CLOAD
  #
+ # Data statements
  # D.ATA     Stores data in lists of numeric or string values
  # REA.D     Reads data from a DATA statement
  # RES.TORE  Sets the position of where to read data from a DATA statement
  #
+ # Graphics:
  # C.OLOR    Chooses which logical color to draw in
  # DR.AWTO   Draws a line to given coordinates
  # GR.APHICS Sets the graphics mode
@@ -168,7 +172,7 @@
  # SO.UND    Starts or stops playing a tone on a sound channel (see END)
  #
  # Code:
- # R.EM      Marks a comment in a program
+ # R.EM or . Marks a comment in a program
  #
  #  ============== AtariBASIC entities ==============
  #
@@ -205,10 +209,10 @@ name: AtariBASIC
 file_extensions:
   - [lst]
 first_line_match: '\d+ (\?|BYE|C(OLOR|L(OSE|OAD|R)|OM|ONT|SAVE)|D(ATA|IM|OS|RAWTO)|EN(TER|D)|FOR|G(ET|O(SUB|TO)|RAPHICS)|IF|INPUT|L(ET|IST|OAD|OCATE|PRINT)|NE(W|XT)|NOTE|ON|OPEN|P(LOT|O(INT|KE|P|SITION)|RINT|UT)|RE(AD|M|STORE|TURN)|RUN|S(AVE|ETCOLOR|OUND|TATUS|TOP)|TRAP)([ :]|$)'
-scope: source.ataribasic
+scope: src.ataribasic
 variables:
   var: '[A-Z][A-Z0-9]*'
-  num: '\d+\.\d*|\.?\d+'
+  num: '\d+\.\d*(E\d+)?|\.?\d+(E\d+)?'
   flt: '[-+]?({{num}})'
 
 contexts:
@@ -569,7 +573,7 @@ contexts:
   on_line_list:
     - include: mixin_statement_end
 
-    - match: ({{num}})\s*(\,)?
+    - match: ({{num}}|{{var}})\s*(\,)?
       captures:
         1: constant.numeric.line-number.ataribasic
         2: support.token.delimiter.list.ataribasic
@@ -677,6 +681,10 @@ contexts:
     # TO is followed by an expression, so stay
     - match: TO
       scope: keyword.to.ataribasic
+
+    # STEP is followed by an expression
+    - match: STEP
+      scope: keyword.step.ataribasic
 
     - include: expr_start
 
