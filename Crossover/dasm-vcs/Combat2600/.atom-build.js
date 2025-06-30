@@ -1,10 +1,10 @@
-var asm_name = 'dicombat';
+var ASM_NAME = 'dicombat';
 module.exports = {
   cmd: 'dasm',
   args: [
-    asm_name+'.asm',
+    ASM_NAME+'.asm',
     '-f3',
-    '-o'+asm_name+'.bin',
+    '-o'+ASM_NAME+'.bin',
     '-I/usr/local/include/vcs',
     '-E2'
   ],
@@ -17,7 +17,7 @@ module.exports = {
         var m = /(.+\..+):([0-9]+): (error: .*)/.exec(line);
         if (m) this.push({file:m[1], line:m[2], message:m[3]});
         m = /Unresolved Symbols?|Warning: Unable to open '.+'/.exec(line);
-        if (m) this.push({file:asm_name+'.asm', line:1, message:m[0]});
+        if (m) this.push({file:ASM_NAME+'.asm', line:1, message:m[0]});
       }.bind(matches)
     );
     return matches;

@@ -1,5 +1,7 @@
 ;
-; Helper functions for BDOS, to adapt into a proper EXE
+; Helper functions for BDOS, to adapt into a proper EXE.
+; Build this with ca65 / ld65 using the 'make' command. Output is 26 bytes.
+; The ld65 linker requires bdos.lnk. For single files dasm might suffice.
 ;
 
 ; 7 bytes at CB are available

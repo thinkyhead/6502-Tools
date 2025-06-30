@@ -1,8 +1,9 @@
 ;
 ; test.s - 6502 Assembler Test Code
+;          for the VASM Versatile Assembler
 ;
 	.org $0602
-start
+start:
 	lda #<data
 	sta $00
 	lda #>data
@@ -11,13 +12,13 @@ start
 	lda #0
 	ldx #25
 
-loop	adc #2
+loop: 	adc #2
 	dex
 	bne loop
 
 	rts
 
-data	.word start
+data: 	.word start
 
 	.word $0201
 	.word $0302
