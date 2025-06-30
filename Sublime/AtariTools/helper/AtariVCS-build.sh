@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
 # bAtariVCS-build.sh
+# Assemble the given source file with DASM
 #
 
 # Get 'helper' path and user environment
@@ -9,15 +10,18 @@ SELF="$0" ; ORIG=$(readlink "$SELF")
 HERE=$(dirname "$SELF")
 source "$HERE/AtariTools.sh"
 
-echo -n "Starting build of " ; echo -n $( basename "$1" ) ...
+echo -n "Starting build of " ; echo $( basename "$1" ) ...
 
 # Clean up the output filename
-OUTFILE="$1.bin"
-OUTFILE="${OUTFILE/.asm.bin/.bin}"
-OUTFILE="${OUTFILE/.s.bin/.bin}"
+INSRC="$1"
+INBASE="${INSRC/.s/}"
+INBASE="${INBASE/.asm/}"
+INBASE="${INBASE/.inc/}"
+INBASE="${INBASE/.6502/}"
+OUTFILE="$INBASE.bin"
 
 # Build the project
-dasm "$1" -f3 -o"$OUTFILE" -I"$VCS_DIR" -E2 | sed '/(.+\\..+):(\\d+): ()(error: .*)|()()()--- (\\d+ Unresolved Symbols?)/d'
+dasm "$INSRC" -f3 -o"$OUTFILE" -I"$VCS_DIR" -E2 | sed '/(.+\\..+):(\\d+): ()(error: .*)|()()()--- (\\d+ Unresolved Symbols?)/d'
 
 # Exit on fail
 [ "$?" -ne "0" ] && { echo "Assembly failed."; exit; }

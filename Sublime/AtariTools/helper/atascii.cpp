@@ -65,7 +65,7 @@ void usage(char * const bin) { fprintf(stderr, "Usage: %s [-a|-n|-u] [-p] filena
 // bits 11-06 : 13-08  .... XXXX XX.. ....  =>  .... .... ..XX XXXX .... ....  7
 // "10"       : 7-6                             .... .... .... .... 10.. ....  B
 // bits 05-00 : 5-0    .... .... ..XX XXXX  =>  .... .... .... .... ..XX XXXX  F
-//     
+//
 int put_utf_trio(const unsigned char c, const bool intl=false) {
   const unsigned short chr = ((c & 0x80) ? (intl ? INT_INVERT : REG_INVERT) : (intl ? INT_NORMAL : REG_NORMAL)) + (c & 0x7F);
   const unsigned char c0 = 0xE0 | (chr >> 12), c1 = 0x80 | ((chr >> 6) & 0x3F), c2 = 0x80 | (chr & 0x3F);

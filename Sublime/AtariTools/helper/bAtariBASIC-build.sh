@@ -2,6 +2,9 @@
 #
 # bAtariBASIC-build.sh
 #
+# Usage: bAtariBASIC-build.sh filename [-O]
+#        -O = Optimize ASM after postprocess
+#
 
 # Get 'helper' path and user environment
 SELF="$0" ; ORIG=$(readlink "$SELF")

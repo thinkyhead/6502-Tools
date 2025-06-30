@@ -2,6 +2,8 @@
 #
 # AtariBASIC-run.sh
 #
+# Usage: AtariBASIC-run.sh [macx|turbo] filename
+#
 
 # Get 'helper' path and user environment
 SELF="$0" ; ORIG=$(readlink "$SELF")
@@ -14,7 +16,7 @@ source "$HERE/AtariTools.sh"
 case "$#" in
   1 ) LSTFILE=$1 ;;
   2 ) EXTRA=$1 ; LSTFILE=$2 ;;
-  * ) echo "Usage: `basename $0` [macx|run|joy|turbo] filename" 1>&2 ; exit 1 ;;
+  * ) echo "Usage: `basename $0` [macx|turbo] filename" 1>&2 ; exit 1 ;;
 esac
 
 set -e
