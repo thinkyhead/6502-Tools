@@ -1,0 +1,4 @@
+{
+  "cmd": ["$packages/User/AtariTools/helper/Atari800-build.sh", "$file" ],
+  "selector": "source.asm"
+}
