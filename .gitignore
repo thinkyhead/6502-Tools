@@ -6,3 +6,5 @@ bdos.s
 a.out
 DoAtari.app
 *LST.bin
+.DS_Store
+*.sublime-workspace

@@ -1,5 +1,0 @@
-{
-  "cmd": ["/usr/local/bin/dasm", "$file", "-f3", "-o$file.bin", "-I/usr/local/include/vcs", "-E2"],
-  "file_regex": "(.+\\..+):(\\d+): ()(error: .*)|()()()--- (\\d+ Unresolved Symbols?)",
-  "selector": "source.asm"
-}

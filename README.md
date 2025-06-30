@@ -1,15 +1,6 @@
 # 6502-Tools
 Tools and enhancements to make working with 6502 Assembly Language on macOS more enjoyable, especially for retro-coding the Atari Computer and Atari 2600 VCS.
 
-## For Atom
-
-### `.atom-build.js`
-This file, set up for a 2600 cartridge build, is used by Atom's standard [Build package](https://atom.io/packages/build) to specify the project build command and error pattern. Use the `AtomBuild` folder as a template for other 2600 code builds. For some cases `make` might be preferable.
-- Fast build with `dasm`.
-  - Set `asm_name` in `.atom-build.js`. Then it will build with `F9` (and build-on-save, if set). Passes all errors back to the **build** module.
-  - Uses `/usr/local` install of '`dasm`' and '`vcs`' to build the project. Change if needed.
-  - Public domain 2600 combat game source code included for testing.
-
 ## For Sublime Text 3
 
 Copy the contents of the `Sublime` folder to your `Packages/User` folder (e.g., `~/Library/Application Support/Sublime Text 3/Packages/User`). Edit `AtariTools.sh` to configure the paths of your installed emulators and build tools. See below for the other tools you'll need.
@@ -60,10 +51,10 @@ Context-aware syntax coloring of bAtariBASIC 1.1 syntax with built-in error-chec
 AtariTools includes AtariBASIC syntax parsing/coloring and a build command to run AtariBASIC in your preferred Atari 800 emulator.
 
 #### `AtariBASIC.sublime-settings`
-This file provides the hook for Sublime to use the `Atari800` theme for `.LST` files, to show rulers at multiples of 38/40 characters, and to draw a final ruler at 254 characters. If the **Atari Classic Int** font is installed, it will be used. (This font will be required for full ATASCII support in future.)
+This file provides the hook for Sublime to use the `Atari800` theme for `.LST` files, to show rulers at multiples of 38/40 characters, and to draw a final ruler at 254 characters. If the **Atari Classic (Regular)** font is installed, it will be used. (This font is needed for proper ATASCII support in Sublime.)
 
 #### `AtariBASIC.sublime-syntax`
-This file provides context-aware syntax coloring of AtariBASIC with built-in error-checking. Syntax coloring makes it even easier to write AtariBASIC and instantly catch syntax errors. Best with `Atari800.tmTheme` and the Atari Classic fonts.
+This syntax provides context-aware syntax coloring of AtariBASIC with built-in error-checking. It makes the code much more readable with standard code fonts, but of course it looks best with `Atari800.tmTheme`.
 
 #### `AtariBASIC.sublime-build`
 This adds `Tools` > `Build System` > `AtariBASIC` to the menu so you can use **Build** `Command-B` to load and run the active LST file in the Atari 800 emulator.
@@ -73,6 +64,15 @@ The **Build** command will run the current BASIC file in **atari800** or **Atari
 The **Build** command saves the current file as **SUBLIME.LST** in your configured Atari hard drive (H:) folder and tells the emulator to load and run **H:SUBLIME3.LST**, so file loading is about as fast as it can be.
 
 NOTE: Currently there's no support for Atari special characters, which would require an input method, translation between Unicode and ATASCII, etc. For now, use `CHR$` and other techniques to program special characters while this is sorted out.
+
+## For Atom (obsolete)
+
+### `.atom-build.js`
+This file, set up for a 2600 cartridge build, is used by Atom's standard [Build package](https://atom.io/packages/build) to specify the project build command and error pattern. Use the `AtomBuild` folder as a template for other 2600 code builds. For some cases `make` might be preferable.
+- Fast build with `dasm`.
+  - Set `asm_name` in `.atom-build.js`. Then it will build with `F9` (and build-on-save, if set). Passes all errors back to the **build** module.
+  - Uses `/usr/local` install of '`dasm`' and '`vcs`' to build the project. Change if needed.
+  - Public domain 2600 combat game source code included for testing.
 
 ## Other things you'll need…
   - [Sublime Text 3](https://www.sublimetext.com/3) - A light and fast extensible editor with a Python core. Can use TextMate bundles.

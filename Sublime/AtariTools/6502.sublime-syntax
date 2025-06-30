@@ -60,10 +60,10 @@ variables:
   ext_define: '{{define}}(::{{define}})?'
   label:      '{{define}}|\@\d+'      # an unbroken name or label string
   std_s:      as[lr]\s*a|brk|cl[cdiv]|dec\s*a|(de|in)[xy]|eor\s*a|inc\s*a|ls[lr]\s*a|nop|p[hl][ap]|ro[lr]\s*a|rt[is]|se[cdi]|t(a[xy]|(sx|xs)|[yx]a)
-  std_d:      a(dc|nd|sl)|bit|c(mp|p[xy])|dec|eor|inc|j(mp|sr)|ld[axy]|ls[lr]|ora|ro[lr]|sbc|st[axy]
+  std_d:      a(dc|nd|s[lr])|bit|c(mp|p[xy])|dec|eor|inc|j(mp|sr)|ld[axy]|ls[lr]|ora|ro[lr]|sbc|st[axy]
   std_b:      b(c[cs]|eq|mi|ne|pl|v[cs])
   added_s:    p[hl][xy]|t[rs]b
-  added_d:    stz
+  added_d:    dcp|lax|sbx|stz
   added_b:    bra
   mos65C02_s: '[rs]mb|stp|wai'
   mos65C02_b: bb[rs]
@@ -96,7 +96,7 @@ contexts:
     # - include: mixin_string
 
     # Match a define line, which may end with a comment
-    - match: ^({{define}})\b\s*(=|EQU|SET)
+    - match: ^(?i)({{define}})\b\s*(=|EQU|SET)
       captures:
         1: entity.name.constant.asm        # symbol
         2: keyword.operator.assignment.asm # operator
@@ -134,6 +134,18 @@ contexts:
     # .endproc
     - match: (?i)\.endproc
       scope: keyword.directive.endproc.asm
+      set: auto_comment
+
+    # .macro/MACRO name [arg[, arg]]
+    - match: (?i)(\.macro)\s*({{define}})
+      captures:
+        1: keyword.directive.macro.asm
+        2: entity.name.label.asm
+      set: auto_comment
+
+    # .endmacro/.ENDMACRO
+    - match: (?i)\.endmacro
+      scope: keyword.directive.endmacro.asm
       set: auto_comment
 
     # Match: ... IF <expr> ; comment
@@ -565,12 +577,12 @@ contexts:
 
   #
   # expr_needs_value <- asm_data(match(value))
-  # 
+  #
   # - Consume spaces
   # - End on a comment marker
   # - Set to 'comment' if a non-operator follows
   # - Pop for anything else (an unconsumed non-operator)
-  # 
+  #
   expr_needs_value:
     - meta_content_scope: ctx.expr_needs_value.asm
 
@@ -606,12 +618,12 @@ contexts:
 
   #
   # expr_needs_operator <- asm_data(match(value))
-  # 
+  #
   # - Consume spaces
   # - End on a comment marker
   # - Set to 'comment' if a non-operator follows
   # - Pop for anything else (an unconsumed non-operator)
-  # 
+  #
   expr_needs_operator:
     - meta_content_scope: ctx.expr_needs_operator.asm
 

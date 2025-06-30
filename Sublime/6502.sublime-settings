@@ -4,6 +4,7 @@
 	"extensions":
 	[
 		"asm",
+		"inc",
 		"s"
 	],
 	"fade_fold_buttons": false,

@@ -64,11 +64,11 @@
 1125 ST.#1,T:?"Error - ";T:G.1124
 
 0 . Staggered output
-1130 E=X-3*INT(X/3):ONNOTT GOTO1135:F$=F$(1,11):GOSUB 6400
+1130 E=X-3*INT(X/3):ONNOTT GOTO1135:F$=F$(1,11):GOS.6400
 1131 L=LEN(F$):IFV THENV=USR(INV,ADR(F$),L)
-1132 ? F$;:IFE<2THEN?SP$(1,14-L);:RET. 
+1132 ? F$;:IFE<2THEN?SP$(1,14-L);:RET.
 1133 IFL<12THEN?
-1134 RET. 
+1134 RET.
 0 . Print last line straight
 1135 IFE THEN?
 0 . Print any line straight
