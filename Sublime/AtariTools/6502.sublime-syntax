@@ -39,6 +39,9 @@
 #   - Only the active context applies, plus any includes.
 #
 # This is a first attempt, and far from elegant. Please help improve.
+# TODO: Assume unrecognized mnemonics are macros (not just "entity.name"),
+#       accept comma plus common entities, as in: , #2, NAME, ETC up to ; for comment.
+# TODO: Recognize addressing modes, process interior of a captured sub-string?
 #
 # 6502 addressing modes:
 #   - Accumulator         PLA ; ROL ; ROR A
@@ -124,6 +127,14 @@ contexts:
     - match: (?i)^\s*\.segment\b
       scope: keyword.directive.segment.asm
       set: asm_string_arg
+
+    # .proc/PROC name: near/far
+    - match: (?i)(\.proc)\s*({{define}})\s*:\s*(near|far)
+      captures:
+        1: keyword.directive.proc.asm
+        2: entity.name.label.asm
+        3: keyword.proc.option.asm
+      set: auto_comment
 
     # .proc/PROC name
     - match: (?i)(\.proc)\s*({{define}})
@@ -224,6 +235,14 @@ contexts:
     - match: (?i)\.?title\b
       scope: keyword.directive.title.asm
       set: asm_string_arg
+
+    # .proc/PROC name: near/far
+    - match: (?i)(\.proc)\s*({{define}})\s*:\s*(near|far)
+      captures:
+        1: keyword.directive.proc.asm
+        2: entity.name.label.asm
+        3: keyword.proc.option.asm
+      set: auto_comment
 
     # .proc/PROC name
     - match: (?i)(\.?proc)\s*({{define}})
@@ -438,14 +457,25 @@ contexts:
   op_start:
     - match: \s+
 
+    # Lowbyte expression
+    - match: \#<
+      scope: keyword.operator.lobyte.asm
+      set: op_immediate
+
+    # Highbyte expression
+    - match: \#>
+      scope: keyword.operator.hibyte.asm
+      set: op_immediate
+
     # Immediate expression
     - match: \#
       scope: keyword.operator.immediate.asm
       set: op_immediate
 
+    # Indirect Addressing with either X or Y
     - match: \(
       scope: punctuation.definition.indirect.start
-      set: op_indirect
+      push: op_indirect
 
     # Other address expression
     - match: ()
@@ -476,24 +506,25 @@ contexts:
   op_indirect:
     - meta_scope: ctx.op_indirect
 
-    - match: \)\s*(,[yY])
-      captures:
-        1: support.opcode.indirect-indexed.asm
-      set: auto_comment
+    - include: mixin_expression
 
-    - match: (\,[xX])\s*\)
+    - match: \s*(\))\s*(,[yY])
+      captures:
+        1: punctuation.definition.indirect.end
+        2: support.opcode.indirect-indexed.asm
+      pop: true
+
+    - match: \s*(\,[xX])
       captures:
         1: support.opcode.indexed-indirect.asm
-      set: auto_comment
 
-    - match: \)
-      scope: punctuation.definition.indirect.end
-      set: auto_comment
+    - match: \s*(\))
+      captures:
+        1: punctuation.definition.indirect.end
+      pop: true
 
     - match: $
       pop: true
-
-    - include: mixin_expression
 
   # Non-immediate operand must be an address
   op_address:
