@@ -35,13 +35,12 @@
  *    ...               : Statement Table (tokenized program)
  * 
  *
- *
- *
- *
- *
- *
- *
- *
+ * - Flowchart for each line:
+ *   - Look for line number, if none found, error
+ *   - While unsure of the state collect letter characters, including '$'?
+ *   - As soon as a command is recognized, tokenize it and move on to next state
+ *     - For a new variable create the VNT entry
+ *   - Follow the flow of the original tokenizer. See the BNF
  *
  */
 #include <unistd.h>
@@ -81,102 +80,104 @@ typedef struct {
 typedef uint16_t AtariLineNum;  // Two byte little-endian integer
 
 /*
+  Header saves memory locations $80-$8D
 
-Header saves memory locations $80-$8D
+  00 00 00 01  05 01 06 01  26 01 A4 01  B8 01
 
-00 00 00 01  05 01 06 01  26 01 A4 01  B8 01
+  00000000   00 00 LOMEM
+  00000002   00 01 VNTP   +$0100  (5 bytes long)
+  00000004   05 01 VNTD   +$0105  end of table plus one
+  00000006   06 01 VVTP   +$0106
+  00000008   26 01 STMTAB +$0126
+  0000000A   A4 01 STMCUR +$01A4
+  0000000C   B8 01 STARP  +$01B8
 
-00000000   00 00 LOMEM
-00000002   00 01 VNTP   +$0100  (5 bytes long)
-00000004   05 01 VNTD   +$0105  end of table plus one
-00000006   06 01 VVTP   +$0106
-00000008   26 01 STMTAB +$0126
-0000000A   A4 01 STMCUR +$01A4
-0000000C   B8 01 STARP  +$01B8
+  VNTP - Variable Name Table. Each variable name's last character has bit 7 set.
 
-Variable Name Table. Each variable name's last character has bit 7 set.
+  100 0000000E   C9 "I"
+  101 0000000F   CA "J"
+  102 00000010   D4 "T"
+  103 00000011      4B A4 "K$"    (VNTD - 1)
 
-100 0000000E   C9 "I"
-101 0000000F   CA "J"
-102 00000010   D4 "T"
-103 00000011      4B A4 "K$"    (VNTD - 1)
+  105 00000013            00  Fewer than 128 variables, dummy zero byte
 
-105 00000013            00  Fewer than 128 variables, dummy zero byte
+  VVTP = Variable Value Table
 
-Variable Value Table
+  106 00000014                00 00 40 05  13 20 00 00                    Scalar 0 5.132
+      0000001C                                          00 01 40 06
+      00000020   13 20 00 00                                              Scalar 1 6.132
+      00000024                00 02 00 00  00 00 00 00                    Scalar 2 0
+      0000002C                                          81 03 00 00
+      00000030   06 00 06 00                                              String 3 0, len=6, dim=6
 
-106 00000014                00 00 40 05  13 20 00 00                    Scalar 0 5.132
-    0000001C                                          00 01 40 06
-    00000020   13 20 00 00                                              Scalar 1 6.132
-    00000024                00 02 00 00  00 00 00 00                    Scalar 2 0
-    0000002C                                          81 03 00 00
-    00000030   06 00 06 00                                              String 3 0, len=6, dim=6
+  STMTAB - Statement Table - Line number, Next Line, Next Statement, Statement1, Statement2, ...
+         - The Next Line / Statement offset is relative to start of the current line
 
-Line 10: ? "HELLO WORLD":IF 2<1 THEN 10
-                            | 10|153|139  ? st 11  H   E  L  L  O
-126 00000034                0A 00 2D 13  28 0F 0B 48  45 4C 4C 4F  ......-.(..HELLO
-                _  W  O  R   L  D
-    00000040   20 57 4F 52  4C 44                                   WORLD
+  10 ? "HELLO WORLD":IF 2<1 THEN 10
+                              | 10|153|139  ? st 11  H   E  L  L  O
+  126 00000034                0A 00 2D 13  28 0F 0B 48  45 4C 4C 4F
+                  _  W  O  R   L  D
+      00000040   20 57 4F 52  4C 44
 
-                                   :153  IF sc |   2            |
-    00000046                      14 2D  07 0E 40 02  00 00 00 00        .-..@.....
-                < sc |   1            |  TH sc |  10            |
-    00000050   20 0E 40 01  00 00 00 00  1B 0E 40 10  00 00 00 00   .@.......@.....
-               ES
-    00000060   16
+                                     :153  IF sc |___2____________|
+  139 00000046                      14 2D  07 0E 40 02  00 00 00 00
+                  < sc |___1____________|  TH sc |__10____________|
+      00000050   20 0E 40 01  00 00 00 00  1B 0E 40 10  00 00 00 00
+                 es
+      00000060   16
 
-Line 20: I=5.132
-                  | 20| | 162| le #0 S=  sc |   5.13  2      | ES
-153 00000061      14 00 0F  0F 36 80 2D  0E 40 05 13  20 00 00 16  .....6.-.@.. ...
+  20 I=5.132
+                    | 20| | 162| le #0 S=  sc |___5.13__2______| es
+  153 00000061      14 00 0F  0F 36 80 2D  0E 40 05 13  20 00 00 16
 
-Line 30: J=I+1
-               | 30| |173|  le #1  = #0   + sc |     1          |
-162 00000070   1E 00 11 11  36 81 2D 80  25 0E 40 01  00 00 00 00
-               es
-    00000080   16
+  30 J=I+1
+                 | 30| |173|  le #1  = #0   + sc |___1____________|
+  162 00000070   1E 00 11 11  36 81 2D 80  25 0E 40 01  00 00 00 00
+                 es
+      00000080   16
 
-Line 39: DIM K$(6)
-                  | 39| | 183| di #3 (   sc |     6          | )
-173 00000081      27 00 10  10 14 83 3B  0E 40 06 00  00 00 00 2C  .'.....;.@.....,
-               es
-    00000090   16
+  39 DIM K$(6)
+                    | 39| | 183| di #3 (   sc |___6____________|  )
+  173 00000081      27 00 10  10 14 83 3B  0E 40 06 00  00 00 00 2C
+                 es
+      00000090   16
 
-Line 40: K$="STRING"
-                  | 40| | 193| LET #3 $= st  6  S  T   R  I  N  G
-183 00000091      28 00 10  10 36 83 2E  0F 06 53 54  52 49 4E 47  .(...6....STRING
-               es
-    000000A0   16
+  40 K$="STRING"
+                    | 40| | 193| le #3 $=  st  6  S  T   R  I  N  G
+  183 00000091      28 00 10  10 36 83 2E  0F 06 53 54  52 49 4E 47
+                 es
+      000000A0   16
 
-Line 50: ? K$;" AND ";K$
-                  | 50|  1A4 |  ? #3  ;  st  5  _  A   N  D  _ ;
-193 000000A1      32 00 11  11 28 83 15  0F 05 20 41  4E 44 20 15  .2...(.... AND .
-               #3 es
-    000000B0   83 16
+  50 ? K$;" AND ";K$
+                    | 50|  1A4 |  ? #3  ;  st  5  _  A   N  D  _  ;
+  193 000000A1      32 00 11  11 28 83 15  0F 05 20 41  4E 44 20 15
+                 #3 es
+      000000B0   83 16
 
-Line 32768 (immediate): S."H:TOKENS.BAS"
-                     |imm|  end | sa st  12  H  :  T   O  K  E  N
-1A4 000000B2         00 80  14 14 19 0F  0C 48 3A 54  4F 4B 45 4E  .........H:TOKEN
-                S  .  B  A   S es
-    000000C0   53 2E 42 41  53 16                                  S.BAS.
+  Line 32768 (immediate): S."H:TOKENS.BAS"
+                       |imm|  end | sa st  12  H  :  T   O  K  E  N
+  1A4 000000B2         00 80  14 14 19 0F  0C 48 3A 54  4F 4B 45 4E
+                  S  .  B  A   S es
+      000000C0   53 2E 42 41  53 16
 
 
-Line tokenizing notes:
-  - 00 Line Number
-  - 01 Next Line Offset (filled in after statement tokenization)
-  - 02 Next Statement Offset (filled in after line tokenization)
-  - 03 First Statement Token.
-  - 04 ...additional tokens
+  Line tokenizing notes:
+    - 00 Line Number
+    - 01 Next Line Offset (filled in after statement tokenization)
+    - 02 Next Statement Offset (filled in after line tokenization)
+    - 03 First Statement Token.
+    - 04 ...additional tokens
+    -    ... Hex 14 statement delimiter, another statement
 
-BCD Tokenizing notes:
-  - First byte is 40 for 10^0, no shifting. EX: 41 1000.000000 = 1E3 = 1000
-                                                40 01.00000000 = 1
-                                                45 140000000000. = 1.4E11 = 140,000,000,000
-                                                41 0999.900000 = 999.9
+  BCD Tokenizing notes:
+    - First byte is 40 for 10^0, no shifting. EX: 41 1000.000000 = 1E3 = 1000
+                                                  40 01.00000000 = 1
+                                                  45 140000000000. = 1.4E11 = 140,000,000,000
+                                                  41 0999.900000 = 999.9
 
-  - 0x40 is the center where the byte 0 is 10^0
-  - For each one over 0x40 multiply the basis by 100
-  - For each one under 0x40 divide the basis by 100
-
+    - 0x40 is the center where the byte 0 is 10^0
+    - For each one over 0x40 multiply the basis by 100
+    - For each one under 0x40 divide the basis by 100
  */
 
 // Statements
@@ -225,7 +226,7 @@ const char * statement_str[] = {
   "?",         // 40
   "GET",       // 41
   "PUT",       // 42
-  "GR.APHIC",  // 43
+  "GR.APHICS", // 43
   "PL.OT",     // 44
   "POS.ITION", // 45
   "DOS",       // 46
@@ -249,14 +250,14 @@ const char * cont_str[] = {
   "",          // 17 UNUSED
   ",",         // 18 , in PRINT statement
   "$",         // 19 ???
-  "(eos)",     // 20 End of expr / statement 
+  "(eos)",     // 20 End of expr / statement
   ";",         // 21 ; in PRINT statement
   "(eol)",     // 22 End of expr / line
   "GOTO",      // 23 ON...GOTO
   "GOSUB",     // 24 ON...GOSUB
   "TO",        // 25 FOR A=X TO
   "STEP",      // 26 FOR A=X TO STEP
-  "THEN"       // 27 IF...THEN
+  "THEN",      // 27 IF...THEN
   "#",         // 20 OPEN #
   "<=",        // 29 IF A<=B
   "<>",        // 30 IF A<>B
