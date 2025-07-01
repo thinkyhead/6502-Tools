@@ -65,6 +65,19 @@ The **Build** command saves the current file as **SUBLIME.LST** in your configur
 
 NOTE: Currently there's no support for Atari special characters, which would require an input method, translation between Unicode and ATASCII, etc. For now, use `CHR$` and other techniques to program special characters while this is sorted out.
 
+## Helper Scripts
+
+- `AtariTools.sh` : Configuration values used by helper scripts.
+- `bAtariBASIC-build.sh` : Shell cript to convert bAtariBASIC code to Assembly and compile it with `dasm`.
+- `AtariVCS-build.sh` : Standard build for the Atari 2600 using `dasm`.
+- `AtariBASIC-run.sh` : Run AtariBASIC code in the selected emulator.
+- `Atari800-build.sh` : Build and run Atari Assembly Language code with `ca65` / `cl65`.
+- `atari2subl.sh` : Wrapper for `atascii` to pipe "P:" device output from Atari800MacX to Sublime Text (`subl`).
+- `atascii` : Native binary of `atascii.cpp` to convert ATASCII <-> Unicode with ATASCII extensions.
+- `atascii.py` : Python version of `atascii.cpp` built with local LLM Mistral-small-3.2-24b.
+- `atascii.cpp` : C++ program to convert ATASCII <-> Unicode. Requires `unistd.h`, `stdio.h`, `stdlib.h`, `libgen.h`.
+- `tokenize.cpp` : WIP - Tokenizer to compile AtariBASIC (`.LST`) text into `.BAS` format.
+
 ## For Atom (obsolete)
 
 ### `.atom-build.js`
