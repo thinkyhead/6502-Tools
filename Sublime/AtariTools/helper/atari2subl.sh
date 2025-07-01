@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# atari2subl - A utility to pipe printed output from atari to sublime text,
-#              converting special characters to UTF-8 for use with the
-#              Atari Unicode font.
+# atari2subl.sh - A utility to pipe printed output from atari to sublime text,
+#                 converting special characters to UTF-8 for use with the
+#                 Atari Unicode font.
 #
 
 # Determine this script's real location
@@ -20,7 +20,7 @@ UTF="$HDD/$PRINTFILE"
 mkdir -p $(dirname "$UTF")
 
 # Convert the "printed" output to UTF-8
-"$HERE/atascii" -p "$1" >"$UTF"
+"$HERE/atascii.py" -p "$1" >"$UTF"
 
 # Open the UTF-8 file in Sublime Text
 subl "$UTF"
