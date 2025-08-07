@@ -3,12 +3,13 @@
 """
 atascii.py - Convert to ATASCII or UTF-8, send to stdout.
 
-Usage: atascii.py [-a|-n] [-p] [-u] filename >outname
+Usage: atascii [-a|-i|-n|-u] [-p] [-s] filename >outname
     By default, ATASCII to UTF-8 E000-E0FF, E100-E1FF
  -a ATASCII to plain ASCII
  -i International set UTF-8 mapping
  -n ATASCII to naive UTF-8
  -p Printed with 'LIST "P:"'
+ -s (with -u) Strip host comments
  -u UTF-8 to ATASCII
 
 Atari Font Mapping:
@@ -41,6 +42,8 @@ The functionality remains the same as the original C++ code, just implemented in
 
 import sys
 import getopt
+
+DEBUG = 0
 
 # Constants
 LF = 0x0A    # ASCII LF
@@ -141,11 +144,12 @@ naive = [
 ]
 
 def usage():
-    print("Usage: atascii [-a|-n] [-p] [-u] filename >outname")
+    print("Usage: atascii [-a|-i|-n|-u] [-p] [-s] filename >outname")
     print(" -a ATASCII to plain ASCII")
     print(" -i International set UTF-8 output")
     print(" -n ATASCII to naive UTF-8")
     print(" -p Printed with 'LIST \"P:\"'")
+    print(" -s Strip host comments")
     print(" -u UTF-8 to ATASCII")
 
 def put_utf_trio(c, intl=False):
@@ -176,31 +180,65 @@ def putchar_u(c):
         sys.stdout.buffer.write(bytes([c]))
 
 # Convert from UTF-8 to ATASCII, writing to stdout
-def unicode_to_atascii(filename):
+def unicode_to_atascii(filename, sflag):
     with open(filename, 'rb') as fp:
-        st = ASCII
+        state = ASCII
+        scheck = sflag
+        gotchar = not sflag
+        skip = False
         while True:
-            c = fp.read(1)
-            if not c: break
-            c = ord(c)
+            ch = fp.read(1)
+            if not ch: break
+            c = ord(ch)
 
-            if st == ASCII:
+            if DEBUG > 1 and c == CR: print("<CR>", end='')
+
+            # For 's' check the beginning of the line for a comment
+            if scheck:
+                if DEBUG > 1: print(f"<{c}>", end='')
+                if ch in { b' ', b'\t' }: continue
+                scheck = False
+                skip = ch in { b';', b'#' }  # A comment to skip?
+                if DEBUG and skip: print("<SKIP>", end='')
+
+            # Reset states at the end of a line
+            if c == LF:
+                scheck = sflag                      # Check for a host comment with 'S' flag
+                if skip:                            # When skipping a line skip this LF too
+                    skip = False
+                    if DEBUG: print("</SKIP>")
+                    continue
+                if DEBUG > 1: print("<LF>", end='')
+
+            # Skipping this input character
+            if skip:
+                if DEBUG > 1: print("|", end='')
+                continue
+
+            # With 'S' the first output character must be non-whitespace
+            if not gotchar:
+                if ch == b' ' or ch == b'\t' or c == LF or c == CR: continue
+                gotchar = True
+
+            if DEBUG: print(f"{chr(c)}", end='')
+
+            if state == ASCII:
                 if c == 0xEE:
-                    st = UTF_1
+                    state = UTF_1
                 else:
                     putchar_a(c)
-            elif st == UTF_1:
+            elif state == UTF_1:
                 if (c & 0xC0) == 0x80:
                     c1 = c
-                    st = UTF_2
+                    state = UTF_2
                 else:
                     sys.stdout.buffer.write(bytes([0xEE]))
                     putchar_a(c)
-                    st = ASCII
-            elif st == UTF_2:
+                    state = ASCII
+            elif state == UTF_2:
                 c = (c1 & 3) << 6 | (c & 0x3F)
                 sys.stdout.buffer.write(bytes([c]))
-                st = ASCII
+                state = ASCII
 
 # Convert from ATASCII to UTF-8, writing to stdout
 def atascii_to_unicode(filename, pflag, iflag, aflag, nflag):
@@ -269,7 +307,7 @@ def atascii_to_unicode(filename, pflag, iflag, aflag, nflag):
 
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "ainpu")
+        opts, args = getopt.getopt(sys.argv[1:], "ainpsu")
     except getopt.GetoptError as err:
         print(str(err))
         usage()
@@ -279,12 +317,14 @@ def main():
     iflag = False
     nflag = False
     pflag = False
+    sflag = False
     uflag = False
     for opt, arg in opts:
         if opt == '-a': aflag = True
         elif opt == '-i': iflag = True
         elif opt == '-n': nflag = True
         elif opt == '-p': pflag = True
+        elif opt == '-s': sflag = True
         elif opt == '-u': uflag = True
 
     # Check for incompatible options
@@ -293,6 +333,8 @@ def main():
         sys.exit(2)
     if pflag and uflag:
         print("-p ignored with -u")
+    if sflag and not uflag:
+        print("-s ignored without -u")
 
     # A filename parameter is required
     if len(args) < 1:
@@ -303,7 +345,7 @@ def main():
 
     try:
         if uflag:
-            unicode_to_atascii(filename)
+            unicode_to_atascii(filename, sflag)
         else:
             atascii_to_unicode(filename, pflag, iflag, aflag, nflag)
 

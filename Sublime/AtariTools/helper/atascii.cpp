@@ -1,12 +1,13 @@
 /**
  * atascii - Convert to ATASCII or UTF-8, send to stdout.
  *
- * Usage: atascii [-a|-n] [-p] [-u] filename >outname
+ * Usage: atascii [-a|-i|-n|-u] [-p] [-s] filename >outname
  *     By default, ATASCII to UTF-8 E000-E0FF, E100-E1FF
  *  -a ATASCII to plain ASCII
  *  -i International set UTF-8 mapping
  *  -n ATASCII to naive UTF-8
  *  -p Printed with 'LIST "P:"'
+ *  -s (with -u) Strip host comments
  *  -u UTF-8 to ATASCII
  *
  * Atari Font Mapping:
@@ -28,6 +29,8 @@
 #include <libgen.h>
 
 typedef unsigned char achar_t;
+
+const char DEBUG = 0; // 1 = debug output, 2 = more verbose output
 
 static const achar_t  LF = 0x0A,  // ASCII LF
                       CR = 0x0D,  // ASCII CR
@@ -55,7 +58,18 @@ static const achar_t  LF = 0x0A,  // ASCII LF
 
 enum { ASCII, UTF_1, UTF_2, UTF_3 };
 
-void usage(char * const bin) { fprintf(stderr, "Usage: %s [-a|-n|-u] [-p] filename\n -a ATASCII to plain ASCII\n -i International set UTF-8 output\n -n ATASCII to naive UTF-8\n -p Printed with 'LIST \"P:\"'\n -u UTF-8 to ATASCII\n", basename(bin)); }
+void usage(char * const bin) {
+  fprintf(stderr,
+    "Usage: %s [-a|-i|-n|-u] [-p] [-s] filename\n"
+    " -a ATASCII to plain ASCII\n"
+    " -i International set UTF-8 output\n"
+    " -n ATASCII to naive UTF-8\n"
+    " -p Printed with 'LIST \"P:\"'\n"
+    " -s Strip host comments\n"
+    " -u UTF-8 to ATASCII\n",
+    basename(bin)
+  );
+}
 
 //                                              |E | |E |   | 1 ||  F  | |F |
 //
@@ -156,15 +170,16 @@ unsigned char * naive[] = {
 };
 
 int main(int argc, char *argv[]) {
-  char aflag = false, iflag = false, nflag = false, pflag = false, uflag = false;
+  char aflag = false, iflag = false, nflag = false, pflag = false, sflag = false, uflag = false;
 
   // Get and check program arguments
 
-  for (char k; (k = getopt(argc, argv, "ainpu")) != -1;) switch (k) {
+  for (char k; (k = getopt(argc, argv, "ainpsu")) != -1;) switch (k) {
     case 'a': aflag = true; break;
     case 'i': iflag = true; break;
     case 'n': nflag = true; break;
     case 'p': pflag = true; break;
+    case 's': sflag = true; break;
     case 'u': uflag = true; break;
     case '?': usage(argv[0]); return EXIT_FAILURE;
     default: abort();
@@ -173,6 +188,7 @@ int main(int argc, char *argv[]) {
   // Check for incompatible options
   if (aflag + iflag + nflag + uflag > 1) { fprintf(stderr, "Only one of -a -i -n -u may be used at a time.\n"); return EXIT_FAILURE; }
   if (pflag && uflag) { fprintf(stderr, "-p ignored\n"); }
+  if (sflag && !uflag) { fprintf(stderr, "-s ignored\n"); }
 
   // A filename parameter is required
   if (optind >= argc) { usage(argv[0]); return EXIT_FAILURE; }
@@ -187,26 +203,78 @@ int main(int argc, char *argv[]) {
     //
     // Convert from UTF-8 to ATASCII
     //
-    char st = 0;
+    char state = 0;
+    bool scheck = sflag,
+         gotchar = !sflag,
+         skip = false;
     unsigned char c1;
-    while ((c = fgetc(fp)) != EOF) switch (st) {
-      case ASCII:
-        if (c == 0xEE) st = UTF_1; else putchar_a(c);
-        break;
-      case UTF_1:
-        if ((c & 0xC0) == 0x80) {
-          c1 = c;
-          st = UTF_2;
+
+    if (DEBUG) {
+      fprintf(stderr, "Converting ");
+      if (aflag) fprintf(stderr, "ATASCII to plain ASCII...\n");
+      if (iflag) fprintf(stderr, "ATASCII to international UTF-8...\n");
+      if (nflag) fprintf(stderr, "ATASCII to naive UTF-8...\n");
+      if (pflag) fprintf(stderr, "LIST \"P:\" to UTF-8\n");
+      if (uflag) fprintf(stderr, "UTF-8 to ATASCII...\n");
+    }
+
+    while ((c = fgetc(fp)) != EOF) {
+
+      if (DEBUG > 1 && c == CR) fprintf(stderr, "<CR>");
+
+      // For 's' check the beginning of the line for a comment
+      if (scheck) {
+        if (DEBUG > 1) fprintf(stderr, "<%i>", int(c));
+        if (c == ' ' || c == '\t') continue;  // Leading spaces? Keep looking.
+        scheck = false;
+        skip = (c == ';' || c == '#');        // A comment to skip?
+        if (DEBUG && skip) fprintf(stderr, "<SKIP>");
+      }
+
+      // Reset states at the end of a line
+      if (c == LF) {
+        scheck = sflag;                       // Check for a host comment with 'S' flag
+        if (skip) {                           // When skipping a line skip this LF too
+          skip = false;
+          if (DEBUG) fprintf(stderr, "</SKIP>\n");
+          continue;
         }
-        else {
-          putchar(0xEE); putchar_a(c);
-          st = ASCII;
-        }
-        break;
-      case UTF_2:
-        c = (c1 & 3) << 6 | (c & 0x3F); putchar(c);
-        st = ASCII;
-        break;
+        if (DEBUG > 1) fprintf(stderr, "<LF>");
+      }
+
+      // Skipping this input character
+      if (skip) {
+        if (DEBUG) fprintf(stderr, "|");
+        continue;
+      }
+
+      // With 'S' the first output character must be non-whitespace
+      if (!gotchar) {
+        if (c == ' ' || c == '\t' || c == LF || c == CR) continue;
+        gotchar = true;
+      }
+
+      if (DEBUG) fprintf(stderr, "%c", c);
+
+      switch (state) {
+        case ASCII:
+          if (c == 0xEE) state = UTF_1; else putchar_a(c);
+          break;
+        case UTF_1:
+          if ((c & 0xC0) == 0x80) {
+            c1 = c;
+            state = UTF_2;
+          }
+          else {
+            putchar(0xEE); putchar_a(c);
+            state = ASCII;
+          }
+          break;
+        case UTF_2:
+          c = (c1 & 3) << 6 | (c & 0x3F); putchar(c);
+          state = ASCII;
+          break;
+      }
     }
   }
   else {

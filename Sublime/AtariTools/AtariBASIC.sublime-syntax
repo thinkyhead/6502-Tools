@@ -250,6 +250,11 @@ contexts:
       scope: constant.numeric.line-number.ataribasic
       push: code_line
 
+    # Start of a comment line
+    - match: ;|//|\#
+      push: comment
+      scope: comment.host.ataribasic
+
     # Start of the line otherwise
     - match: ''
       push: code_line
@@ -584,6 +589,12 @@ contexts:
   # REM comment uses the whole line
   cmd_rem:
     - meta_content_scope: comment.ataribasic
+    - match: $
+      pop: true
+
+  # Host-based comment uses the whole line
+  comment:
+    - meta_content_scope: host.comment.ataribasic
     - match: $
       pop: true
 
