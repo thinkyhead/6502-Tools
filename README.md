@@ -67,16 +67,37 @@ NOTE: Currently there's no support for Atari special characters, which would req
 
 ## Helper Scripts
 
-- `AtariTools.sh` : Configuration values used by helper scripts.
-- `bAtariBASIC-build.sh` : Shell cript to convert bAtariBASIC code to Assembly and compile it with `dasm`.
-- `AtariVCS-build.sh` : Standard build for the Atari 2600 using `dasm`.
-- `AtariBASIC-run.sh` : Run AtariBASIC code in the selected emulator.
-- `Atari800-build.sh` : Build and run Atari Assembly Language code with `ca65` / `cl65`.
-- `atari2subl.sh` : Wrapper for `atascii` to pipe "P:" device output from Atari800MacX to Sublime Text (`subl`).
-- `atascii` : Native binary of `atascii.cpp` to convert ATASCII <-> Unicode with ATASCII extensions.
-- `atascii.py` : Python version of `atascii.cpp` built with local LLM Mistral-small-3.2-24b.
-- `atascii.cpp` : C++ program to convert ATASCII <-> Unicode. Requires `unistd.h`, `stdio.h`, `stdlib.h`, `libgen.h`.
-- `tokenize.cpp` : WIP - Tokenizer to compile AtariBASIC (`.LST`) text into `.BAS` format.
+### `AtariTools.sh`
+This file contains the configuration values used by helper scripts.
+
+### `bAtariBASIC-build.sh`
+Used by the **Build** command to convert bAtariBASIC code to Assembly and compile it with `dasm`.
+
+### `AtariVCS-build.sh`
+Used by the **Build** command to do a standard build for the Atari 2600 using `dasm`.
+
+### `AtariBASIC-run.sh`
+Used by the **Build** command to run AtariBASIC code in the emulator you have configured in the `AtariTools.sh` script.
+
+### `Atari800-build.sh`
+Build and run Atari Assembly Language code with `ca65` / `cl65`.
+
+### `atari2subl.sh`
+This wrapper for `atascii` is used to pipe "P:" device output from `atari800` or `Atari800MacX` to Sublime Text (`subl`).
+- Configure the `atari800` "Print Command" to use this script.
+- Configure the `Atari800MacX` "Print cmd" to use this script.
+
+### `atascii`
+Native binary of `atascii.cpp` to convert ATASCII <-> Unicode with ATASCII extensions.
+
+### `atascii.py`
+Python version of `atascii` converted from C++ with assistance from Mistral-small-3.2-24b.
+
+### `atascii.cpp`
+The C++ source code of `atascii` which converts ATASCII <-> Unicode. Requires `unistd.h`, `stdio.h`, `stdlib.h`, `libgen.h`.
+
+### `tokenize.cpp`
+WIP - Tokenizer to compile AtariBASIC (`.LST`) text into `.BAS` format.
 
 ## For Atom (obsolete)
 
