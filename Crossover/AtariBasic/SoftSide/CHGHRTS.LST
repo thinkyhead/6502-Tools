@@ -1,0 +1,79 @@
+;
+; Changing Hearts
+; by Stan Ockers
+;
+; Softside Vol 3-05 Feb 1981
+;
+
+10 DIM P$(18),G$(100),B$(1),D$(1),H$(9),F$(9),L$(9),S$(9),N$(9):OPEN #1,4,0,"K:"
+20 D$=CHR$(160):B$=CHR$(128):FOR I=1 TO 9:L$(I)=D$:F$(I)=B$:NEXT I:S$=L$:S$(5,5)=B$:F$(5,5)=D$
+30 P$="":N$="123456789"
+40 G$=""
+50 GRAPHICS 2:POSITION 2,5:?#6;"CHANGING HEARTS":FOR I=3 TO 6:SETCOLOR 0,I,4:SOUND 0,RND(0)*40+10,10,8
+55 GOSUB 710:POKE 756,226:SOUND 0,RND(0)*40+10,10,8:GOSUB 710:POKE 756,224:NEXT I:SOUND 0,0,0,0
+60 POKE 752,1:?:?,"Need Instructions?":?,"    ( Y or N )":GET #1,K:IF K=89 THEN GOSUB 1000
+170 T=0
+180 H$=S$:GOSUB 400:F=2:GOSUB 500
+190 T=T+1
+200 ? CHR$(125);"Turn # ";T:?"Pick a number (1-9)"
+210 GET #1,K:N=K-48:IF N=25 THEN 180
+215 IF N<1 OR N>9 THEN 210
+220 GOSUB 900:GET #6,H:IF H=160 THEN ? CHR$(125):?:?"You may only pick  hearts.":GOSUB 760:GOTO 210
+250 GOSUB 600:IF H$=L$ THEN 300
+260 IF H$=F$ THEN 350
+270 GOTO 190
+
+300 FOR S=30 TO 190:SOUND 0,S,10,8:NEXT S:SOUND 0,0,0,0:?CHR$(125):?"Sorry, there's no way out!!!":GOSUB 750
+310 GOTO 370
+
+350 ? CHR$(125):FOR J=0 TO 14:POKE 708,4+16*J:SOUND 0,50-2*J,10,8:GOSUB 730:POKE 708,40:GOSUB 730
+351 NEXT J:SOUND 0,0,0,0
+360 POKE 656,1:POKE 657,10:?"CONGRATULATIONS !!!":?"You did it in ";T;" turns.":GOSUB 750
+370 POKE 764,255:?CHR$(125):?:?"Care to try again? (Y or N)":GET #1,K:IF K=89 THEN 170
+380 ?"Thanks for the game.":END
+
+400 GRAPHICS 2:SETCOLOR 4,2,8:SETCOLOR 3,4,10:POKE 756,226:POKE 752,1
+410 POSITION 7,2:?#6;""
+420 POSITION 7,4:?#6;""
+430 POSITION 7,6:?#6;""
+440 POSITION 7,8:?#6;""
+450 FOR X=7 TO 13 STEP 2:FOR Y=3 TO 7 STEP 2:POSITION X,Y:?#6;CHR$(124);:NEXT Y:NEXT X:RETURN
+500 FOR N=1 TO 9:GOSUB 900:IF F=1 THEN ? #6;H$(N,N);
+510 IF F=2 THEN ? #6;S$(N,N);
+520 IF F=3 THEN ? #6;F$(N,N);
+530 IF F=4 THEN ? #6;N$(N,N);
+540 IF F=5 THEN ? #6;L$(N,N);
+550 NEXT N:RETURN
+600 FOR L=1 TO 5:F=1:GOSUB 800:SOUND 0,5*N+50,10,8:F=2:GOSUB 800:SOUND 0,5*N+80,10,8
+620 NEXT L:SOUND 0,0,0,0:F=3:GOSUB 800:RETURN
+700 FOR K=0 TO C:NEXT K:RETURN
+710 C=150:GOTO 700
+720 C=1000:GOTO 700
+730 C=30:GOTO 700
+750 POKE 764,255:?,"(Press any key)";
+760 IF PEEK(764)=255 THEN 760
+770 RETURN
+800 SN=N
+801 J=5*(N-1)
+802 FOR I=1 TO 5
+803 N=ASC(G$(J+I))
+804 IF N=0 THEN 850
+810 GOSUB 900:IF F=1 THEN ? #6;" ";
+820 IF F=2 THEN ? #6;H$(N,N);
+830 GET #6,Z:IF F=3 AND Z=160 THEN POSITION X,Y:?#6;B$;:H$(N,N)=B$
+840 IF F=3 AND Z=128 THEN POSITION X,Y:?#6;D$;:H$(N,N)=D$
+850 NEXT I:N=SN:RETURN
+900 X=ASC(P$(2*N-1)):Y=ASC(P$(2*N)):POSITION X,Y:RETURN
+
+1000 H$=S$:GOSUB 400:F=2:GOSUB 500:?"Go from this pattern ...":?,"('s around )":GOSUB 750
+1010 F=3:GOSUB 500:?CHR$(125);"To this pattern ('s around )":?"by choosing  hearts.":GOSUB 750
+1020 GRAPHICS 2:F=4:GOSUB 500:POKE 752,1:?"These are the position numbers.":?"Different groups of hearts will be"
+1030 ?"reversed depending on your choice.":GOSUB 750:F=2:GOSUB 400:GOSUB 500
+1040 ?"If you pick the center square, the":?"hearts in a cross will be reversed."
+1050 GOSUB 720:N=5:GOSUB 600:GOSUB 750:?CHR$(125);"If you choose the middle square on"
+1060 ?"an edge, the whole edge will be":?"reversed.":GOSUB 720:N=8:GOSUB 600:GOSUB 700
+1070 ? CHR$(125);"If you pick a corner, a square":?"including that corner will be":?"reversed."
+1080 GOSUB 720:N=7:GOSUB 600:GOSUB 750:?CHR$(125);"If you end up with all dark hearts":?"you lose !!!":F=5
+1090 GOSUB 500:GOSUB 750:?CHR$(125);"Hit the 'I' key to get back to the":?"initial position."
+1100 ?"Understand the instructions?":POKE 764,255:GET #1,K:IF K<>89 THEN 1000
+1110 RETURN

@@ -1,10 +1,10 @@
-0 .
-0 . BDOS.LST
-0 . A bare-bones CLI using file funcs
-0 . by Thinkyhead
-0 .
+;
+; BDOS.LST
+; A bare-bones CLI using file funcs
+; by Thinkyhead
+;
 
-1 POK.82,0:POK.709,15:POK.710,0:?:? "BDOS - (c) 2019 Thinkyhead"
+1 POK.82,0:POK.709,15:POK.710,113:?:? "BDOS - (c) 2019 Thinkyhead"
 
 2 DIMT$(80),C$(80),F$(80),ARG$(78),HIS$(650),CD$(3),CMD$(10)
 3 DIMSRC$(20),DST$(20),CO$(14),M$(1),K$(1),EOL$(1),YN$(2),SP$(40)
@@ -28,23 +28,23 @@
 160 IFCMD$="MV"THENGOS.1600:G.10
 170 IFCMD$="CAT"THENGOS.1700:G.10
 180 IFCMD$="Q"THENEND
-0 .
-0 . Run a BASIC program?
-0 .
+;
+; Run a BASIC program?
+;
 190 IFL<5THEN199
 191 IFC$(L-3)<>".BAS"THEN199
 192 F$=CD$:F$(LEN(F$)+1)=C$
 193 ?"Run ";F$;"? ";:GOS.8000:IFNOTYN THEN10
-194 T.195:RUN F$
+194 T.195:POK.82,2:GR.0:RUN F$
 195 ?"Can't run ";F$:G.10
 
-0 .
-0 . Command Error
-0 .
+;
+; Command Error
+;
 199 ERR=1
-0 .
-0 . Go back to prompt
-0 .
+;
+; Go back to prompt
+;
 200 ONERR GOSUB9998:G.10
 
 1100 .
@@ -63,15 +63,15 @@
 1124 CL.#1:RET.
 1125 ST.#1,T:?"Error - ";T:G.1124
 
-0 . Staggered output
+; Staggered output
 1130 E=X-3*INT(X/3):ONNOTT GOTO1135:F$=F$(1,11):GOS.6400
 1131 L=LEN(F$):IFV THENV=USR(INV,ADR(F$),L)
 1132 ? F$;:IFE<2THEN?SP$(1,14-L);:RET.
 1133 IFL<12THEN?
 1134 RET.
-0 . Print last line straight
+; Print last line straight
 1135 IFE THEN?
-0 . Print any line straight
+; Print any line straight
 1140 IFNOTT ANDNS THENRET.
 1141 IFNOTT THEN?
 1142 IFV THENV=USR(INV,ADR(F$),LEN(F$))
@@ -88,13 +88,13 @@
 1220 ?"Src";:I.SRC$
 1221 ?"Dst";:I.DST$
 
-0 . Got base SRC,DST
-0 . Put a drive prefix on both
+; Got base SRC,DST
+; Put a drive prefix on both
 1240 GOS.5800:T$=DST$:GOS.5900:IFI=LEN(DST$)THEN GOS.1280:G.1245
 1241 IFNOTI THENDST$=CD$:DST$(LEN(DST$)+1)=T$
 1242
 
-0 . Full SRC,DST. Begin copy
+; Full SRC,DST. Begin copy
 1245 ?"Copy ";SRC$;" to ";DST$;"? ";:GOS.8000:IFNOTYN THENRET.
 
 1250 T.1290:O.#1,4,0,SRC$:T.1291:O.#3,8,0,DST$
@@ -102,7 +102,7 @@
 1252 ?"DONE":?
 1253 CL.#1:CL.#3:RET.
 
-0 . Append src file onto DST if needed
+; Append src file onto DST if needed
 1280 Q=I:T$=SRC$:GOS.5900:DST$(Q+1)=SRC$((I>1)*I+1):RET.
 
 1290 ? CO$;"src ";SRC$:RET.
@@ -188,13 +188,13 @@
 5009 IFNOTL THEN5004
 5010 IFC$(L)=" "THEN5004
 
-0 . Print char, commit on enter
+; Print char, commit on enter
 5020 ?K$;:IFK=155THEN5030
 
-0 . Add the char, loop
+; Add the char, loop
 5021 C$(L+1)=CHR$(K):G.5004
 
-0 . Set command and return
+; Set command and return
 5030 IFNOTL THENRET.
 
 5031 IFC$(L)=" "THENL=L-1:C$=C$(1,L):G.5031
@@ -205,41 +205,41 @@
 5041 ?K$;:IFL=1THENC$="":RET.
 5042 C$=C$(1,L-1):RET.
 
-0 . Apply CD$ drive prefix to SRC$
+; Apply CD$ drive prefix to SRC$
 5800 T$=SRC$:GOS.5900:IFNOTI THENSRC$=CD$:SRC$(LEN(SRC$)+1)=T$
 5801 RET.
 
-0 . Find colons or spaces
+; Find colons or spaces
 5900 M$=":":G.6000
 5901 M$=" ":G.6000
-0 . I=strpos(M$ in T$)
+; I=strpos(M$ in T$)
 6000 M=LEN(M$):T=LEN(T$):IFNOTT ORM>T THEN6003
 6001 F.I=1TOT-M+1:IFT$(I,I+M-1)=M$THENRET.
 6002 N.I
 6003 I=0:RET.
 
-0 . M$=GetVolume (T$)
+; M$=GetVolume (T$)
 6100 GOS.6200:M$="":IFI THENM$=T$(1,I)
 6101 RET.
 
-0 . PrefixLen - returned in I
-0 . Also: ValidPrefix test
+; PrefixLen - returned in I
+; Also: ValidPrefix test
 6200 I=0:Q=LEN(T$):IFQ<2THENRET.
 6201 M$=T$(1,1):IFM$<>"D" AND M$<>"H"THENRET.
 6202 M$=T$(2,2):IFM$=":"THENI=2:RET.
 6203 IFQ>2ANDM$>="1"ANDM$<="8"ANDT$(3,3)=":"THENI=3
 6204 RET.
 
-0 . ValidFilename(T$)
+; ValidFilename(T$)
 6300 GOS.5900:IFI THENGOS.6200:IFNOTI THENRET. :.invalid prefix?
-0 . Check for proper naming
+; Check for proper naming
 6301 M$=".":GOS.6000:IFI>8THEN6320. :.filename too long
 6302 IFNOTI ANDLEN(T$)>8THENRET.
 6302 IFI ANDL>I+3THEN6320           :.ext too long
 6310 I=LEN(T$):RET.
 6320 I=0:RET.
 
-0 . F$=CompactName(F$)
+; F$=CompactName(F$)
 6400 T$=F$(1,8):GOS.6420:ARG$=T$
 6401 T$=F$(9):GOS.6420:F$=ARG$:I=LEN(F$):IFT$<>""THENF$(I+1)=".":F$(I+2)=T$
 6402 RET.
@@ -248,10 +248,10 @@
 6421 IFI=1THENT$="":RET.
 6422 T$=T$(1,I-1):G.6420
 
-0 . History Buffer
+; History Buffer
 7000 IFLEN(HIS$)=0THEN RET.
 
-0 . Move up and down
+; Move up and down
 7001 OP=HP:HP=HP+(K=28)-(K=29):IFHP<0THENHP=0:RET.
 7002 IFHP=0THENC$="":G.7011
 7003 S1=LEN(HIS$)+2:C=HP
@@ -276,5 +276,4 @@
 9998 ?"   ";C$;"?? (";CMD$;")":ERR=0:RET.
 9999 ? "ERROR":G.10
 
-0
 RUN

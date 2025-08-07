@@ -1,0 +1,403 @@
+;
+; Atari BASIC
+; 'DEFENSE'
+; AUTHOR: Greg Schroeder
+; © 1982 SoftSide
+;
+; Softside Vol 5-05 Feb 1982
+;
+
+10 GOSUB 10000
+
+; Dimension variables.
+
+15 DIM A(2,41),B(4),C(4),D(4),E(4),F(4),SH(2),SC(2),A$(21),H$(5),R(4),AL(2):SC(1)=0:SC(2)=0
+
+; Set arrays to zero.
+
+20 FOR I=0 TO 4:B(I)=-1:C(I)=0:D(I)=0:E(I)=0:R(I)=0:NEXT I
+25 I=SC(1)*(SC(1)>SC(2))+SC(2)*(SC(2)>SC(1)):HSC=HSC*(HSC>I)+I*(I>HSC)
+
+
+; Place aliens for two players in moon's surface
+; variable.
+
+30 FOR I=1 TO 2:FOR J=1 TO 20:A(I,J)=INT(RND(0)*16):NEXT J:NEXT I
+
+; Define other variables for both players.
+
+40 SH(1)=3:SH(2)=3:SC(1)=0:SC(2)=0:AL(1)=20:AL(2)=20:F(1)=20:F(2)=20:F(3)=0:F(4)=0:XC=0
+
+; Jump to "get ready" subroutine.
+
+50 GOSUB 6000
+
+; Lines 100·150: Main loop.
+; Increment alien on screen counter.
+
+100 TT=TT+1:IF TT=4 THEN TT=1
+
+; Move moon's surface contained in A$. Use H$
+; as temporary storage.
+
+105 IF GS>1 THEN H$=A$(1,GS):A$=A$(GS+1,20):A$(LEN(A$)+1)=H$:POSITION 0,20:? #6;A$;
+
+; Lines 110-140: Move Ship.
+; Check If joystick moved.
+
+110 S=STICK(PL):IF S=15 THEN 150
+
+; Check joystick to move ship up.
+
+120 Y1=Y:IF S/2=INT(S/2) AND Y>6 THEN Y=Y-1
+
+; Check joystick to move ship down. See If ship
+; hit ground.
+
+125 IF (S=5 OR S=9 OR S=13) THEN Y=Y+1:IF Y=20 THEN GOTO 3000
+
+; Erase and reprint redefined ship character.
+
+130 POSITION 1,Y1:? #6;"  ";:POSITION 1,Y:? #6;"";
+
+; Check joystick to move ship faster.
+
+135 IF S>4 AND S<8 AND GS<2 THEN GS=GS+0.05
+
+; Check joystick to move ship slower.
+
+140 IF S>8 AND S<12 THEN GS=GS-0.05:IF GS<0 THEN GS=0
+
+; Lines 150-170: Fire Laser.
+; Check If trigger released.
+
+150 IF STRIG(PL)=1 THEN SL=0:GOTO 200
+
+; If trigger stili pressed, then branch to alien
+; movement.
+
+155 IF SL=1 THEN 200
+
+; Print redefined text graphics laser. Make some
+; noise. Check If laser hit alien(s).
+
+160 SOUND 1,20,4,15:POSITION 3,Y:? #6;"";:FOR I=1 TO 3:IF B(I)>2 AND INT(C(I))=Y THEN 4000
+161 . LINE 160: 16 <CTRL> ''
+162 NEXT I
+
+; Erase laser. Turn off sound. Set trigger pressed
+; variable.
+
+165 POSITION 3,Y:? #6;"                 ";:SOUND 1,0,0,0:SOUND 2,0,0,0:SL=1
+
+; Check If all aliens are gone.
+
+170 IF AL(PL)<1 THEN 4100
+
+; Lines 200-300: Alien Movement.
+; Increment moon surface counter.
+
+200 XC=XC+1:IF XC=F(PL)+1 THEN XC=1
+
+; Move aliens' position in array.
+
+210 IF A(PL,XC)>-5 THEN A(PL,XC)=A(PL,XC)-(GS):IF A(PL,XC)<=0 THEN 1000
+
+; Check if variable contains no alien.
+
+220 IF B(TT)=-1 THEN 300
+
+; Erase alien. Move alien along X axis. Check if
+; it is off-screen.
+
+230 POSITION INT(B(TT)),INT(C(TT)):? #6;" ";:B(TT)=B(TT)-GS-0.5:IF B(TT)<0 THEN B(TT)=-1:A(PL,R(TT))=15:GOTO 300
+
+; Check if alien is smiling blob and branch to
+; different movement routine.
+
+240 IF E(TT)>4 THEN 2000
+
+; Check if alien is off-screen after moving along
+; Y axls.
+
+250 C(TT)=C(TT)+D(TT):IF C(TT)<6 OR C(TT)>19 THEN C(TT)=C(TT)-D(TT):D(TT)=-D(TT)
+
+; Check If alien hit you.
+
+255 IF INT(B(TT))>=0 AND INT(B(TT))<=2 THEN IF INT(C(TT))=Y THEN 3000
+
+; Print specific redefined alien character.
+
+260 POSITION INT(B(TT)),INT(C(TT)):GOSUB 260+E(TT)*5:GOTO 300
+265 ? #6;"Z";:RETURN
+270 ? #6;"z";:RETURN
+275 ? #6;"";:RETURN
+280 ? #6;"";:RETURN
+285 ? #6;"";:RETURN
+290 ? #6;"t";:RETURN
+
+; Return to start of main loop.
+
+300 GOTO 100
+
+; Lines 1000-2010: Set Up New Alien
+; Find empty alien variable: If none, then restart
+; alien at end of moon's surface.
+
+1000 FOR I=1 TO 3:IF B(I)=-1 THEN 1010
+1005 NEXT I:A(PL,XC)=15:GOTO 220
+
+; Set Y value for alien. Set alien's movement.
+
+1010 C(I)=INT(RND(0)*12)+7:D(I)=RND(0)+0.1-1.5*(RND(0)<0.5)
+
+; Pick alien type. Remember which surface alien
+; it is. If alien is a smiling blob, then start X
+; position at mid-screen.
+
+1020 E(I)=INT(RND(0)*6)+1:R(I)=XC:A(PL,XC)=-10:B(I)=17:IF E(I)>4 THEN B(I)=11
+1025 GOTO 220
+
+; Move smiling blob along Y axis.
+
+2000 IF C(TT)<Y THEN D(TT)=1:GOTO 250
+2010 IF C(TT)>=Y THEN D(TT)=-1:GOTO 250
+
+; Lines 3000-3070: You've Been Hit.
+; Clear playing field.
+
+3000 FOR I=6 TO 19:POSITION 0,I:? #6;"                    ";:NEXT I
+3010 FOR I=1 TO 3:IF B(I)>0 THEN A(PL,R(I))=15:B(I)=-1
+
+; Turn off sound.
+
+3015 NEXT I:FOR I=0 TO 3:SOUND I,0,0,0:NEXT I
+
+; Print redefined ship character. Brighten
+; ship In red.
+
+3020 POSITION 1,Y:? #6;"";:FOR I=2 TO 8 STEP 0.1:SETCOLOR 2,4,I:NEXT I
+
+; Make explosion sound, first explosion.
+; Initialize explosion loop.
+
+3025 SOUND 0,20,8,15:POSITION 1,Y:? #6;"";:FOR I=15 TO 0 STEP -0.2
+
+; Make explosion sounds.
+
+3030 SOUND 0,20,8,I:SOUND 1,75,8,I+1:SOUND 2,175,8,I+3:SOUND 3,255,8,I+5
+
+; Print explosion steps when ready.
+
+3040 IF I=12 THEN POSITION 0,Y-1:? #6;" ";:POSITION 0,Y:? #6;"::";:POSITION 1,Y+1:? #6;"";
+3045 IF I=8 THEN POSITION 0,Y-1:? #6;"";:POSITION 0,Y:? #6;"++";:POSITION 0,Y+1:? #6;"";
+3050 IF I=4 THEN POSITION 0,Y-1:? #6;" ";:POSITION 0,Y:? #6;"++";:POSITION 1,Y+1:? #6;"";
+3055 IF I=1 THEN POSITION 0,Y-1:? #6;"    ";:POSITION 0,Y:? #6;"    ";:POSITION 0,Y+1:? #6;"    ";
+
+; Turn off sound. Erase ship.
+
+3060 NEXT I:FOR I=0 TO 3:SOUND I,0,0,0:NEXT I:POSITION 1,Y:? #6;"  ";
+
+; Set ground speed to zero. Subtract ship
+; from player. Print number of ships left.
+; Check If all ships gone.
+
+3062 GS=0:SH(PL)=SH(PL)-1:POSITION 3+12*(PL=2),4:? #6;SH(PL);:IF SH(PL)=0 THEN GOSUB 7000
+
+; If there's another player, then change
+; player variable.
+
+3065 IF SH(PL-1+2*(PL=1))>0 THEN PL=PL+1:IF PL>PP THEN PL=1
+
+; Jump to "get ready" routine. Jump to
+; screen drawing.
+
+3070 GOSUB 5000:FOR I=1 TO 1000:NEXT I:GOSUB 6000:XC=0:GOTO 100
+
+; Lines 4000-4050: Destroy Aliens.
+; Make some noise. Check if alien is smiling
+; blob.
+
+4000 SOUND 2,RND(0)*200+50,10,10:POSITION INT(B(I)),INT(C(I)):? #6;:IF E(I)>4 THEN 4020
+
+; Print score for drone. Add to total score.
+
+4010 ? #6;E(I)*10;:SC(PL)=SC(PL)+E(I)*10:GOTO 4030
+
+; Print score for smiling blob. Add to total
+; score.
+
+4020 ? #6;(E(I)-4)*100;:SC(PL)=SC(PL)+(E(I)-4)*100
+
+; Clear alien variables. Print player's score.
+
+4030 B(I)=-1:A(PL,R(I))=-5:POSITION 2,3:? #6;SC(1);:IF PP=2 THEN POSITION 14,3:? #6;SC(2);
+
+; Decrease the number of aliens in attack
+; wave. Return to see if more hit.
+
+4040 AL(PL)=AL(PL)-1:POSITION 2,22:? #6;"t=";AL(1);" ";:IF PP=2 THEN POSITION 12,22:? #6;"=";AL(2);" ";
+4050 NEXT I:GOTO 165
+
+; Lines 4100-4135: Attack Wave Destroyed.
+
+; Clear screen. Restore ATARI® character
+; set. Add to player's wave cleared total.
+; Print message, make noise.
+
+4100 GRAPHICS 17:POKE 756,224:F(PL+2)=F(PL+2)+1:POSITION 8,10:? #6;"attack":? #6;"  wave ";F(PL+2);
+4110 ? #6;" destroyed":? #6:SOUND 0,200,10,10:SOUND 1,201,10,10:SOUND 2,0,0,0
+
+; Print bonus message. (500 points for each
+; remaining ship.) Add bonus to total score.
+
+4120 ? #6;"    ";SH(PL)*500:SC(PL)=SC(PL)+SH(PL)*500
+
+; Check If extra ship Is awarded. Print
+; message.
+
+4123 IF F(PL+2)/4=INT(F(PL+2)/4) THEN SH(PL)=SH(PL)+1:? #6:? #6;"    "
+
+; Add more to next wave. Reset aliens on
+; surface.
+
+4125 AL(PL)=F(PL)+5:F(PL)=F(PL)+5:IF F(PL)>40 THEN F(PL)=40:AL(PL)=40
+
+; Make sure wave doesn't go over 40 aliens.
+
+4130 FOR J=1 TO AL(PL):A(PL,J)=INT(RND(0)*16):NEXT J
+
+; Jump to screen drawing. Jump to main
+; loop.
+
+4135 FOR I=1 TO 1500:NEXT I:GOSUB 6000:GOTO 100
+
+; Lines 5000-5005: Get Ready
+
+; Clear screen. Restore ATARI® character
+; set. Print message.
+
+5000 GRAPHICS 18:POKE 756,224:POSITION 4,5:? #6;"PLAYER   ";PL
+5005 POSITION 4,6:? #6;"":RETURN
+
+; Lines 6000-6070: Draw Screen.
+; Clear screen: Restore new character set.
+; Turn off sound.
+
+6000 GRAPHICS 17:POKE 756,ST/256:FOR X=0 TO 3:SOUND X,0,0,0:NEXT X
+
+; Print messages for both players. (If only
+; one player, then only player #1's
+; messages.)
+
+6020 POSITION 6,0:? #6;"":POSITION 3,2:? #6;"#1   #2":POSITION (18-LEN(STR$(HSC)))/2,1:? #6;HSC;
+6030 POSITION 2,3:? #6;SC(1);:POSITION 3,4:? #6;SH(1);
+6040 IF PP=2 THEN POSITION 14,3:? #6;SC(2);:POSITION 15,4:? #6;SH(2);
+6045 POSITION 2,22:? #6;"t=";AL(1);:IF PP=2 THEN POSITION 12,22:? #6;"=";AL(2);
+
+; Print line made of redefined character.
+
+6050 FOR I=0 TO 19:POSITION I,5:? #6;"W";:NEXT I
+
+; Assemble moon's surface picture in A$.
+
+6060 FOR I=1 TO 20:A$(I,I)="@":NEXT I:A$(10,11)="UV":A$(2,3)="UV":A$(19,20)="UV"
+
+; Print ground. Set ship position (Y) to mid-
+; screen and print ship. Make rocket sound.
+
+6070 POSITION 0,20:? #6;A$;:Y=12:POSITION 1,Y:? #6;"";:SOUND 0,75,8,4:RETURN
+
+; Lines 7000-7050: Game Over.
+
+; Restore ATARI® character set. Print game
+; over and score.
+
+7000 POKE 756,224:GRAPHICS 18:POSITION 5,5:? #6;" ";CHR$(PL+176);:POSITION 5,6:? #6;"game over";
+7005 POSITION 4,8:? #6;" ";SC(PL);
+
+; See If both players' games are over.
+
+7010 FOR I=1 TO 400:NEXT I:IF SH(1)=0 AND SH(PP)=0 THEN 7050
+
+; Return to main loop.
+
+7020 RETURN
+
+7050 FOR I=1 TO 400:NEXT I:POP :GOSUB 11000:GOSUB 11100:GOTO 20
+
+; Lines 10000-10070: Redefine Character Set.
+
+; Set top of memory five pages down.
+; Initialize graphics. Jump to title display
+; routine.
+
+10000 POKE 106,PEEK(106)-5:GRAPHICS 0:GOSUB 11000
+
+; Set start of new character set pointer.
+
+10010 ST=(PEEK(106)+1)*256
+
+; Move ATARI® character set from ROM to
+; top of RAM. Jump to number of players
+; input.
+
+10020 FOR X=0 TO 1023:POKE ST+X,PEEK(57344+X):NEXT X:GOSUB 11100
+
+; Redefine "X" character to be back half of
+; ship and "Y" to be front half of ship. "Z"
+; is a drone. "U" is CHR$(6). " V" is CHR$(7).
+
+10030 FOR X=0 TO 23:READ A:POKE ST+448+X,A:NEXT X:FOR X=0 TO 15:POKE ST+424+X,PEEK(ST+560+X):NEXT X
+
+; "W" is CHR$(18).
+
+10040 FOR X=0 TO 7:POKE ST+440+X,PEEK(ST+656+X):NEXT X
+
+; "T" is smiling blob.
+
+10045 FOR X=0 TO 7:READ A:POKE ST+416+X,A:NEXT X
+
+; "@" is flat ground and laser character.
+
+10050 FOR X=0 TO 6:POKE ST+256+X,0:NEXT X:POKE ST+263,255
+
+; Initialize new character set.
+
+10055 GRAPHICS 1:POKE 756,ST/256:RETURN
+
+; DATA for redefined characters.
+
+10060 DATA 0,0,0,0,30,15,7,7,0,0,0,0,0,192,252,255,0,8,28,62,127,42,20,34
+10070 DATA 0,126,153,153,255,189,195,126
+
+; Lines 11000-11050: Title Display.
+; Suppress cursor. Print title and
+; instructions.
+
+11000 GRAPHICS 17:POKE 752,1:POSITION 7,0:? #6;"":? #6:? #6:? #6;"  evil aliens from"
+11010 ? #6;" beyond earth have   invaded the moon.":? #6:? #6
+11020 ? #6;"  YOUR MISSION IS    TO DESTROY AS MANY  ATTACKING WAVES OF  THOSE ALIENS BEFORE";
+11030 ? #6;" THEY LAUNCH THEIR   FLEETS TO CONQUER   THE EARTH.":? #6:? #6
+11040 ? #6;"  "
+11050 RETURN
+
+; Lines 11100-11120: Number of Players Input.
+
+; OPEN keyboard. Print message.
+
+11100 OPEN #2,4,0,"K:":POSITION 0,23:? #6;"PUSH 1 OR 2 TO START";
+
+; Check if key "1" or "2" is pressed.
+
+11110 IF PEEK(764)<>30 AND PEEK(764)<>31 THEN 11110
+
+; GET key pressed. CLOSE keyboard.
+; Decide whether one- or two-player game.
+
+11115 GET #2,I:PP=1:CLOSE #2:IF I=50 THEN PP=2
+
+; Set player variable. Jump to "get ready"
+; subroutine.
+
+11120 PL=1:GOSUB 5000:RETURN

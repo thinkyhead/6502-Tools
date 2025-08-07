@@ -1,20 +1,38 @@
-0 .
-0 . AtariBASIC
-0 .
-0 . MENU.BAS
-0 .
+################
+#              #
+# AtariBASIC   #
+#              #
+#  MENU.BAS    #
+#              #
+################
 
-0 DIM E$(1),K$(1),N$(8),F$(14)
-10?"(B) BDOS"
-11?"(E) Export"
-12?"(I) Import"
-13?"(Q) Quit"
-14?:?">";
-20OP.#1,4,0,"K:":GET#1,K:CL.#1:K$=CHR$(K)
-30IFK$="Q"THEN?CHR$(125):DOS
-40RES.:T.70
-50REA.N$:IFK$=N$(1,1)THENF$="D:":F$(3)=N$:F$(LEN(F$)+1)=".BAS":?CHR$(125):RUNF$
-60G.50
-70?CHR$(K);"";:G.20
-500D.BDOS,EXPORT,IMPORT
-1000S."D:MENU.BAS":L."D:MENU.LST"
+0 GR.0:DIM E$(1),K$(1),N$(1),O$(8),T$(30),F$(14)
+
+10?"":RES.
+11REA.N$,O$,T$:?"(";N$;") ";T$:IFO$<>""THEN11
+12?:?">";
+
+100OP.#1,4,0,"K:":GET#1,K:CL.#1:K$=CHR$(K):?CHR$(K);"";
+
+; QUIT
+200IFK$="Q"THEN?CHR$(125);:END
+
+; Another Item?
+210RES.
+220REA.N$,O$,T$:IFK$<>N$ANDO$<>""THEN220
+225IFO$=""THEN?" ";:G.100
+
+230F$="H:":F$(3)=O$:F$(LEN(F$)+1)=".BAS"
+240T.300:?CHR$(125);"RUNNING ";F$:RUNF$:END
+
+300?"<Error>";CHR$(253):G.10
+
+500D.B,BDOS,BDOS
+501D.E,EXPORT,Export
+502D.I,IMPORT,Import
+503D.M,MASTMIND,Mastermind
+504D.S,SPACEATK,Outer Space Attack
+505D.V,VBIDEMO,VBI Demo
+506D.Q,,Quit
+
+1000S."H:MENU.BAS":L."H:MENU.LST"

@@ -1,57 +1,240 @@
-10I=0:J=0:COUNT=0:ATTACK=0:GOS.280:G.140
-20 . OUTER SPACE ATTACK V.1 12/81
-21 . By SHELDON LEEMON
-22 . Oak Park, MI 48237
-23 .
-30Y=PEEK(53248):IFY>0THENGOS.210
-40IFSF=1THENSVP=SVP-4:M$(SVP)=SHELL$:POK.53278,1:IFSVP-4*K<10THENM$(SVP,SVP+4)=BL$:SF=0
-50Y=PEEK(53248):IFY>0THENGOS.210
-60IFBF=1THENBVP=BVP+3:M$(BVP)=BOMB$:IFBVP>102THENM$(BVP,BVP+5)=BL$:BF=0:BVP=20
-70IFPEEK(53259)=1THEN250
-80IFBF=0THENIFCOUNT>ATTACK THENIFK<16THENBF=1:POK.53255,HP+3:BVP=14+4*K:COUNT=0
-90HP=HP+4*(STICK(0)=7)-4*(STICK(0)=11):POK.53248,HP
-100IFSTRIG(0)=0THENIFSF=0THENSF=1:HPM=HP+2:POK.53252,HPM:SVP=94:M$(SVP)=SHELL$:POK.77,0
-110COUNT=COUNT+1:RET.
-120POK.656,1:POK.657,2:?"GAME OVER--PUSH BUTTON TO PLAY AGAIN";:SO.0,0,0,0:CHANCES=0:SCREENS=0
-130POK.656,1:POK.657,2:?"                                    ";:POK.704,PEEK(710):IFSTRIG(0)=1THEN120
-140POK.656,3:POK.657,2:?"SCORE   ";:SCORE=0:GOS.240:POK.705,38:POK.706,38:ATTACK=80:TOUGH=0:TOUGHER=0
-150POK.704,196:M$=BL$:SF=0:BF=0:POK.53278,1:F.I=1TO3:F.J=80TO150:SO.0,J,10,6:N.J:N.I:COUNT=80
-160POK.77,0:ATTACK=ATTACK-SCREENS*10:IFSCREENS>1THENTOUGH=30:IFSCREENS>3THENTOUGHER=60
-170F.K=1TO20:D=-D:F.I=0TO8:L=PEEK(DL)-D-20*(I=8):H=PEEK(DH)-(L<0)+(L>255):L=L+256*(L<0)-256*(L>255)
-180GOS.30:POK.DH,H:POK.DL,L:GOS.30:POK.756,RT+4+2*(PEEK(756)=RT+4):GOS.30+TOUGH
-190SO.0,255,12,15:GOS.30+TOUGHER:SO.0,0,0,0:N.I:N.K
-200GOS.420:M$=BL$:SF=0:BF=0:POK.53278,1:G.120
-210SO.0,20,10,6:X=HPM+8*I*(-D)-64*(D<0)-48:X=2*INT(X/16):Y=(Y=2)+3*(Y=1)+5*(Y=8)+7*(Y=4)-1
-220SCORE=SCORE+10*(10-Y):HITS=HITS+1:IFHITS=24THENPOP:M$=BL$:SCREENS=SCREENS+1:GOS.420:G.150
-230POS.X,Y:?#6;"  "
-240POK.656,3:POK.657,8:?SCORE;"         ";:M$(SVP,SVP+2)=BL$:SF=0:POK.53278,1:RET.
-250POK.706-CHANCES,0:POK.704,PEEK(710):M$=BL$:F.K=70TO0STEP-1:SO.0,240,8,K/5:N.K:GOS.420
-260CHANCES=CHANCES+1:IFCHANCES=3THENCHANCES=0:SCORE=0:G.120
-270G.150
-280RT=PEEK(106):IFRT/2=INT(RT/2)THENRT=RT-8
-290POK.89,RT:POK.88,0:?CHR$(125):POK.89,RT+3:?CHR$(125):POK.106,RT:GR.18:POK.756,RT+4
-295?#6;"% OUTER %":?#6:?#6;"    & space &"
-300?#6:?#6;"        ' ATTACK '":?#6:?#6:?#6:?#6;"   BY s. leemon"
-310F.I=8TO39:REA.X:POK.(RT+4)*256+I+32,X:SO.0,I,10,6:N.I
-320F.I=40TO71:REA.X:POK.(RT+6)*256+I,X:SO.0,I,10,6:N.I
-330F.I=72TO87:POK.(RT+6)*256+I-72,0:SO.0,I,10,10:N.I
-340F.I=88TO511:J=PEEK(57344+I):POK.(RT+6)*256+I,J:POK.(RT+4)*256+I,J:SO.0,I,10,6:N.I
-350F.I=0TO600:SO.0,0,0,0:N.I:GR.1:POK.559,0:DH=PEEK(560)+PEEK(561)*256+5:DL=DH-1
-360POK.89,RT+2:POK.88,128:POK.752,1:?" ":POK.DH+25,6:POK.708,52:POK.709,132:POK.710,8:POK.711,84
-370DIMBL$(128),D$(1),F$((INT(ADR(D$)/1024)+1)*1024-ADR(D$)-1),PM$(384),M$(128),P$(128),P1$(128),P2$(128)
-380DIMBOMB$(6),SHELL$(6):BL$=CHR$(0):BL$(128)=CHR$(0):BL$(2)=BL$:M$=BL$:SVP=88
-390F.I=1TO6:REA.K,Y,D:P$(97+I,97+I)=CHR$(K):SHELL$(I,I)=CHR$(Y):BOMB$(I,I)=CHR$(D):N.I
-400P1$=BL$:P2$=BL$:P1$(12)=P$:P2$=P1$:POK.53249,170:POK.53250,156:POK.704,196:POK.707,76
-410BVP=10:POK.53254,100:HP=128:POK.53248,HP:POK.54279,ADR(PM$)/256:POK.623,1:POK.53277,3
-420POK.DH,PEEK(89):POK.DL,128:POK.559,46:BF=1:HITS=0:D=-1:POK.756,RT+4
-430?#6;CHR$(125):F.J=0TO3:POS.0,J*2:F.I=1TO6:?#6;CHR$(5+32*J+J+64*(J>1));" ";:N.I:N.J:RET.
-440D.60,126,255,165,255,126,0,0
-441D.60,126,215,215,126,255,129,102
-442D.24,60,126,235,255,255,65,0
-445D.195,126,255,153,221,255,65,65
-446D.0,0,60,90,60,0,0,0
-447D.60,126,86,126,60,62,34,54
-450D.24,60,126,215,255,255,130,0
-451D.195,66,126,255,153,187,255,65
-460D.24,1,0, 24,1,0, 24,0,0, 60,0,0, 126,0,192, 255,0,192
+;
+; Outer Space Attack V.1 12/81
+; By SHELDON LEEMON
+; Oak Park, MI 48237
+;
+; SoftSide Vol 5-06 Mar 1982
+;
 
+10 I=0:J=0:COUNT=0:ATTACK=0:GOSUB 280:GOTO 140
+
+; Checks the collision register for Missile
+; 0 to see if a missile has hit an invader.
+; If it has, flow jumps to Line 210, where
+; the hit is scored, the invader erased, and
+; a check is done to see if the screen has
+; been cleared.
+
+30 Y=PEEK(53248):IF Y>0 THEN GOSUB 210
+
+; Checks to see if the shell flag (SF) has
+; been set. If it has, the missile is moved,
+; and a check is done to see if it has
+; gotten past the top row of invaders. If it
+; has, the missile is erased and the flag is
+; turned off. Line 50 then repeats the
+; check of Line 30 to see if the motion of
+; the missile has caused a collision.
+
+40 IF SF=1 THEN SVP=SVP-4:M$(SVP)=SHELL$:POKE 53278,1:IF SVP-4*K<10 THEN M$(SVP,SVP+4)=BL$:SF=0
+50 Y=PEEK(53248):IF Y>0 THEN GOSUB 210
+
+; Does the same kind of check as Line 40
+; does, only this time moves the bomb.
+; Line 70 checks for a collision between
+; the bomb and the laser base.
+
+60 IF BF=1 THEN BVP=BVP+3:M$(BVP)=BOMB$:IF BVP>102 THEN M$(BVP,BVP+5)=BL$:BF=0:BVP=20
+70 IF PEEK(53259)=1 THEN 250
+
+; Determines whether or not to drop a
+; bomb (by setting the flag BF). As more
+; screens are cleared, fewer iterations of
+; the loop will pass before a bomb is
+; dropped, and they will fall more
+; frequently. The position of the bomb is
+; determined by the position of the laser
+; base, so they can fall out of nowhere,
+; rather than being dropped by a
+; particular invader.
+
+80 IF BF=0 THEN IF COUNT>ATTACK THEN IF K<16 THEN BF=1:POKE 53255,HP+3:BVP=14+4*K:COUNT=0
+
+; Checks the joystick for right or left
+; motion, and moves the player
+; appropriately. No checking is done to
+; see that the player is not moved off of
+; the screen, because this would slow
+; down the loop. Therefore, it is possible
+; to crash the program by trying to move
+; the player beyond the limits of the
+; screen.
+
+90 HP=HP+4*(STICK(0)=7)-4*(STICK(0)=11):POKE 53248,HP
+
+; Checks the fire button, and if no missile
+; is already in flight, it sets the missile
+; flag and launches one. Line 110 merely
+; adds one to the loop counter (COUNT),
+; and returns to the main loop.
+
+100 IF STRIG(0)=0 THEN IF SF=0 THEN SF=1:HPM=HP+2:POKE 53252,HPM:SVP=94:M$(SVP)=SHELL$:POKE 77,0
+110 COUNT=COUNT+1:RETURN
+
+; Lines 120-160: Recurring initialization routines.
+
+120 POKE 656,1:POKE 657,2:? "GAME OVER--PUSH BUTTON TO PLAY AGAIN";:SOUND 0,0,0,0:CHANCES=0:SCREENS=0
+130 POKE 656,1:POKE 657,2:? "                                    ";:POKE 704,PEEK(710):IF STRIG(0)=1 THEN 120
+
+; Initializes the scoring routines and
+; player positions for each screen. Also,
+; variables are set up for the increasing
+; game difficulty on succeeding screen.
+; Lines 120-140 reinitialize the score total
+; variable and "Game Over" message for
+; the end of game.
+
+140 POKE 656,3:POKE 657,2:? "SCORE   ";:SCORE=0:GOSUB 240:POKE 705,38:POKE 706,38:ATTACK=80:TOUGH=30:TOUGHER=0
+150 POKE 704,196:M$=BL$:SF=0:BF=0:POKE 53278,1:FOR I=1 TO 3:FOR J=80 TO 150:SOUND 0,J,10,6:NEXT J:NEXT I:COUNT=80
+160 POKE 77,0:ATTACK=ATTACK-SCREENS*10:IF SCREENS>1 THEN TOUGH=60:IF SCREENS>3 THEN TOUGHER=60
+
+; Main program loop. Yes friends, the
+; main loop that moves the invaders is
+; only three lines long! All it takes to
+; move them is to check the pointer to
+; screen memory, and move it up one or
+; back one position. The whole screen
+; (except for the PM graphics) seems to
+; move. The only reason it takes three
+; whole lines is that the address pointer is
+; in two bytes, and we have to check to
+; see that the low byte value doesn't get
+; under 0 or over 255. Also, the
+; animation of the characters is
+; accomplished by POKEing location 756
+; in line 180. This alternates the character
+; sets being displayed. At several points
+; during each iteration of the loop, the
+; subroutine that moves the laser base,
+; missiles and bombs is called.
+
+170 FOR K=1 TO 20:D=-D:FOR I=0 TO 8:L=PEEK(DL)-D-20*(I=8):H=PEEK(DH)-(L<0)+(L>255):L=L+256*(L<0)-256*(L>255)
+180 GOSUB 30:POKE DH,H:POKE DL,L:GOSUB 30:POKE 756,RT+4+2*(PEEK(756)=RT+4):GOSUB TOUGH
+190 SOUND 0,255,12,15:GOSUB 30+TOUGHER:SOUND 0,0,0,0:NEXT I:NEXT K
+200 GOSUB 420:M$=BL$:SF=0:BF=0:POKE 53278,1:GOTO 120
+
+; Lines 210-270: Hit subroutines.
+; Contains the subroutine which erases
+; invaders that have been hit, and scores
+; the hit. Line 210 determines which
+; character was hit.
+
+210 SOUND 0,20,10,6:X=HPM+8*I*(-D)-64*(D<0)-48:X=2*INT(X/16):Y=(Y=2)+3*(Y=1)+5*(Y=8)+7*(Y=4)-1
+220 SCORE=SCORE+10*(10-Y):HITS=HITS+1:IF HITS=24 THEN POP :M$=BL$:SCREENS=SCREENS+1:GOSUB 420:GOTO 150
+230 POSITION X,Y:? #6;"  "
+240 POKE 656,3:POKE 657,8:? SCORE;"         ";:M$(SVP,SVP+2)=BL$:SF=0:POKE 53278,1:RETURN
+
+; Scores hits on the laser base. A spare
+; base is erased, and if no spare bases are
+; left, the game ends.
+
+250 POKE 706-CHANCES,0:POKE 704,PEEK(710):M$=BL$:FOR K=70 TO 0 STEP -1:SOUND 0,240,8,K/5:NEXT K:GOSUB 420
+260 CHANCES=CHANCES+1:IF CHANCES=3 THEN CHANCES=0:SCORE=0:GOTO 120
+270 GOTO 150
+
+; Lines 280 to 460: Initialization routine.
+; After initializing some important
+; variables, the program jumps to line
+; 280. The order of the program was
+; carefully planned; the initialization
+; routines which are only used once are
+; placed at the back of the program, out
+; of the way. The main loop goes in the
+; middle, while frequently-called
+; subroutines appear at the front. This
+; layout adds much to the program's
+; speed.
+
+; Checks the top-of-memory pointer
+; and resets it, so that the computer
+; will not use the top 8 pages. This
+; space will be used for storing two
+; new character sets, as well as the
+; "moving" screen display. Line 290
+; makes the computer think that this
+; area is the screen display, and
+; zeroes out the memory there with a
+; "clear screen" command (CHR$
+; 125). Next, the program calls a full-
+; screen Graphics 3 display and sets
+; the character-set pointer to the
+; fourth page above the ramtop
+; pointer (RT + 4).
+
+280 RT=PEEK(106):IF RT/2=INT(RT/2) THEN RT=RT-8
+290 POKE 89,RT:POKE 88,0:? CHR$(125):POKE 89,RT+3:? CHR$(125):POKE 106,RT:GRAPHICS 18:POKE 756,RT+4
+
+; Prints the title, but since there is no
+; character-set data stored at RT + 4
+; yet, nothing appears on the screen.
+; Lines 310 to 340 fill in the two new
+; character sets, mostly by reading
+; the ROM set data, but changing the
+; first four characters of each set
+; with the data in lines 440-450. As
+; this data is POKEd in, the title
+; appears on screen.
+
+295 ? #6;"% OUTER %":? #6:? #6;"    & space &"
+300 ? #6:? #6;"        ' ATTACK '":? #6:? #6:? #6:? #6;"   BY s. leemon"
+310 FOR I=8 TO 39:READ X:POKE (RT+4)*256+I+32,X:SOUND 0,I,10,6:NEXT I
+320 FOR I=40 TO 71:READ X:POKE (RT+6)*256+I,X:SOUND 0,I,10,6:NEXT I
+330 FOR I=72 TO 87:POKE (RT+6)*256+I-72,0:SOUND 0,I,10,10:NEXT I
+340 FOR I=88 TO 511:J=PEEK(57344+I):POKE (RT+6)*256+I,J:POKE (RT+4)*256+I,J:SOUND 0,I,10,6:NEXT I
+
+; Stores the address of the pointer to
+; display memory in DH and DL. Color
+; registers are set in line 360.
+
+350 FOR I=0 TO 600:SOUND 0,0,0,0:NEXT I:GRAPHICS 1:POKE 559,0:DH=PEEK(560)+PEEK(561)*256+5:DL=DH-1
+360 POKE 89,RT+2:POKE 88,128:POKE 752,1:? " ":POKE DH+25,6:POKE 708,52:POKE 709,132:POKE 710,8:POKE 711,84
+
+; Starts the initialization routine for
+; ATARI® PM graphics. This program
+; uses a most helpful trick: The space
+; where Player/Missile data is stored
+; is DIMensioned as a series of
+; strings. Because PM$ must start on
+; an even 1 K boundary, we DIMension
+; F$ to fill the space between 0$ and
+; the next highest 1 K boundary. Now,
+; whatever data is contained in the
+; strings which are DIMensioned
+; immediately after PM$ will appear
+; on the screen as players and
+; missiles. Line 380 zeroes out this
+; memory, and line 390 reads the data
+; for the shapes of the laser cannon,
+; the shells, and the bombs into the
+; appropriate strings. lines 400·410
+; complete the Player/Missile
+; initialization by setting the color
+; registers, horizontal position
+; registers, PM base address, and
+; enabling double·line resolution PM
+; graphics.
+
+370 DIM BL$(128),D$(1),F$((INT(ADR(D$)/1024)+1)*1024-ADR(D$)-1),PM$(384),M$(128),P$(128),P1$(128),P2$(128)
+380 DIM BOMB$(6),SHELL$(6):BL$=CHR$(0):BL$(128)=CHR$(0):BL$(2)=BL$:M$=BL$:SVP=88
+390 FOR I=1 TO 6:READ K,Y,D:P$(97+I,97+I)=CHR$(K):SHELL$(I,I)=CHR$(Y):BOMB$(I,I)=CHR$(D):NEXT I
+400 P1$=BL$:P2$=BL$:P1$(12)=P$:P2$=P1$:POKE 53249,170:POKE 53250,156:POKE 704,196:POKE 707,76
+410 BVP=10:POKE 53254,100:HP=128:POKE 53248,HP:POKE 54279,ADR(PM$)/256:POKE 623,1:POKE 53277,3
+
+; Sets screen memory to 2 1/2 pages
+; above ramtop. Line 430 prints the
+; four rows of redefined characters
+; that make up the invaders, and
+; sends you back to the beginning.
+
+420 POKE DH,PEEK(89):POKE DL,128:POKE 559,46:BF=1:HITS=0:D=-1:POKE 756,RT+4
+430 ? #6;CHR$(125):FOR J=0 TO 3:POSITION 0,J*2:FOR I=1 TO 6:? #6;CHR$(5+32*J+J+64*(J>1));" ";:NEXT I:NEXT J:RETURN
+
+440 DATA 60,126,255,165,255,126,0,0
+441 DATA 60,126,215,215,126,255,129,102
+442 DATA 24,60,126,235,255,255,65,0
+445 DATA 195,126,255,153,221,255,65,65
+446 DATA 0,0,60,90,60,0,0,0
+447 DATA 60,126,86,126,60,62,34,54
+450 DATA 24,60,126,215,255,255,130,0
+451 DATA 195,66,126,255,153,187,255,65
+460 DATA 24,1,0, 24,1,0, 24,0,0, 60,0,0, 126,0,192, 255,0,192

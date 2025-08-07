@@ -1,3 +1,8 @@
+;
+; DLIST
+; Print the current display list
+;
+
 100G.2000
 102 DIM A$(10):DONE=0:PV=-1:PC=0
 105 DIM G$(8),M$(15):G$="TEXTGRFX":M$=" 0***123456*7*8"
@@ -31,7 +36,7 @@
 1340 C=N+48:IFC>57 THENC=C+7
 1341 ? CHR$(C);:RET.
 
-0 . Look at some registers
+; Look at some registers
 2000 GOS.3000:SZ=(B-4)*256:IFSZ<=PEEK(144)+256*PEEK(145)THEN?"LOW MEMORY!":STOP
 2001 GOS.5000:POKE106,B-4:GR.0:.MOVE DL DATA
 2002 GOS.3000:END
@@ -47,5 +52,3 @@
 
 9998 END
 9999 S."D:DLIST.BAS":? "Saved!":END
-
-0

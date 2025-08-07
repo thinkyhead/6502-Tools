@@ -7,7 +7,7 @@
 
 10 G.100
 
-0 . Print Hex byte
+; Print Hex byte
 20 IFDOHEX THENH=INT(B/16):L=B-H*16+N1:H=H+N1:? H$(H,H);H$(L,L);
 21 RET.
 
@@ -40,9 +40,9 @@
 196 F.I=1TOS:B=PEEK(A):A=A+N1:GOS.HOUT:N.I:?SP$;:RET.
 197 S=N2:M=PEEK(A)+256*PEEK(A+N1):GOS.196:?"(";M;") ";:RET.
 
-0 .
-0 . Un-tokenize.
-0 .
+;
+; Un-tokenize.
+;
 200 ST=PEEK(136)+256*PEEK(137):M=300:NS=N0:NL=N0:LO=N0:I=N0
 202 B=PEEK(ST+I):.IFM<>OM THEN?:?"M=";M:?
 203 GOS.HOUT:OM=M:GOS.M
@@ -50,9 +50,9 @@
 205 IFLO=NS THENM=330:IFDOHEX THEN?
 209 I=I+N1:G.202
 
-0 .
-0 . Line Number, lengths
-0 .
+;
+; Line Number, lengths
+;
 300 LO=N0:MSD=N0:LINE=B:M=310:RET.
 310 LINE=LINE+256*B:IFLINE>32767THEN?:?:?"DONE!":END
 315 IFDOHEX THEN? " (";LINE;") ";:G.318
@@ -63,14 +63,14 @@
 330 IFDOHEX THEN? " (NS) ";
 331 ?:NS=B:M=340:RET.
 
-0 .
-0 . Handlers at 1000 + 10 * token
-0 .
+;
+; Handlers at 1000 + 10 * token
+;
 340 M=1000+B*10:G.400+B
 
-0 .
-0 . Command Table
-0 .
+;
+; Command Table
+;
 400?C1$;"REM";     C2$;:RET.
 401?C1$;"DATA";    C2$;:RET.
 402?C1$;"INPUT";   C2$;:RET.
@@ -129,9 +129,9 @@
 455?C1$;"ERROR";   C2$;:RET.
 460?C2$;:RET.
 
-0 .
-0 . REM
-0 .
+;
+; REM
+;
 1000 M=1001:A$=""
 1001 IFB=155THEN?SP$;CHR$(34);A$;CHR$(34);:G.1910
 1002 A$(LEN(A$)+N1)=CHR$(B)
@@ -197,31 +197,31 @@
 1540 G.DOXP:.(let)
 1550 G.1000:.ERROR
 
-0 .
-0 . End of statement
-0 .
+;
+; End of statement
+;
 1900 IFDOHEX THEN?" (eos) :";
 1901 M=330:RET.
 
-0 .
-0 . End of Line
-0 .
+;
+; End of Line
+;
 1910 IFDOHEX THEN?" (eol) >";
 1911 M=300:POKE82,N0:RET.
 
-0 .
-0 . Expr after stmt or expr
-0 .
+;
+; Expr after stmt or expr
+;
 1999 MSD=N0:GOS.MPUSH:M=CXP
 
-0 .
-0 . Variable index
-0 .
+;
+; Variable index
+;
 2000 IFB>=128THEN?E$;:G.5040:.var, ret
 
-0 .
-0 . Arguments tokens
-0 .
+;
+; Arguments tokens
+;
 2010 G.2000+B
 
 2014 ONNOTDOHEX GOTOBCD:?"#";:G.BCD:.BCD
@@ -297,7 +297,7 @@
 2084 ?"STRIG ";:RET.
 2099 RET.
 
-0 . Scalar
+; Scalar
 2100 GOS.MPUSH:M=2101:SC=N6:SV=N0:RET.
 2101 XP=N0:IFB THENXP=100^(B-64-N4)
 2102 M=2103:G.2104
@@ -305,15 +305,15 @@
 2104 SC=SC-N1:IFSC>N0 THENRET.
 2105 ?E$;(SV*XP);SP$;:G.MPOP
 
-0 . = after LET var
+; = after LET var
 2110 IFB=14THENSC=N6:?"=";:M=DOXP:RET.
 
-0 . SUBSCRIPT
-0 . 2120 GOS.MPUSH:M=2121:RET.
-0 . 2121 IFB=37THEN?", ";
-0 . 2122 RET.
+; SUBSCRIPT
+; 2120 GOS.MPUSH:M=2121:RET.
+; 2121 IFB=37THEN?", ";
+; 2122 RET.
 
-0 . String
+; String
 2200 GOS.MPUSH:M=2202:SC=N0:A$="":RET.
 2202 IFSC=N0 THENSC=B:IFSC=N0 THEN2210
 2204 IFDOHEX THEN?CHR$(34);SP$;
@@ -322,18 +322,17 @@
 2208 SC=SC-N1:IFSC>N0 THENRET.
 2210 ?SP$;CHR$(34);A$;CHR$(34);SP$;:G.MPOP
 
-0 . MPUSH
+; MPUSH
 5010 MS(MSD)=M:MSD=MSD+N1:RET.
 
-0 . MPOP
+; MPOP
 5020 IFNOTMSD THEN?"<No Back>":RET.
 5021 MSD=MSD-N1:M=MS(MSD):RET.:.?"Back to ";M
 
-0 . bcd_to_dec
+; bcd_to_dec
 5030 H=INT(B/16):V=B-H*16+H*10:RET.
 
-0 . var_name(B)
+; var_name(B)
 5040 H=B*N8-1023:L=ASC(V$(H)):?V$(H+N1,H+L);SP$;:RET.
 
 0 DIMZ(5):Z(0)=1:Z(1)=2:Z(2)=3:Z(3)=4:Z(4)=5
-

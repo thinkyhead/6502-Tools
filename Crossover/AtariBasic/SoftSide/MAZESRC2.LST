@@ -1,0 +1,181 @@
+;
+; Maze Search
+; by David Bohlke
+;
+; SoftSide Vol 2-11 Aug 1980
+;
+
+1 GOTO 50
+
+; Fast "Jump Table"
+
+5 GOTO 7        :.Right
+6 GOTO 14       :.Up
+7 X=X+1:RETURN  :.Right
+9 GOTO 13       :.Down
+10               .Left
+11 X=X-1:RETURN :.Left
+13 Y=Y+1:RETURN :.Down
+14 Y=Y-1:RETURN :.Up
+
+; Draw the player
+
+15 C.KP:PLOT M,N:RETURN
+
+; Wait for some jiffies
+
+20 T=(PEEK(19)*256+PEEK(20)):RETURN
+25 GOSUB 20:U=T+DUR
+26 IF T<U THEN GOSUB 20:GOTO 26
+27 RETURN
+
+; Count available directions
+30 AD=0:LOCATE M+N2,N,Z:IF NOT Z THEN AD=AD+N1
+31 LOCATE M-N2,N,Z:IF NOT Z THEN AD=AD+N2
+32 LOCATE M,N+N2,Z:IF NOT Z THEN AD=AD+N4
+33 LOCATE M,N-N2,Z:IF NOT Z THEN AD=AD+N8
+34 RETURN
+
+; Play some notes
+
+40 READA:IF A=N1 THEN RETURN
+41 DUR=N1:IF A THEN READDUR:IF A>N2 THEN SOUND N0,A,N10,VOL:SOUND N1,A*I5,14,VOL
+42 GOSUB 25:SOUND N0,N0,N0,N0:SOUND N1,N0,N0,N0:GOTO 40
+
+; Initialization - Set mode, draw border
+
+50 GOSUB 950:GRAPHICS N3+16
+51 C.KW:PLOT N4,N0:DR.36,N0:DR.36,22:DR.N4,22:DR.N4,N0
+
+; Build the random maze, origin @ 18,10
+
+60 DIM M(200),N(200),D(200)
+61 K=N0:M=N10:N=N10
+62 C.KW:PLOT M,N
+
+; Some direction is available? If not, backtrack.
+
+100 GOSUB 30:IF NOT AD THEN 150
+
+; Pick an available random direction
+
+110 RD=N0:IF AD=N1 THEN 121
+111 IF AD=N2 THEN 122
+112 IF AD=N4 THEN 123
+113 IF AD=N8 THEN 124
+
+120 RD=N1:GOTO 121+INT(N4*RND(N0))
+121 DX=N1:DY=N0:FD=N1:GOTO 130
+122 DX=M1:DY=N0:FD=N2:GOTO 130
+123 DX=N0:DY=N1:FD=N4:GOTO 130
+124 DX=N0:DY=M1:FD=N8
+
+; Check if the wall can go there
+
+130 NX=M+DX+DX:NY=N+DY+DY:LOCATE NX,NY,Z:IF Z THEN 120
+
+; Draw the new wall
+
+140 PLOT NX,NY:PLOT M+DX,N+DY:AD=AD-FD
+141 IF AD THEN M(K)=M:N(K)=N:D(K)=AD:K=K+N1
+142 M=NX:N=NY:SOUND N0,160+M+N,N10,2:Z=15*RND(N0):SE.KW-N1,Z,N2:SE.N4,Z,N10
+143 GOTO 100
+
+; No space for wall. Backtrack or start the game.
+
+150 SOUND N0,N0,N0,N0
+152 IF NOT K THEN 200
+154 K=K-N1:M=M(K):N=N(K):AD=D(K)
+156 GOTO 100:C.KP:PLOT M,N:C.KW
+
+; Init the player and treasure
+
+200 CLR:GOSUB 950
+201 M=19:N=11:CT=0:PT=N0:TT=24:TS=N0
+202 SE.KW-N1,N10,N2:SE.N4,N0,N10
+203 SE.KP-N1,N0,14:C.KP:PLOT M,N
+204 SE.KT-N1,N2,N8:C.KT:FOR I=N1 TOTT:GOSUB 900:N.I
+205 C.KP:PLOT 38,N0:DR.38,22:PLOT 39,N0:DR.39,22
+
+;>>>>>>>>>>>>>>>>>
+;>>> Game Loop >>>
+;>>>>>>>>>>>>>>>>>
+
+; Process Joystick
+
+500 S=STICK(N0):IF S=15 THEN 550
+501 TS=0.02
+502 X=M:Y=N:GOSUB S:IF X=M ANDN=Y THEN 540
+503 SOUND N0,X+X+Y+Y,N10,N4:C.N0:PLOT M,N
+
+; Hit a wall?
+
+510 LOCATE X,Y,Z:IF Z>KT THEN SOUND N0,50,12,VOL:GOTO 540
+
+; New Player position
+
+520 M=X:N=Y
+
+; Got a treasure? Grab it and draw on the left.
+
+530 IF Z<>KT THEN 540
+531 FOR I=60 TO 0 STEP -5:SOUND N0,I,8,VOL:N.I:PT=100:HT=HT+N1
+532 V=HT*0.5:C.KT:PLOT N2-(V=INT(V)),TT-HT
+533 IF HT=TT THEN 700
+
+; Draw Player, silence last sound
+
+540 C.KP:PLOT M,N:SOUND N0,N0,N0,N0
+
+; Timer is paused for a moment?
+
+550 IF PT THEN PT=PT-N1:GOTO 500
+
+; Flash the player when the timer is running
+
+560 R=RND(N0):C.N1+R+R:PLOT M,N
+
+; Update timer
+
+570 OT=CT:CT=CT+TS:IF INT(OT)<>INT(CT) THEN C.N0:V=CT-N1:IF V>=N0 THEN PLOT 38,V:PLOT 39,V
+571 IF CT<23 THEN 500
+
+; Out of Time! Game Over.
+
+;<<<<<<<<<<<<<<<<<
+;<<< Game Loop <<<
+;<<<<<<<<<<<<<<<<<
+
+; Failed. Play a sad sound.
+
+; Got all items! Play a tune.
+
+700 COLOR KP:PLOT M,N
+701 IF HT=TT THEN RESTORE 1000:GOSUB 40:GOTO 800
+702 SOUND N0,240,12,VOL:DUR=90:GOSUB 25
+
+; Wait for button press to restart
+
+799 . SOUND N0,109*RND(N0),10,N4
+800 SOUND N0,N0,N0,N0
+801 IF STRIG(N0) THEN 801
+802 RUN
+
+; Plot a random treasure
+
+900 X=INT(16*RND(N0)):X=X+X+N5:Y=INT(11*RND(N0)):Y=Y+Y+N1:LOCATE X,Y,Z
+904 IF Z THEN 900
+906 PLOT X,Y:RETURN
+
+; Value vars for speed
+
+950 N0=0:N1=1:N2=2:N3=3:N4=4:N5=5:N6=6:N8=8:N10=10:M1=-1:I5=N2^(N5/12)
+951 VOL=N5:KW=N3:KP=N2:KT=N1
+959 RETURN
+
+1000 . Shave and a haircut... two bits!
+1001 DATA 46,18, 0, 61, 3, 0
+1002 DATA 65, 3, 0, 61, 3, 0
+1003 DATA 57,18, 0, 61,18, 2,30
+1004 DATA 48,18, 0, 46,18
+1005 DATA  2,90, 1
