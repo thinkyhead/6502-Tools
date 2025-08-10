@@ -1,5 +1,6 @@
+# Makefile for ca65 demo "bdos" helper code
 
-.PHONY : test copy default clean
+.PHONY : default view clean
 
 default : bdos.bin
 
@@ -8,6 +9,9 @@ bdos.o : bdos.asm
 
 bdos.bin : bdos.o
 	ld65 -o bdos.bin -C bdos.cfg bdos.o
+
+view : bdos.o
+	nano bdos.s
 
 clean :
 	$(RM) *.o *~ *.map *.s bdos.bin

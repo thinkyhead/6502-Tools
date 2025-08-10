@@ -1,7 +1,7 @@
 ;
 ; Helper functions for BDOS, to adapt into a proper EXE.
 ; Build this with ca65 / ld65 using the 'make' command. Output is 26 bytes.
-; The ld65 linker requires bdos.lnk. For single files dasm might suffice.
+; The ld65 linker requires bdos.cfg.
 ;
 
 ; 7 bytes at CB are available
@@ -23,8 +23,8 @@ SCR3:   .res 2
         .proc inv_string
 
 InvertString:
-        pla
-        cmp #2          ; 2 arguments required
+        pla             ; argc from USR()
+        cmp #2          ; 2 16-bit arguments required
         bne _fail
         pla             ; stringAddr HI
         sta SCR1+1

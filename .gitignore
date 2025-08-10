@@ -2,6 +2,8 @@
 *.xex
 *.set
 *.o
+*.65o
+*.vobj
 Icon?
 bdos.s
 a.out
