@@ -56,9 +56,10 @@ file_extensions:
   - [ dasm, asm, s, m65, a65, inc, '6502' ]
 scope: source.asm
 variables:
-  define:     '[.a-zA-Z_]\w*'  # define name (no dot allowed)
+  define:     '[a-zA-Z_][a-zA-Z0-9_]*\b'  # define name (no dot allowed)
+  dotdefine:  '\.[a-zA-Z0-9_]+\b'  # define name (no dot allowed)
   ext_define: '{{define}}(::{{define}})?'
-  label:      '{{define}}|\@\d+'      # an unbroken name or label string
+  label:      '{{define}}|{{dotdefine}}|\@\d+'      # an unbroken name or label string
   std_s:      as[lr]\s*a|brk|cl[cdiv]|dec\s*a|(de|in)[xy]|eor\s*a|inc\s*a|ls[lr]\s*a|nop|p[hl][ap]|ro[lr]\s*a|rt[is]|se[cdi]|t(a[xy]|(sx|xs)|[yx]a)
   std_d:      a(dc|nd|s[lr])|bit|c(mp|p[xy])|dec|eor|inc|j(mp|sr)|ld[axy]|ls[lr]|ora|ro[lr]|sbc|st[axy]
   std_b:      b(c[cs]|eq|mi|ne|pl|v[cs])
@@ -96,7 +97,7 @@ contexts:
     # - include: mixin_string
 
     # Match a define line, which may end with a comment
-    - match: ^(?i)({{define}})\b\s*(=|EQU|SET)
+    - match: ^(?i)({{define}})\b\s*(=|EQU|SET)\b
       captures:
         1: entity.name.constant.asm        # symbol
         2: keyword.operator.assignment.asm # operator
