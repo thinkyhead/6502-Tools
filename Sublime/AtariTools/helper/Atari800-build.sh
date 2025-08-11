@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# bAtari800-build.sh
+# Atari800-build.sh
 #
 
 # Get 'helper' path and user environment

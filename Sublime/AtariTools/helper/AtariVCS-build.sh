@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# bAtariVCS-build.sh
+# AtariVCS-build.sh
 # Assemble the given source file with DASM
 #
 
