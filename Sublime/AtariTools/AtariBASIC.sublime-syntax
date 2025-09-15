@@ -594,7 +594,7 @@ contexts:
 
   # Host-based comment uses the whole line
   comment:
-    - meta_content_scope: host.comment.ataribasic
+    - meta_content_scope: comment.host.ataribasic
     - match: $
       pop: true
 
