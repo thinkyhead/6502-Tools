@@ -10,7 +10,7 @@ Copy the contents of the `Sublime` folder to your `Packages/User` folder (e.g., 
 #### `Atari800.tmTheme`
 The Atari800 theme provides the classic Atari blue-colored background and bluish-white text, plus extra color-coding used by the syntaxes for AtariBASIC and bAtariBASIC.
 
-For the most authentic experience editing LST files, free Atari classic fonts (see below) may be installed to get full ATASCII support via the Unicode user-defined area (work-in-progress).
+In order to edit Atari BASIC (.LST) files you'll need to install the free Atari Classic fonts (see below). Tgese provide full ATASCII support by mapping the special characters to the Unicode user-defined area. Special ATASCII characters are automatically translated when passing code to and from the emulator.
 
 ![Atari800.tmTheme](_img/atari-code-theme.png)
 
@@ -51,24 +51,22 @@ Context-aware syntax coloring of bAtariBASIC 1.1 syntax with built-in error-chec
 AtariTools includes AtariBASIC syntax parsing/coloring and a build command to run AtariBASIC in your preferred Atari 800 emulator.
 
 #### `AtariBASIC.sublime-settings`
-This file provides the hook for Sublime to use the `Atari800` theme for `.LST` files, to show rulers at multiples of 38/40 characters, and to draw a final ruler at 254 characters. If the **Atari Classic (Regular)** font is installed, it will be used. (This font is needed for proper ATASCII support in Sublime.)
+This file provides the hook for Sublime to use the `Atari800` theme for `.LST` files, defines rulers at multiples of 38/40 characters, and a max length ruler at 254 characters. If the **Atari Classic (Regular)** font is installed, it will be used. (This font is needed for proper ATASCII support in Sublime.)
 
 #### `AtariBASIC.sublime-syntax`
-This syntax provides context-aware syntax coloring of AtariBASIC with built-in error-checking. It makes the code much more readable with standard code fonts, but of course it looks best with `Atari800.tmTheme`.
+This syntax provides context-aware syntax coloring of AtariBASIC with built-in error-checking. It makes the code much more readable with standard code fonts, but of course it looks best with `Atari800.tmTheme`. A work in progress, it needs better expression handling.
 
 #### `AtariBASIC.sublime-build`
-This adds `Tools` > `Build System` > `AtariBASIC` to the menu so you can use **Build** `Command-B` to load and run the active LST file in the Atari 800 emulator.
+This adds `Tools` > `Build System` > `AtariBASIC` to the menu so you can use **Build** `Command-B` to load and run the active LST file in your favorite Atari 800 emulator.
 
-The **Build** command will run the current BASIC file in **atari800** or **Atari800MacX**, depending on which was last selected. Make sure your **atari800** and **Atari800MacX** default settings have BASIC enabled, a local folder exposed as hard drive H:, and up to two floppies mounted for development purposes.
+The **Build** command will run the current BASIC file in **atari800** or **Atari800MacX**, depending on what you last selected under **Build With…**. Make sure your **atari800** and **Atari800MacX** default settings have BASIC enabled, a local folder exposed as hard drive H:, and up to two floppies mounted for development purposes.
 
-The **Build** command saves the current file as **SUBLIME.LST** in your configured Atari hard drive (H:) folder and tells the emulator to load and run **H:SUBLIME3.LST**, so file loading is about as fast as it can be.
-
-NOTE: Currently there's no support for Atari special characters, which would require an input method, translation between Unicode and ATASCII, etc. For now, use `CHR$` and other techniques to program special characters while this is sorted out.
+**Build** saves a copy of the current file with ATASCII encoding as **SUBLIME.LST** to your configured Atari hard drive (H:) folder. The emulator then loads and runs **H:SUBLIME.LST** directly for fastest file loading. At this stage you can toggle Turbo in the emulator to speed things up.
 
 ## Helper Scripts
 
 ### `AtariTools.sh`
-This file contains the configuration values used by helper scripts.
+**_Edit this file!_** The `AtariTools.sh` file contains the configuration values and file paths that will be used by the helper scripts. Provide paths to your emulators and your "H1:" hard drive folder.
 
 ### `bAtariBASIC-build.sh`
 Used by the **Build** command to convert bAtariBASIC code to Assembly and compile it with `dasm`.
@@ -99,6 +97,12 @@ The C++ source code of `atascii` which converts ATASCII <-> Unicode. Requires `u
 ### `tokenize.cpp`
 WIP - Tokenizer to compile AtariBASIC (`.LST`) text into `.BAS` format.
 
+### `basic.py`
+WIP - Loader, tokenizer, and interpreter for AtariBASIC written in Python. It can load and list BAS files in tokenized form but it currently has no tokenizer or interpreter. See `basic.py -h` for command-line options.
+
+### `xexinfo.py`
+Script to read a structured Atari XEX, COM, or BIN file and display its contents. See `xexinfo.py -h` for command-line options.
+
 ## For Atom (obsolete)
 
 ### `.atom-build.js`
@@ -110,15 +114,19 @@ This file, set up for a 2600 cartridge build, is used by Atom's standard [Build 
 
 ## Other things you'll need…
   - [Sublime Text 3](https://www.sublimetext.com/3) - A light and fast extensible editor with a Python core. Can use TextMate bundles.
-  - [Atom](http://atom.io) - A powerful modular editor. May run sluggishly on older systems.
   - [atari800](https://atari800.github.io/) - A good, working Atari emulator that fails much of the acid test but runs pretty well. (Use F1 for settings!) Also available via package managers like [MacPorts](https://www.macports.org/ports.php?by=name&substr=atari800) and [Homebrew](https://formulae.brew.sh/formula/atari800#default).
-  - [Atari800MacX](http://www.atarimac.com/atari800macx.php) - A build from 2012 that mostly works with macOS Sierra - but **disable sound** or it will crash! (The project needs a new Quartz-based UI and other code updates before building with current Xcode is possible.)
-  - [Atari Classic Fonts](http://members.bitstream.net/marksim/atarimac/fonts.html) - Regular, Chunky, Smooth, and ExtraSmooth - especially for use with `Atari800.tmTheme`. The newest all-in-one font is preferred, because it has full ATASCII support.
+  - [Atari800MacX](https://github.com/atarimacosx/Atari800MacX) - This nice Mac UI wrapper for Atari800. There's a Universal version 6.0.1 but sometimes 5.3.1 seems to work better.
+  - [Atari Classic Fonts](http://members.bitstream.net/marksim/atarimac/fonts.html) - Regular, Chunky, Smooth, and ExtraSmooth - especially for use with `Atari800.tmTheme`. Use the newest all-in-one font for full ATASCII support.
   - [Eightbit-Atari-Fonts](https://github.com/TheRobotFactory/EightBit-Atari-Fonts) - Many more Atari custom fonts for use with `Atari800.tmTheme`.
   - [dasm](http://dasm-dillon.sourceforge.net) - A 6502 cross-assembler most commonly used to build Atari 2600 code. Also included with bAtariBASIC.
   - [cc65](https://github.com/cc65/cc65) - A C cross-compiler for many 6502 platforms. A rich set of libraries is included.
   - [ca65](https://github.com/cc65/cc65) - A 6502 macro-assembler, also including headers for many 6502 platforms.
   - [Atari tools](https://github.com/jhallen/atari-tools) - Includes the `atr` command-line tool to manage ATR disk images and files.
 
-## Upcoming Plans
-- Better support for Batari Basic in the macOS ecosystem. Playfield/sprite tools (web-based, Javascript).
+## Future Plans
+Python is a great language for quick implementations and it's natively supported in Sublime Text.
+- Sublime Importer to convert Atari BASIC tokenized files.
+- Tokenizer for AtariBASIC so no emulator is needed to convert LST to BAS.
+- Interpreter to run and debug AtariBASIC in other environments.
+- Better support for Batari Basic in the macOS ecosystem.
+- Tools: Character, Map, Player/Missile, and Bitmap editing tools.

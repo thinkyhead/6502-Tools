@@ -2,6 +2,10 @@
 #
 # Atari800-build.sh
 #
+# Uses ca65 + ld65 to build the active source file
+# On success runs the resulting executable in the emulator
+# Expects a .lnk or .cfg file with the same base name as the source file
+#
 
 # Get 'helper' path and user environment
 SELF="$0" ; ORIG=$(readlink "$SELF")
@@ -20,7 +24,8 @@ INBASE="${INBASE/.a65/}"
 INBASE="${INBASE/.6502/}"
 
 IN_LNK="$INBASE.lnk"
-[[ -f "$IN_LNK" ]] || { echo "Required file '$IN_LNK' not found."; exit; }
+[[ -f "$IN_LNK" ]] || IN_LNK="$INBASE.cfg"
+[[ -f "$IN_LNK" ]] || { echo "Required file '$INBASE.lnk'/'$INBASE.cfg' not found."; exit; }
 
 OUT_LISTING="$INBASE.txt"
 OUT_O="$INBASE.o"

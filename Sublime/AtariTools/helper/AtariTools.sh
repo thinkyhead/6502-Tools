@@ -27,7 +27,7 @@ HDD=$ATARI_HOME/HardDrive1
 #FLOPPY2="$ATARI_HOME/Disks/floppy2.atr"
 
 # Build output from Sublime:
-SUBLFILE="SUBLIME3.LST"
+SUBLFILE="SUBLIME.LST"
 
 # Printed output from atari800:
 PRINTFILE="ATARIOUT.LST"
