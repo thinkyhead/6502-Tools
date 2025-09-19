@@ -11,3 +11,4 @@ DoAtari.app
 *LST.bin
 .DS_Store
 *.sublime-workspace
+__pycache__/
