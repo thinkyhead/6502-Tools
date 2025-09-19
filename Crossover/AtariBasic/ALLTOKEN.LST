@@ -1,0 +1,129 @@
+ 0 . REM
+ 1 D.DATA
+ 2 I.A
+ 3 C.A
+ 4 L.A,B
+ 5 E."C:PROGRAM.LST"
+ 6 LE.A=A
+ 7 IFA=A THEN1000
+ 8 F.A=A TOA STEPA
+ 9 N.A
+10 G.A
+11 GO TO A
+12 GOS.A
+13 T.A
+14 B.
+15 CONT
+16 COMB(1)
+17 CL.#1
+18 CLR
+19 DEG
+20 DIMB(1)
+21 END
+22 NEW
+23 O.#1,4,0,"S:"
+24 LO."D:FILE.BAS"
+25 S."D:FILE.BAS"
+26 ST.#1,A
+27 NO.#1,A,A
+28 P.#1,A,A
+29 XIO18,#6,0,0,"S:"
+30 ONA GOTO A,A,A
+31 POK.A,A
+32 PR.A$;":",A
+33 RAD
+34 REA.A,A
+35 RES.1000
+36 RET.
+37 RU.
+38 STO.
+39 POP
+40 ?A,A;
+41 GET#1,A
+42 PUT#1,A
+43 GR.A
+44 PL.A,A
+45 POS.A,A
+46 DOS
+47 DR.A,A
+48 SE.A,A,A
+49 LOC.A,A,A
+50 SO.A,A,A,A
+51 LP."A",A
+52 CS.
+53 CL.#1
+54 A=5
+55 Oops:. ERROR token
+
+116 . "      Double-Quote (UNUSED?)
+117 .        Expression Stack Marker
+118 ?,
+119 . $      Dollar Sign (UNUSED?)
+120 ?:. End Expr / Stmt
+121 ?;:. ;
+122 A=(123+7/B):.End of expr / line
+123 ON A GOTO B,C,D:. ON...GOTO
+124 ON A GOSUB B,C,D:. ON...GOSUB
+125 FORA=B TOC:.FOR ... TO
+126 FORA=B TOC STEPD:.FOR ... TO ... STEP
+127 IFA THEN100:IFB THEN?:.IF...THEN
+128 OPEN #1,4,0,"K:":. # (OPEN)
+
+; "Real" Operators
+
+129 ?B<=C:.<=
+130 ?B<>C:.<>
+131 ?B>=C:.>=
+132 ?B<C:.<
+133 ?B>C:.>
+134 ?B=C:.=
+135 ?B^C:.^ (Up Arrow $5E+$80)
+136 ?B*C:.*
+137 ?B+C:.+
+138 ?B-C:.-
+139 ?B/C:./
+140 ?NOTB:.NOT
+141 ?B ORC:.OR
+142 ?B ANDC:.AND
+143 ?((B)):.( math
+144 ?((B)):.) close (all)
+145 ?A=B:.S1=S2
+146 A$=B$:.N$=A$ (= for let?)
+147 ?A$<=B$:. <= (str)
+148 ?A$<>B$:. <> (str)
+149 ?A$>=B$:. >= (str)
+150 ?A$<B$:. < (str)
+151 ?A$<B$:. > (str)
+152 ?A$=B$:. = (str)
+153 ?+B:.+ (POS)
+154 ?-B:.- (NEG)
+155 ?B$(A):.A$(
+156 ?A(B):.SC(
+157 DIMA(B):.DIM SC(
+158 ?CHR$(A);PEEK(B):.( for CHR$, PEEK
+159 DIMB$(A):. ( for DIM S$(
+160 ?A(B,C):. , Subscript Separator
+
+; Function Tokens
+
+161 ?STR$(A)
+162 ?CHR$(A)
+163 ?USR(A)
+164 ?ASC(B$)
+165 ?VAL(B$)
+166 ?LEN(B$)
+167 ?ADR(B$)
+
+; Numeric Functions
+
+168 ?ATN(A)
+169 ?COS(A)
+170 ?PEEK(A)
+171 ?SIN(A)
+172 ?RND(A)
+173 ?FRE(A)
+174 ?EXP(A)
+175 ?LOG(A)
+176 ?CLOG(A)
+177 ?SQR(A)
+178 ?SGN(A)
