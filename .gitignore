@@ -12,3 +12,4 @@ DoAtari.app
 .DS_Store
 *.sublime-workspace
 __pycache__/
+work/
