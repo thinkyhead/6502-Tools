@@ -335,7 +335,7 @@
 ; Initialize graphics. Jump to title display
 ; routine.
 
-10000 N0=0:N1=1:N2=2:N3=3:N4=4:N5=5:N6=6:N8=8:N10=10:M1=-1:N756=756
+10000 REA.N0,N1,N2,N3,N4,N5,N6,N8,N10,M1,N756:D.0,1,2,3,4,5,6,8,10,-1,756
 10005 I=PEEK(105)-N5:POKE 106,I:GRAPHICS N0:GOSUB 11000
 
 ; Set start of new character set pointer.

@@ -1,67 +1,78 @@
-1 .
-2 . Self-listing Program
-3 .
-4 . Looks into the BASIC program buffers
-5 . to print a listing of itself.
-6 .
+;
+; Self-listing Program
+;
+; Looks into the BASIC program buffers
+; to print a listing of itself.
+;
 
-10 G.100
+80 G.100
 
 ; Print Hex byte
-20 IFDOHEX THENH=INT(B/16):L=B-H*16+N1:H=H+N1:? H$(H,H);H$(L,L);
-21 RET.
+85 IFDOHEX THENH=INT(B/16):L=B-H*16+N1:H=H+N1:?#1;H$(H,H);H$(L,L);
+86 RET.
 
-100 CLR:POKE82,0:?CHR$(125);:SE.1,2,15
-101 REA.N0,N1,N2,N3,N4,N5,N6,N7,N8,N9,DOHEX
-102 D.0,1,2,3,4,5,6,7,8,9,1
-103 . O.#1,8,0,"H:LISTOUT.TXT"
-105 DOXP=1999:CXP=2000:BCD=2100:STR=2200:HOUT=20:MPUSH=5010:MPOP=5020:XDEC=5030
+; MPUSH
+90 MS(MSD)=M:MSD=MSD+N1:RET.
+
+; MPOP
+95 IFNOTMSD THEN?#1;"<No Back>":RET.
+96 MSD=MSD-N1:M=MS(MSD):RET.:.?#1;"Back to ";M
+
+100 REA.N0,N1,N2,N3,N4,N5,N6,N7,N8,N9,DOHEX,DOXP,CXP,BCD,STR,HOUT,MPUSH,MPOP,XDEC
+101 D.0,1,2,3,4,5,6,7,8,9,1,1999,2000,2100,2200,85,90,95,5030
+102 POKE82,N0:?CHR$(125);:SE.N1,N2,15
+103 O.#N1,N8,N0,"S:":POK.752,N1
+
 110 DIM SP$(N1),H$(16),A$(100),MS(10),E$(N1),C1$(N2),C2$(N2):SP$=" ":H$="0123456789ABCDEF":E$="":C1$=E$:C2$=SP$:IFDOHEX THENE$="|":C1$=" <":C2$="> "
 115 POKE559,34:GOS.150:GOS.160:POKE559,34:G.200
 
-150 DIMV$(100*N8):?"Vars: ";
+150 DIMV$(100*N8):?#1;"Vars: ";
 151 S=N0:I=N1:A=PEEK(130)+256*PEEK(131)
-152 IFA>=PEEK(132)+256*PEEK(133)THEN?:?:RET.
-153 B=PEEK(A):A=A+N1:S=S+N1:.GOS.HOUT:?SP$;
+152 IFA>=PEEK(132)+256*PEEK(133)THEN?#1:?#1:RET.
+153 B=PEEK(A):A=A+N1:S=S+N1:.GOS.HOUT:?#1;SP$;
 154 O=B>=128:V$(I+S,I+S)=CHR$(B-O*128):IFNOTO THEN152
-155 V$(I,I)=CHR$(S):IFI>N1 THEN?",";
-156 ?V$(I+1,I+S);:I=I+N8:S=N0:G.152
+155 V$(I,I)=CHR$(S):IFI>N1 THEN?#1;",";
+156 ?#1;V$(I+N1,I+S);:I=I+N8:S=N0:G.152
 
-160 ?"Values: ":A=PEEK(134)+256*PEEK(135)
-161 IFA>=PEEK(136)+256*PEEK(137)THEN?:?:RET.
+160 ?#1;"Values: ":A=PEEK(134)+256*PEEK(135)
+161 IFA>=PEEK(136)+256*PEEK(137)THEN?#1:?#1:RET.
 162 B=PEEK(A):A=A+N1:GOS.HOUT:I=B:GOS.195
-163 ONN1+(I>=64)+(I>=128)GOSUB170,180,190:?:G.161
+163 ONN1+(I>=64)+(I>=128)GOSUB170,180,190:?#1:G.161
 
 170 S=N6:G.196:.Scalar
 180 GOS.197:GOS.197:G.197:.Array
 190 GOS.197:GOS.197:G.197:.String
 
-195 B=PEEK(A):A=A+N1:GOS.HOUT:B=B+128:?E$;:G.5040
-196 F.I=1TOS:B=PEEK(A):A=A+N1:GOS.HOUT:N.I:?SP$;:RET.
-197 S=N2:M=PEEK(A)+256*PEEK(A+N1):GOS.196:?"(";M;") ";:RET.
+195 B=PEEK(A):A=A+N1:GOS.HOUT:B=B+128:?#1;E$;:G.5040
+196 F.I=1TOS:B=PEEK(A):A=A+N1:GOS.HOUT:N.I:?#1;SP$;:RET.
+197 S=N2:M=PEEK(A)+256*PEEK(A+N1):GOS.196:?#1;"(";M;") ";:RET.
 
 ;
 ; Un-tokenize.
 ;
 200 ST=PEEK(136)+256*PEEK(137):M=300:NS=N0:NL=N0:LO=N0:I=N0
-202 B=PEEK(ST+I):.IFM<>OM THEN?:?"M=";M:?
+202 B=PEEK(ST+I):.IFM<>OM THEN?#1:?#1;"M=";M:?#1
 203 GOS.HOUT:OM=M:GOS.M
-204 LO=LO+N1:IFLO=NL THEN?:?:M=300:G.209
-205 IFLO=NS THENM=330:IFDOHEX THEN?
+204 LO=LO+N1:IFLO=NL THEN?#1:?#1:M=300:G.209
+205 IFLO=NS THENM=330:IFDOHEX THEN?#1
 209 I=I+N1:G.202
 
 ;
 ; Line Number, lengths
 ;
 300 LO=N0:MSD=N0:LINE=B:M=310:RET.
-310 LINE=LINE+256*B:IFLINE>32767THEN?:?:?"DONE!":END
-315 IFDOHEX THEN? " (";LINE;") ";:G.318
-316 ?LINE;":";
+310 LINE=LINE+256*B:IFLINE>LAST THEN?#1:?#1:?#1;"DONE!":POK.752,N0:END
+315 IFDOHEX THEN?#1;" (";LINE;") ";:G.318
+316 ?#1;LINE;":";
 318 M=320:POKE82,N2:RET.
-320 IFDOHEX THEN? " (NL) ";
+
+; Get NL  Next Line
+320 IFDOHEX THEN?#1;" (NL) ";
 321 NL=B:M=330:RET.
-330 IFDOHEX THEN? " (NS) ";
-331 ?:NS=B:M=340:RET.
+
+; Get NS  Next Statement
+330 IFDOHEX THEN?#1;" (NS) ";
+331 ?#1:NS=B:M=340:RET.
 
 ;
 ; Handlers at 1000 + 10 * token
@@ -71,71 +82,71 @@
 ;
 ; Command Table
 ;
-400?C1$;"REM";     C2$;:RET.
-401?C1$;"DATA";    C2$;:RET.
-402?C1$;"INPUT";   C2$;:RET.
-403?C1$;"COLOR";   C2$;:RET.
-404?C1$;"LIST";    C2$;:RET.
-405?C1$;"ENTER";   C2$;:RET.
-406?C1$;"LET";     C2$;:RET.
-407?C1$;"IF";      C2$;:RET.
-408?C1$;"FOR";     C2$;:RET.
-409?C1$;"NEXT";    C2$;:RET.
-410?C1$;"GOTO";    C2$;:RET.
-411?C1$;"GO TO";   C2$;:RET.
-412?C1$;"GOSUB";   C2$;:RET.
-413?C1$;"TRAP";    C2$;:RET.
-414?C1$;"BYE";     C2$;:RET.
-415?C1$;"CONT";    C2$;:RET.
-416?C1$;"COM";     C2$;:RET.
-417?C1$;"CLOSE";   C2$;:RET.
-418?C1$;"CLR";     C2$;:RET.
-419?C1$;"DEG";     C2$;:RET.
-420?C1$;"DIM";     C2$;:RET.
-421?C1$;"END";     C2$;:RET.
-422?C1$;"NEW";     C2$;:RET.
-423?C1$;"OPEN";    C2$;:RET.
-424?C1$;"LOAD";    C2$;:RET.
-425?C1$;"SAVE";    C2$;:RET.
-426?C1$;"STATUS";  C2$;:RET.
-427?C1$;"NOTE";    C2$;:RET.
-428?C1$;"POINT";   C2$;:RET.
-429?C1$;"XIO";     C2$;:RET.
-430?C1$;"ON";      C2$;:RET.
-431?C1$;"POKE";    C2$;:RET.
-432?C1$;"PRINT";   C2$;:RET.
-433?C1$;"RAD";     C2$;:RET.
-434?C1$;"READ";    C2$;:RET.
-435?C1$;"RESTORE"; C2$;:RET.
-436?C1$;"RETURN";  C2$;:RET.
-437?C1$;"RUN";     C2$;:RET.
-438?C1$;"STOP";    C2$;:RET.
-439?C1$;"POP";     C2$;:RET.
-440?C1$;"?";       C2$;:RET.
-441?C1$;"GET";     C2$;:RET.
-442?C1$;"PUT";     C2$;:RET.
-443?C1$;"GRAPHIC"; C2$;:RET.
-444?C1$;"PLOT";    C2$;:RET.
-445?C1$;"POSITION";C2$;:RET.
-446?C1$;"DOS";     C2$;:RET.
-447?C1$;"DRAWTO";  C2$;:RET.
-448?C1$;"SETCOLOR";C2$;:RET.
-449?C1$;"LOCATE";  C2$;:RET.
-450?C1$;"SOUND";   C2$;:RET.
-451?C1$;"LPRINT";  C2$;:RET.
-452?C1$;"CSAVE";   C2$;:RET.
-453?C1$;"CLOAD";   C2$;:RET.
-454ONNOTDOHEX GOTO460:?C1$;"let";
-455?C1$;"ERROR";   C2$;:RET.
-460?C2$;:RET.
+400?#1;C1$;"REM";     C2$;:RET.
+401?#1;C1$;"DATA";    C2$;:RET.
+402?#1;C1$;"INPUT";   C2$;:RET.
+403?#1;C1$;"COLOR";   C2$;:RET.
+404?#1;C1$;"LIST";    C2$;:RET.
+405?#1;C1$;"ENTER";   C2$;:RET.
+406?#1;C1$;"LET";     C2$;:RET.
+407?#1;C1$;"IF";      C2$;:RET.
+408?#1;C1$;"FOR";     C2$;:RET.
+409?#1;C1$;"NEXT";    C2$;:RET.
+410?#1;C1$;"GOTO";    C2$;:RET.
+411?#1;C1$;"GO TO";   C2$;:RET.
+412?#1;C1$;"GOSUB";   C2$;:RET.
+413?#1;C1$;"TRAP";    C2$;:RET.
+414?#1;C1$;"BYE";     C2$;:RET.
+415?#1;C1$;"CONT";    C2$;:RET.
+416?#1;C1$;"COM";     C2$;:RET.
+417?#1;C1$;"CLOSE";   C2$;:RET.
+418?#1;C1$;"CLR";     C2$;:RET.
+419?#1;C1$;"DEG";     C2$;:RET.
+420?#1;C1$;"DIM";     C2$;:RET.
+421?#1;C1$;"END";     C2$;:RET.
+422?#1;C1$;"NEW";     C2$;:RET.
+423?#1;C1$;"OPEN";    C2$;:RET.
+424?#1;C1$;"LOAD";    C2$;:RET.
+425?#1;C1$;"SAVE";    C2$;:RET.
+426?#1;C1$;"STATUS";  C2$;:RET.
+427?#1;C1$;"NOTE";    C2$;:RET.
+428?#1;C1$;"POINT";   C2$;:RET.
+429?#1;C1$;"XIO";     C2$;:RET.
+430?#1;C1$;"ON";      C2$;:RET.
+431?#1;C1$;"POKE";    C2$;:RET.
+432?#1;C1$;"PRINT";   C2$;:RET.
+433?#1;C1$;"RAD";     C2$;:RET.
+434?#1;C1$;"READ";    C2$;:RET.
+435?#1;C1$;"RESTORE"; C2$;:RET.
+436?#1;C1$;"RETURN";  C2$;:RET.
+437?#1;C1$;"RUN";     C2$;:RET.
+438?#1;C1$;"STOP";    C2$;:RET.
+439?#1;C1$;"POP";     C2$;:RET.
+440?#1;C1$;"?";       C2$;:RET.
+441?#1;C1$;"GET";     C2$;:RET.
+442?#1;C1$;"PUT";     C2$;:RET.
+443?#1;C1$;"GRAPHICS";C2$;:RET.
+444?#1;C1$;"PLOT";    C2$;:RET.
+445?#1;C1$;"POSITION";C2$;:RET.
+446?#1;C1$;"DOS";     C2$;:RET.
+447?#1;C1$;"DRAWTO";  C2$;:RET.
+448?#1;C1$;"SETCOLOR";C2$;:RET.
+449?#1;C1$;"LOCATE";  C2$;:RET.
+450?#1;C1$;"SOUND";   C2$;:RET.
+451?#1;C1$;"LPRINT";  C2$;:RET.
+452?#1;C1$;"CSAVE";   C2$;:RET.
+453?#1;C1$;"CLOAD";   C2$;:RET.
+454ONNOTDOHEX GOTO460:?#1;C1$;"let";C2$;:RET.
+455?#1;C1$;"ERROR";   C2$;:RET.
+460?#1;C2$;:RET.
 
 ;
 ; REM
 ;
 1000 M=1001:A$=""
-1001 IFB=155THEN?SP$;CHR$(34);A$;CHR$(34);:G.1910
+1001 IFB=155THEN?#1;SP$;CHR$(34);A$;CHR$(34);:G.1910
 1002 A$(LEN(A$)+N1)=CHR$(B)
-1003 .? "|";CHR$(B);" ";:RET.:.REM
+1003 .?#1;"|";CHR$(B);" ";:RET.:.REM
 1004 RET.
 
 1010 G.1000:.DATA
@@ -200,13 +211,13 @@
 ;
 ; End of statement
 ;
-1900 IFDOHEX THEN?" (eos) :";
+1900 IFDOHEX THEN?#1;" (eos) :";
 1901 M=330:RET.
 
 ;
 ; End of Line
 ;
-1910 IFDOHEX THEN?" (eol) >";
+1910 IFDOHEX THEN?#1;" (eol) >";
 1911 M=300:POKE82,N0:RET.
 
 ;
@@ -217,84 +228,84 @@
 ;
 ; Variable index
 ;
-2000 IFB>=128THEN?E$;:G.5040:.var, ret
+2000 IFB>=128THEN?#1;E$;:G.5040:.var, ret
 
 ;
 ; Arguments tokens
 ;
 2010 G.2000+B
 
-2014 ONNOTDOHEX GOTOBCD:?"#";:G.BCD:.BCD
+2014 ONNOTDOHEX GOTOBCD:?#1;"#";:G.BCD:.BCD
 2015 G.STR:.STRING
 2016 STOP:. ---
 2017 STOP:. ---
-2018 ?", ";:RET.:.?,
+2018 ?#1;", ";:RET.:.?,
 2019 STOP:. ---
 2020 G.1900:. (eos) end of expr / statement
-2021 ?"; ";:RET.:.?;
+2021 ?#1;"; ";:RET.:.?;
 2022 G.1910:. (eol) end of expr / line
-2023 ?"GOTO ";:RET.
-2024 ?"GOSUB ";:RET.
-2025 ?"TO ";:RET.
-2026 ?"STEP ";:RET.
-2027 ?"THEN ";:RET.
-2028 ?"# ";:RET.:.OPEN #
-2029 ?"<= ";:RET.:.IF A<=B
-2030 ?"<> ";:RET.:.IF A<>B
-2031 ?">= ";:RET.:.IF A<=B
-2032 ?"< ";:RET.:.IF A<B
-2033 ?"> ";:RET.:.IF A>B
-2034 ?"= ";:RET.:.IF A=B
-2035 ?"^ ";:RET.:.A=B^C
-2036 ?"* ";:RET.:.A=B*C
-2037 ?"+ ";:RET.:.A=B+C
-2038 ?"- ";:RET.:.A=B-C
-2039 ?"/ ";:RET.:.A=B/C
-2040 ?"NOT ";:RET.
-2041 ?"OR ";:RET.
-2042 ?"AND ";:RET.
-2043 SUB=SUB+N1:?"(m ";:RET.:.( math
-2044 SUB=SUB-N1:?") ";:RET.:.exit (
-2045 ?"= ";:RET.:.S1=S2
-2046 ?"= ";:RET.:.N$=A$
-2047 ?"<= ";:RET.:.cmp A$<=B$
-2048 ?"<> ";:RET.:.cmp A$<>B$
-2049 ?">= ";:RET.:.cmp A$>=B$
-2050 ?"< ";:RET.:.cmp A$<B$
-2051 ?"> ";:RET.:.cmp A$<B$
-2052 ?"= ";:RET.:.cmp A$=B$
-2053 ?"+ ";:RET.:.POSITIVE
-2054 ?"- ";:RET.:.NEGATIVE
-2055 SUB=SUB+1:?"(g ";:RET.:.A$( G.MPUSH
-2056 SUB=SUB+1:ONNOTDOHEX GOTO2099:?"(a ";:RET.:.SC(
-2057 SUB=SUB+1:?"(s ";:RET.:.DIM SC(
-2058 SUB=SUB+1:?"(c ";:RET.:.CHR$(, PEEK(
-2059 SUB=SUB+1:?"(d ";:RET.:.DIM S$(
-2060 ?", ";:RET.
-2061 ?"STR$ ";:RET.
-2062 ?"CHR$ ";:RET.
-2063 ?"USR ";:RET.
-2064 ?"ASC ";:RET.
-2065 ?"VAL ";:RET.
-2066 ?"LEN ";:RET.
-2067 ?"ADR ";:RET.
-2068 ?"ATN ";:RET.
-2069 ?"COS ";:RET.
-2070 ?"PEEK ";:RET.
-2071 ?"SIN ";:RET.
-2072 ?"RND ";:RET.
-2073 ?"FRE ";:RET.
-2074 ?"EXP ";:RET.
-2075 ?"LOG ";:RET.
-2076 ?"CLOG ";:RET.
-2077 ?"SQR ";:RET.
-2078 ?"SGN ";:RET.
-2079 ?"ABS ";:RET.
-2080 ?"INT ";:RET.
-2081 ?"PADDLE ";:RET.
-2082 ?"STICK ";:RET.
-2083 ?"PTRIG ";:RET.
-2084 ?"STRIG ";:RET.
+2023 ?#1;"GOTO ";:RET.
+2024 ?#1;"GOSUB ";:RET.
+2025 ?#1;"TO ";:RET.
+2026 ?#1;"STEP ";:RET.
+2027 ?#1;"THEN ";:RET.
+2028 ?#1;"# ";:RET.:.OPEN #
+2029 ?#1;"<= ";:RET.:.IF A<=B
+2030 ?#1;"<> ";:RET.:.IF A<>B
+2031 ?#1;">= ";:RET.:.IF A<=B
+2032 ?#1;"< ";:RET.:.IF A<B
+2033 ?#1;"> ";:RET.:.IF A>B
+2034 ?#1;"= ";:RET.:.IF A=B
+2035 ?#1;"^ ";:RET.:.A=B^C
+2036 ?#1;"* ";:RET.:.A=B*C
+2037 ?#1;"+ ";:RET.:.A=B+C
+2038 ?#1;"- ";:RET.:.A=B-C
+2039 ?#1;"/ ";:RET.:.A=B/C
+2040 ?#1;"NOT ";:RET.
+2041 ?#1;"OR ";:RET.
+2042 ?#1;"AND ";:RET.
+2043 SUB=SUB+N1:?#1;"(m ";:RET.:.( math
+2044 SUB=SUB-N1:?#1;") ";:RET.:.exit (
+2045 ?#1;"= ";:RET.:.S1=S2
+2046 ?#1;"= ";:RET.:.N$=A$
+2047 ?#1;"<= ";:RET.:.cmp A$<=B$
+2048 ?#1;"<> ";:RET.:.cmp A$<>B$
+2049 ?#1;">= ";:RET.:.cmp A$>=B$
+2050 ?#1;"< ";:RET.:.cmp A$<B$
+2051 ?#1;"> ";:RET.:.cmp A$<B$
+2052 ?#1;"= ";:RET.:.cmp A$=B$
+2053 ?#1;"+ ";:RET.:.POSITIVE
+2054 ?#1;"- ";:RET.:.NEGATIVE
+2055 SUB=SUB+N1:?#1;"(g ";:RET.:.A$( G.MPUSH
+2056 SUB=SUB+N1:ONNOTDOHEX GOTO2099:?#1;"(a ";:RET.:.SC(
+2057 SUB=SUB+N1:?#1;"(s ";:RET.:.DIM SC(
+2058 SUB=SUB+N1:?#1;"(c ";:RET.:.CHR$(, PEEK(
+2059 SUB=SUB+N1:?#1;"(d ";:RET.:.DIM S$(
+2060 ?#1;", ";:RET.
+2061 ?#1;"STR$ ";:RET.
+2062 ?#1;"CHR$ ";:RET.
+2063 ?#1;"USR ";:RET.
+2064 ?#1;"ASC ";:RET.
+2065 ?#1;"VAL ";:RET.
+2066 ?#1;"LEN ";:RET.
+2067 ?#1;"ADR ";:RET.
+2068 ?#1;"ATN ";:RET.
+2069 ?#1;"COS ";:RET.
+2070 ?#1;"PEEK ";:RET.
+2071 ?#1;"SIN ";:RET.
+2072 ?#1;"RND ";:RET.
+2073 ?#1;"FRE ";:RET.
+2074 ?#1;"EXP ";:RET.
+2075 ?#1;"LOG ";:RET.
+2076 ?#1;"CLOG ";:RET.
+2077 ?#1;"SQR ";:RET.
+2078 ?#1;"SGN ";:RET.
+2079 ?#1;"ABS ";:RET.
+2080 ?#1;"INT ";:RET.
+2081 ?#1;"PADDLE ";:RET.
+2082 ?#1;"STICK ";:RET.
+2083 ?#1;"PTRIG ";:RET.
+2084 ?#1;"STRIG ";:RET.
 2099 RET.
 
 ; Scalar
@@ -303,36 +314,32 @@
 2102 M=2103:G.2104
 2103 GOS.XDEC:SV=SV*100+V
 2104 SC=SC-N1:IFSC>N0 THENRET.
-2105 ?E$;(SV*XP);SP$;:G.MPOP
+2105 ?#1;E$;(SV*XP);SP$;:G.MPOP
 
 ; = after LET var
-2110 IFB=14THENSC=N6:?"=";:M=DOXP:RET.
+2110 IFB=14THENSC=N6:?#1;"=";:M=DOXP:RET.
 
 ; SUBSCRIPT
 ; 2120 GOS.MPUSH:M=2121:RET.
-; 2121 IFB=37THEN?", ";
+; 2121 IFB=37THEN?#1;", ";
 ; 2122 RET.
 
 ; String
 2200 GOS.MPUSH:M=2202:SC=N0:A$="":RET.
 2202 IFSC=N0 THENSC=B:IFSC=N0 THEN2210
-2204 IFDOHEX THEN?CHR$(34);SP$;
+2204 IFDOHEX THEN?#1;CHR$(34);SP$;
 2205 M=2206:RET.
 2206 A$(LEN(A$)+N1)=CHR$(B)
 2208 SC=SC-N1:IFSC>N0 THENRET.
-2210 ?SP$;CHR$(34);A$;CHR$(34);SP$;:G.MPOP
-
-; MPUSH
-5010 MS(MSD)=M:MSD=MSD+N1:RET.
-
-; MPOP
-5020 IFNOTMSD THEN?"<No Back>":RET.
-5021 MSD=MSD-N1:M=MS(MSD):RET.:.?"Back to ";M
+2210 ?#1;SP$;CHR$(34);A$;CHR$(34);SP$;:G.MPOP
 
 ; bcd_to_dec
 5030 H=INT(B/16):V=B-H*16+H*10:RET.
 
 ; var_name(B)
-5040 H=B*N8-1023:L=ASC(V$(H)):?V$(H+N1,H+L);SP$;:RET.
+5040 H=B*N8-1023:L=ASC(V$(H)):?#1;V$(H+N1,H+L);SP$;:RET.
 
-0 DIMZ(5):Z(0)=1:Z(1)=2:Z(2)=3:Z(3)=4:Z(4)=5
+; Code to untokenize
+0 CLR:LAST=10
+1 DIMZ(5),Z$(1):Z(0)=1:Z(1)=2:Z(2)=3:Z(3)=4:Z(4)=5
+2 Z$=""

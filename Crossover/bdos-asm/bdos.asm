@@ -46,3 +46,27 @@ _fail:
         rts
 
         .endproc
+
+;        .proc test_invert_string
+
+;TestInvertString:
+;        ; Push string length on stack
+;        lda #(strend-string)
+;        pha
+;        lda #0
+;        pha
+;        ; Push string address on stack
+;        lda #<string
+;        pha
+;        lda #>string
+;        pha
+;        ; Pushed 2 args
+;        lda #2
+;        pha
+;        jsr InvertString
+;        rts
+
+;string: .byte "HELLO WORLD"
+;strend:
+
+;        .endproc

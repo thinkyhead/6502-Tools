@@ -4,7 +4,7 @@
 ; by Thinkyhead
 ;
 
-10 CLR:L=4:N=6:DIM K$(1),G$(L),A$(L),UG(L),UA(L)
+10 CLR:N0=0:N1=1:L=4:N=6:DIM K$(N1),G$(L),A$(L),UG(L),UA(L)
 
 20 ?CHR$(125);"MASTERMIND"
 21 ?"I'm thinking of a ";L;"-digit number"
@@ -13,21 +13,21 @@
 24 ?" Good luck!":?
 
 ; New Sequence: L length using N digits
-30 TURN=0:A$="":F.I=1TOL:V=INT(RND(0)*N):A$(I,I)=CHR$(49+V):N.I
+30 TURN=N0:A$="":F.I=N1 TOL:V=INT(RND(N0)*N):A$(I,I)=CHR$(49+V):N.I
 
 ; Next turn
-40 TURN=TURN+1:C=0:IFTURN<10THEN?" ";
+40 TURN=TURN+N1:C=N0:IFTURN<10THEN?" ";
 41 ?TURN;"> ";
 42 GOS.100:ONK$="Q"GOTO200:ONK$="A"GOTO150:IFK$<"1"ORK>48+N THEN42
-43 ?K$;" ";:C=C+1:G$(C,C)=K$:IFC<L THEN42
+43 ?K$;" ";:C=C+N1:G$(C,C)=K$:IFC<L THEN42
 
 ; Prepare to check the answer
-50 PM=0:XM=0:F.J=1TOL:UG(J)=0:UA(J)=0:N.J
+50 PM=N0:XM=N0:F.J=N1 TOL:UG(J)=N0:UA(J)=N0:N.J
 ; Count up exact matches
-51 F.I=1TOL:IFG$(I,I)=A$(I,I)THENUG(I)=1:UA(I)=1:XM=XM+1
+51 F.I=N1 TOL:IFG$(I,I)=A$(I,I)THENUG(I)=N1:UA(I)=N1:XM=XM+N1
 ; Count up out-of-order matches
-52 N.I:F.I=1TOL:ONUG(I)GOTO55:F.J=1TOL:ONUA(J)GOTO54
-53 UG(I)=1:IFG$(I,I)=A$(J,J)THENUA(J)=1:PM=PM+1:G.55
+52 N.I:F.I=N1 TOL:ONUG(I)GOTO55:F.J=N1 TOL:ONUA(J)GOTO54
+53 UG(I)=N1:IFG$(I,I)=A$(J,J)THENUA(J)=N1:PM=PM+N1:G.55
 54 N.J
 55 N.I
 
@@ -37,7 +37,7 @@
 80 ?"You won in ";TURN;" moves!":?:G.21
 
 ; Get a key
-100 OPEN #1,4,0,"K:":GET #1,K:CL.#1:K$=CHR$(K):RET.
+100 OPEN #N1,4,N0,"K:":GET #N1,K:CL.#N1:K$=CHR$(K):RET.
 
 ; Cheat
 150 ?:?"Answer is ";A$:?:G.21

@@ -10,7 +10,7 @@
 3 DIMSRC$(20),DST$(20),CO$(14),M$(1),K$(1),EOL$(1),YN$(2),SP$(40)
 
 4 HP=0:CD$="D:":CO$="Couldn't open ":EOL$=CHR$(155):YN$="NY":SP$=" ":SP$(40)=SP$:SP$(2)=SP$(1)
-5 DIMINV$(26):INV$="code":REM InvertString(adr,len)
+5 DIMINV$(26):INV$="hhhhhI":INV=ADR(INV$):REM InvertString(adr,len)
 6 O.#2,4,0,"K:"
 7 T.8:F$=CD$:GOS.1360:O.#1,6,0,F$:CL.#1:G.10
 8 T.9:F$="H:":GOS.1360:O.#1,6,0,F$:CD$="H:":CL.#1:G.10
