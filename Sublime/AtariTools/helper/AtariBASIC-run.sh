@@ -43,7 +43,7 @@ if [[ ! $RUNFILE =~ ".LST" ]]; then
 fi
 
 # Convert the UTF-8 file to ATASCII
-"$HERE/atascii.py" -s -u "$LSTFILE" >"$RUNFILE"
+"$HERE/../basic/atascii.py" -s -u "$LSTFILE" >"$RUNFILE"
 
 # SAVE or RUN?
 if [[ $EXTRA == "save" ]]; then
