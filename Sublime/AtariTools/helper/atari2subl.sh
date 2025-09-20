@@ -20,7 +20,7 @@ BINF="$HDD/$PRINTBIN"
 mkdir -p "${UTF%/*}"
 
 # Convert the "printed" output to UTF-8
-"$HERE/atascii.py" -p "$1" >"$UTF"
+"$HERE/../basic/atascii.py" -p "$1" >"$UTF"
 
 # Save raw binary output
 cp "$1" "$BINF"
