@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 """
 atascii.py - Convert to ATASCII or UTF-8, send to stdout.
 
@@ -45,35 +44,29 @@ import getopt
 
 DEBUG = 0
 
-# Constants
-LF = 0x0A    # ASCII LF
-CR = 0x0D    # ASCII CR
-ATESC = 0x1B # ESCAPE
-ATURW = 0x1C # UP-ARROW
-ATDRW = 0x1D # DOWN-ARROW
-ATLRW = 0x1E # LEFT-ARROW
-ATRRW = 0x1F # RIGHT-ARROW
-ATCLR = 0x7D # CLEAR SCREEN CHARACTER
-ATRUB = 0x7E # BACK SPACE (RUBOUT)
-ATTAB = 0x7F # TAB
-ATEOL = 0x9B # END-OF-LINE
-ATDELL = 0x9C # delete line
-ATINSL = 0x9D # insert line
-ATCTAB = 0x9E # clear TAB
-ATSTAB = 0x9F # set TAB
-ATBEL = 0xFD  # CONSOLE BELL
-ATDEL = 0xFE  # delete char.
-ATINS = 0xFF  # insert char.
+# ATASCII Characters
+LF     = 0x0A
+CR     = 0x0D
+ATESC  = 0x1B # ␛ ESCAPE
+ATURW  = 0x1C # ↑ Up Arrow    (CTRL -)
+ATDRW  = 0x1D # ↓ Down Arrow  (CTRL =)
+ATLRW  = 0x1E # ← Left Arrow  (CTRL +)
+ATRRW  = 0x1F # → Right Arrow (CTRL *)
+ATCLR  = 0x7D # ↰ Clear Screen
+ATRUB  = 0x7E # ⏴ BKSP (RUBOUT)
+ATTAB  = 0x7F # ⏵ TAB
+ATEOL  = 0x9B # END-OF-LINE   (RETURN)
+ATDELL = 0x9C # DELETE LINE   (SHIFT BKSP)
+ATINSL = 0x9D # INSERT LINE   (SHIFT >)
+ATCTAB = 0x9E # Clear TABSTOP (CTRL TAB)
+ATSTAB = 0x9F # Set TABSTOP   (SHIFT TAB)
+ATBEL  = 0xFD # Buzzer        (CTRL 2)
+ATDEL  = 0xFE # Delete        (CTRL BKSP)
+ATINS  = 0xFF # Insert        (CTRL >)
 
-REG_NORMAL = 0xE000
-REG_INVERT = 0xE080
-INT_NORMAL = 0xE100
-INT_INVERT = 0xE180
-
-ASCII = 0
-UTF_1 = 1
-UTF_2 = 2
-UTF_3 = 3
+# ATASCII / UTF Constants
+REG_NORMAL, REG_INVERT, INT_NORMAL, INT_INVERT = 0xE000, 0xE080, 0xE100, 0xE180
+ASCII, UTF_1, UTF_2, UTF_3 = 0, 1, 2, 3
 
 # Character mappings (same as in C++ code)
 naive = [
@@ -152,7 +145,9 @@ def usage():
     print(" -s Strip host comments")
     print(" -u UTF-8 to ATASCII")
 
-def put_utf_trio(c, intl=False):
+# --- Byte-returning helpers ---
+
+def utf_trio_bytes(c, intl=False) -> bytes:
     if c & 0x80:
         base = INT_INVERT if intl else REG_INVERT
     else:
@@ -164,146 +159,176 @@ def put_utf_trio(c, intl=False):
     c1 = 0x80 | ((chr_val >> 6) & 0x3F)
     c2 = 0x80 | (chr_val & 0x3F)
 
-    sys.stdout.buffer.write(bytes([c0, c1, c2]))
-    return None
+    return bytes([c0, c1, c2])
 
-def putchar_a(c):
+def char_a_bytes(c) -> bytes:
     if c == LF:
-        sys.stdout.buffer.write(bytes([ATEOL]))
+        return bytes([ATEOL])
     else:
-        sys.stdout.buffer.write(bytes([c]))
+        return bytes([c])
 
-def putchar_u(c):
+def char_u_bytes(c) -> bytes:
     if c == ATEOL:
-        sys.stdout.buffer.write(bytes([LF]))
+        return bytes([LF])
     else:
-        sys.stdout.buffer.write(bytes([c]))
+        return bytes([c])
+
+# --- Conversion functions ---
 
 # Convert from UTF-8 to ATASCII, writing to stdout
 def unicode_to_atascii(filename, sflag):
-    with open(filename, 'rb') as fp:
-        state = ASCII
-        scheck = sflag
-        gotchar = not sflag
-        skip = False
-        while True:
-            ch = fp.read(1)
-            if not ch: break
-            c = ord(ch)
+    """Convert a UTF‑8 file to ATASCII and write the result to stdout."""
 
-            if DEBUG > 1 and c == CR: print("<CR>", end='')
+    # Read the input file as raw bytes
+    with open(filename, 'rb') as f: bindata = f.read()
 
-            # For 's' check the beginning of the line for a comment
-            if scheck:
-                if DEBUG > 1: print(f"<{c}>", end='')
-                if ch in { b' ', b'\t' }: continue
-                scheck = False
-                skip = ch in { b';', b'#' }  # A comment to skip?
-                if DEBUG and skip: print("<SKIP>", end='')
+    # Convert the byte data
+    out_bytes = unicode_to_atascii_str(bindata, sflag)
 
-            # Reset states at the end of a line
-            if c == LF:
-                scheck = sflag                      # Check for a host comment with 'S' flag
-                if skip:                            # When skipping a line skip this LF too
-                    skip = False
-                    if DEBUG: print("</SKIP>")
-                    continue
-                if DEBUG > 1: print("<LF>", end='')
+    # Write the ATASCII bytes directly to stdout (binary mode)
+    sys.stdout.buffer.write(out_bytes)
 
-            # Skipping this input character
-            if skip:
-                if DEBUG > 1: print("|", end='')
+def unicode_to_atascii_str(bindata: bytes, sflag=False) -> bytes:
+    """Convert a UTF‑8 string to ATASCII."""
+    state = ASCII
+    scheck = sflag
+    gotchar = not sflag
+    skip = False
+    out = bytearray()
+
+    i = 0
+    while i < len(bindata):
+        c = bindata[i]
+        ch = bytes([c])
+        i += 1
+
+        if DEBUG > 1 and c == CR: print("<CR>", end='')
+
+        # For 's' check the beginning of the line for a comment
+        if scheck:
+            if DEBUG > 1: print(f"<{c}>", end='')
+            if ch in {b' ', b'\t'}: continue
+            scheck = False
+            skip = ch in {b';', b'#'}
+            if DEBUG and skip: print("<SKIP>", end='')
+            if skip: continue
+
+        # Reset states at the end of a line
+        if c == LF:
+            if DEBUG > 1: print("<LF>", end='')
+            scheck = sflag                      # Check for a host comment with 'S' flag
+            if skip:                            # When skipping a line skip this LF too
+                skip = False
+                if DEBUG: print("</SKIP>")
                 continue
 
-            # With 'S' the first output character must be non-whitespace
-            if not gotchar:
-                if ch == b' ' or ch == b'\t' or c == LF or c == CR: continue
-                gotchar = True
+        # Skipping this input character
+        if skip:
+            if DEBUG > 1: print("|", end='')
+            continue
 
-            if DEBUG: print(f"{chr(c)}", end='')
+        # With 'S' the first output character must be non-whitespace
+        if not gotchar:
+            if ch in {b' ', b'\t'} or c in {LF, CR}: continue
+            gotchar = True
 
-            if state == ASCII:
-                if c == 0xEE:
-                    state = UTF_1
-                else:
-                    putchar_a(c)
-            elif state == UTF_1:
-                if (c & 0xC0) == 0x80:
-                    c1 = c
-                    state = UTF_2
-                else:
-                    sys.stdout.buffer.write(bytes([0xEE]))
-                    putchar_a(c)
-                    state = ASCII
-            elif state == UTF_2:
-                c = (c1 & 3) << 6 | (c & 0x3F)
-                sys.stdout.buffer.write(bytes([c]))
+        if DEBUG: print(f"{chr(c)}", end='')
+
+        if state == ASCII:
+            if c == 0xEE:
+                state = UTF_1
+            else:
+                out.extend(char_a_bytes(c))
+        elif state == UTF_1:
+            if (c & 0xC0) == 0x80:
+                c1 = c
+                state = UTF_2
+            else:
+                out.append(0xEE)
+                out.extend(char_a_bytes(c))
                 state = ASCII
+        elif state == UTF_2:
+            c = ((c1 & 3) << 6) | (c & 0x3F)
+            out.append(c)
+            state = ASCII
+
+    return bytes(out)
 
 # Convert from ATASCII to UTF-8, writing to stdout
 def atascii_to_unicode(filename, pflag, iflag, aflag, nflag):
-    with open(filename, 'rb') as fp:
-        got_lf = False
-        while True:
-            c = fp.read(1)
-            if not c: break
-            c = ord(c)
+    """Convert an ATASCII file to UTF‑8 text and write the result to stdout."""
 
-            if pflag:
-                # The LIST "P:" command in atari800 replaces 0x9B with 0x0A (LF)
-                # which makes it (nearly) impossible to tell whether LF was
-                # actually in the original file. As a workaround for most cases,
-                # only keep the LF if the next character is a numeric digit.
-                #
-                # A more robust heuristic would look for one or more digits
-                # followed by a space.
-                if got_lf:
-                    if c >= ord('0') and c <= ord('9'):
-                        sys.stdout.buffer.write(bytes([LF]))  # LF followed by a digit? Trust the LF.
-                    else:
-                        put_utf_trio(0x0A, iflag)           # LF in the middle of a line, substitute
-                # Wait till the next character to decide what to do with LF
-                if c == LF:
-                    got_lf = True
-                    continue
+    # Read the input file as raw bytes
+    with open(filename, 'rb') as f:
+        bindata = f.read()
 
-                got_lf = False
+    # Convert the byte data to a Unicode string
+    out_text = atascii_to_unicode_str(bindata, pflag, iflag, aflag, nflag)
 
-            if aflag:
-                # Do a clean ASCII-only conversion
-                if c < 0x20:
-                    sys.stdout.buffer.write(bytes([c + ord('a') - 1]))
-                elif c >= 0xC0:
-                    sys.stdout.buffer.write(bytes([c - 0xC0 + ord('A') - 1]))
-                else:
-                    putchar_u(c)
-            elif nflag:
-                # Convert to common UTF-8 for Unicode fonts
-                if c == ATEOL:
-                    sys.stdout.buffer.write(bytes([LF]))
-                else:
-                    utf_bytes = naive[c]
-                    if utf_bytes is None:
-                        sys.stdout.buffer.write(bytes([c]))
-                    elif utf_bytes[0] < 0x80:
-                        sys.stdout.buffer.write(bytes([utf_bytes[0]]))
-                    else:
-                        for b in utf_bytes:
-                            sys.stdout.buffer.write(bytes([b]))
+    # Write the Unicode to stdout as UTF‑8
+    sys.stdout.buffer.write(out_text.encode('utf-8'))
+
+def atascii_to_unicode_str(bindata: bytes, pflag=False, iflag=False, aflag=False, nflag=False) -> bytes:
+    """Convert an ATASCII string to UTF‑8."""
+    got_lf = False
+    out = bytearray()
+    i = 0
+
+    while i < len(bindata):
+        c = bindata[i]
+        i += 1
+
+        if pflag:
+            # The LIST "P:" command in atari800 replaces 0x9B with 0x0A (LF)
+            # which makes it (nearly) impossible to tell whether LF was
+            # actually in the original file. As a workaround for most cases,
+            # only keep the LF if the next character is a numeric digit.
+            #
+            # A more robust heuristic would look for one or more digits
+            # followed by a space.
+            if got_lf:
+                if ord('0') <= c <= ord('9'):
+                    out.append(LF)  # LF followed by a digit? Trust the LF.
+                else:               # LF in the middle of a line, substitute
+                    out.extend(utf_trio_bytes(0x0A, iflag))
+
+            # Wait till the next character to decide what to do with LF
+            got_lf = c == LF
+            if got_lf: continue
+
+        if aflag:
+            # Do a clean ASCII-only conversion
+            if c < 0x20:
+                out.append(c + ord('a') - 1)
+            elif c >= 0xC0:
+                out.append(c - 0xC0 + ord('A') - 1)
             else:
-                # Convert to user-space UTF-8 for Atari Font
-                if c == ATEOL:
-                    sys.stdout.buffer.write(bytes([LF]))
+                out.extend(char_u_bytes(c))
+        elif nflag:
+            # Convert to common UTF-8 for Unicode fonts
+            if c == ATEOL:
+                out.append(LF)
+            else:
+                utf_bytes = naive[c]
+                if utf_bytes is None:
+                    out.append(c)
                 else:
-                    b = c & 0x7F
-                    if b <= 0x1F or b == 0x60 or c >= 0x7B:
-                        put_utf_trio(c, iflag)
-                    else:
-                        putchar_u(c)
+                    out.extend(utf_bytes)
+        else:
+            # Convert to user-space UTF-8 for Atari Font
+            if c == ATEOL:
+                out.append(LF)
+            else:
+                b = c & 0x7F
+                if b <= 0x1F or b == 0x60 or c >= 0x7B:
+                    out.extend(utf_trio_bytes(c, iflag))
+                else:
+                    out.extend(char_u_bytes(c))
 
-        # If the last character in the file was LF...
-        if got_lf:
-            sys.stdout.buffer.write(bytes([LF]))
+    # If the last character in the file was LF...
+    if got_lf: out.append(LF)
+
+    return bytes(out).decode("utf-8", errors="replace")
 
 def main():
     try:
