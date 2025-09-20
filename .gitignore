@@ -1,6 +1,7 @@
 *.bin
 *.car
 *.xex
+*.car
 *.set
 *.o
 *.65o
