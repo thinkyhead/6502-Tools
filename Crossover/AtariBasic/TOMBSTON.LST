@@ -1,0 +1,12 @@
+; Tombstone City prototyping
+1000?"Setting up DL... 30x18 (plus)"
+1100?"Custom charset..."
+1200?"PM for schooner?"
+2000GR.0:POKE710,238:POKE709,0
+2001?"TOMBSTONE CITY":?
+2002?"Saguaro        0 Points"
+2003?"Tumbleweed   100 Points"
+2004?"MORG         150 Points":?
+2005?"Restart Game      START"
+2006?"Select Level     SELECT"
+2007?"Panic Button  SPACE BAR"
