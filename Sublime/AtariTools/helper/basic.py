@@ -122,16 +122,16 @@ statement_name_table = (
     "SO.UND", "LP.RINT", "CS.AVE", "CL.OAD", "(let)" if DEBUG_CODE else "", "ERROR  -"
 )
 
-_REM    = 0 ; _GOTO   = 10 ; _DIM    = 20 ; _ON     = 30 ; _QUESTION=40 ; _SOUND  = 50
-_DATA   = 1 ; _GO_TO  = 11 ; _END    = 21 ; _POKE   = 31 ; _GET    = 41 ; _LPRINT = 51
-_INPUT  = 2 ; _GOSUB  = 12 ; _NEW    = 22 ; _PRINT  = 32 ; _PUT    = 42 ; _CSAVE  = 52
-_COLOR  = 3 ; _TRAP   = 13 ; _OPEN   = 23 ; _RAD    = 33 ; _GRAPHIC= 43 ; _CLOAD  = 53
-_LIST   = 4 ; _BYE    = 14 ; _LOAD   = 24 ; _READ   = 34 ; _PLOT   = 44 ; _LET_   = 54
-_ENTER  = 5 ; _CONT   = 15 ; _SAVE   = 25 ; _RESTORE= 35 ; _POSITION=45 ; _ERROR  = 55
-_LET    = 6 ; _COM    = 16 ; _STATUS = 26 ; _RETURN = 36 ; _DOS    = 46
-_IF     = 7 ; _CLOSE  = 17 ; _NOTE   = 27 ; _RUN    = 37 ; _DRAWTO = 47
-_FOR    = 8 ; _CLR    = 18 ; _POINT  = 28 ; _STOP   = 38 ; _SETCOLOR=48
-_NEXT   = 9 ; _DEG    = 19 ; _XIO    = 29 ; _POP    = 39 ; _LOCATE = 49
+kREM    = 0 ; kGOTO   = 10 ; cDIM    = 20 ; kON     = 30 ; kQUESTION=40 ; kSOUND  = 50
+kDATA   = 1 ; kGO_TO  = 11 ; cEND    = 21 ; kPOKE   = 31 ; kGET    = 41 ; kLPRINT = 51
+kINPUT  = 2 ; kGOSUB  = 12 ; cNEW    = 22 ; kPRINT  = 32 ; kPUT    = 42 ; kCSAVE  = 52
+kCOLOR  = 3 ; kTRAP   = 13 ; cOPEN   = 23 ; kRAD    = 33 ; kGRAPHIC= 43 ; kCLOAD  = 53
+kLIST   = 4 ; kBYE    = 14 ; cLOAD   = 24 ; kREAD   = 34 ; kPLOT   = 44 ; kILET   = 54
+kENTER  = 5 ; kCONT   = 15 ; cSAVE   = 25 ; kRESTORE= 35 ; kPOSITION=45 ; kERROR  = 55
+kLET    = 6 ; kCOM    = 16 ; cSTATUS = 26 ; kRETURN = 36 ; kDOS    = 46
+kIF     = 7 ; kCLOSE  = 17 ; cNOTE   = 27 ; kRUN    = 37 ; kDRAWTO = 47
+kFOR    = 8 ; kCLR    = 18 ; cPOINT  = 28 ; kSTOP   = 38 ; kSETCOLOR=48
+kNEXT   = 9 ; kDEG    = 19 ; cXIO    = 29 ; kPOP    = 39 ; kLOCATE = 49
 
 commands_info = []
 c = {}
@@ -194,59 +194,192 @@ ops_and_funcs = (
     "PADDLE", "STICK", "PTRIG", "STRIG"
 )
 
-_ops_and_funcs = [ f"<{x:02X}={ops_and_funcs[x]}>" for x in range(60) ]
+# Syntax Rules Tokens
+
+kANTV   = 0x00  # Absolute Non-Terminal Vector (ANTV) to sub-call another rule
+kESRT   = 0x01  # External Subroutine Call (ESRT) to call a handler for more complex rules
+kOR     = 0x02  # ABML or
+kRTN    = 0x03  # (aka <END>) Return, marks the end of an ABML rule. Return pass or fail.
+kVEXP   = 0x0E  # (aka <EXP>) Expression Non-Terminal Vector. Shorthand for ANTV AD(EXP)
+kCHNG   = 0x0F  # Change Last Token to X. e.g., to rectify '=' as assign or compare.
+
+# Program Tokens
+
+cDQ     = 0x10  # "      Double-Quote (UNUSED?)
+cSOE    = 0x11  #        Expression Stack Marker
+cCOM    = 0x12  # ,      in PRINT statement
+cDOL    = 0x13  # $      Dollar Sign
+cEOS    = 0x14  # :      End of expr / statement
+cSC     = 0x15  # ;      in PRINT statement
+cCR     = 0x16  #        End of expr / line
+cGTO    = 0x17  # GOTO   ON...GOTO
+cGS     = 0x18  # GOSUB  ON...GOSUB
+cTO     = 0x19  # TO     FOR ... TO
+cSTEP   = 0x1A  # STEP   FOR ... TO ... STEP
+cTHEN   = 0x1B  # THEN   IF...THEN
+cPND    = 0x1C  # #      OPEN #
+
+# "Real" Operators
+cSROP   = 0x1D  # First "real" operator
+
+cLE     = 0x1D  # <=     IF A<=B
+cNE     = 0x1E  # <>     IF A<>B
+cGE     = 0x1F  # >=     IF A<=B
+cGT     = 0x20  # <      IF A<B
+cLT     = 0x21  # >      IF A>B
+cEO     = 0x22  # =      IF A=B
+cEXP    = 0x23  # ^      A=B^C   (Up Arrow $5E+$80)
+cMUL    = 0x24  # *      A=B*C
+cPLUS   = 0x25  # +      A=B+C
+cMINUS  = 0x26  # -      A=B-C
+cDIV    = 0x27  # /      A=B/C
+cNOT    = 0x28  # NOT    Boolean logic
+cOR     = 0x29  # OR
+cAND    = 0x2A  # AND
+cLPRN   = 0x2B  # (      ( math
+cRPRN   = 0x2C  # )      close for all parens
+cAASN   = 0x2D  # =      S1=S2
+cSASN   = 0x2E  # =      N$=A$
+cSLE    = 0x2F  # <=     cmp A$<=B$
+cSNE    = 0x30  # <>     cmp A$<>B$
+cSGE    = 0x31  # >=     cmp A$>=B$
+cSLT    = 0x32  # <      cmp A$<B$
+cSGT    = 0x33  # >      cmp A$<B$
+cSEQ    = 0x34  # =      cmp A$=B$
+cUPLUS  = 0x35  # +      POSITIVE
+cUMINUS = 0x36  # -      NEGATIVE
+cSLPRN  = 0x37  # (      A$(
+cALPRN  = 0x38  # (      SC(
+cDLPRN  = 0x39  # (      DIM SC(
+cFLPRN  = 0x3A  # (      CHR$(, PEEK(
+cDSLPR  = 0x3B  # (      DIM S$(
+cACOM   = 0x3C  # ,      Array Subscript Separator
+
+# Function Tokens
+cFFUN   = 0x3D  # FIRST FUNCTION CODE
+
+cSTR    = 0x3D  # STR$()
+cCHR    = 0x3E  # CHR$()
+cUSR    = 0x3F  # USR()
+cASC    = 0x40  # ASC()
+cVAL    = 0x41  # VAL()
+cLEN    = 0x42  # LEN()
+cADR    = 0x43  # ADR()
+cNFNP   = 0x44  # Numeric Functions
+cATN    = 0x44  # ATN()
+cCOS    = 0x45  # COS()
+cPEEK   = 0x46  # PEEK()
+cSIN    = 0x47  # SIN()
+cRND    = 0x48  # RND()
+cFRE    = 0x49  # FRE()
+cEXP    = 0x4A  # EXP()
+cLOG    = 0x4B  # LOG()
+cCLOG   = 0x4C  # CLOG()
+cSQR    = 0x4D  # SQR()
+cSGN    = 0x4E  # SGN()
 
 # --------------------------------------------------------------------------- #
 # Operator and Function Execution
 # --------------------------------------------------------------------------- #
 
-def handle_REM() -> None:
-    """Handle the REM command."""
-    print("OK")
+def op_LE()     -> None: pass
+def op_NE()     -> None: pass
+def op_GE()     -> None: pass
+def op_LT()     -> None: pass
+def op_GT()     -> None: pass
+def op_EQ()     -> None: pass
+def op_POWER()  -> None: pass
+def op_MUL()    -> None: pass
+def op_PLUS()   -> None: pass
+def op_MINUS()  -> None: pass
+def op_DIV()    -> None: pass
+def op_NOT()    -> None: pass
+def op_OR()     -> None: pass
+def op_AND()    -> None: pass
+def op_LPRN()   -> None: pass
+def op_RPRN()   -> None: pass
+def op_AASN()   -> None: pass
+def xs_AASN()   -> None: pass
+def op_SLE()    -> None: pass
+def op_SNE()    -> None: pass
+def op_SGE()    -> None: pass
+def op_SLT()    -> None: pass
+def op_SGT()    -> None: pass
+def op_SEQ()    -> None: pass
+def op_UPLUS()  -> None: pass
+def op_UMINUS() -> None: pass
+def op_SLPRN()  -> None: pass
+def op_ALPRN()  -> None: pass
+def op_DLPRN()  -> None: pass
+def op_FLPRN()  -> None: pass
+def op_DSLPR()  -> None: pass
+def op_ACOM()   -> None: pass
+def op_STR()    -> None: pass
+def op_CHR()    -> None: pass
+def op_USR()    -> None: pass
+def op_ASC()    -> None: pass
+def op_VAL()    -> None: pass
+def op_LEN()    -> None: pass
+def op_ADR()    -> None: pass
+def op_ATN()    -> None: pass
+def op_COS()    -> None: pass
+def op_PEEK()   -> None: pass
+def op_SIN()    -> None: pass
+def op_RND()    -> None: pass
+def op_FRE()    -> None: pass
+def op_EXP()    -> None: pass
+def op_LOG()    -> None: pass
+def op_L10()    -> None: pass
+def op_SQR()    -> None: pass
+def op_SGN()    -> None: pass
+def op_ABS()    -> None: pass
+def op_INT()    -> None: pass
+def op_PADDLE() -> None: pass
+def op_STICK()  -> None: pass
+def op_PTRIG()  -> None: pass
+def op_STRIG()  -> None: pass
 
-def handle_DATA() -> None:
-    """Handle the DATA command."""
-    print("OK")
+# OPETAB - Operator Execution Table
+# - Contains operator handler function refs
+# - Same order as Operator Name Table
+misc_ops_table = (
+    op_LE,      op_NE,      op_GE,      op_LT,      op_GT,
+    op_EQ,      op_POWER,   op_MUL,     op_PLUS,    op_MINUS,
+    op_DIV,     op_NOT,     op_OR,      op_AND,     op_LPRN,
+    op_RPRN,    op_AASN,    xs_AASN,    op_SLE,     op_SNE,
+    op_SGE,     op_SLT,     op_SGT,     op_SEQ,     op_UPLUS,
+    op_UMINUS,  op_SLPRN,   op_ALPRN,   op_DLPRN,   op_FLPRN,
+    op_DSLPR,   op_ACOM,
+    op_STR,     op_CHR,     op_USR,     op_ASC,     op_VAL,
+    op_LEN,     op_ADR,     op_ATN,     op_COS,     op_PEEK,
+    op_SIN,     op_RND,     op_FRE,     op_EXP,     op_LOG,
+    op_L10,     op_SQR,     op_SGN,     op_ABS,     op_INT,
+    op_PADDLE,  op_STICK,   op_PTRIG,   op_STRIG,
+)
 
-def handle_NEW() -> None:
-    """Handle the NEW command."""
-    global variable_name_table
-    global variable_value_table
-    global statement_table
-    variable_name_table = []
-    variable_value_table = []
-    statement_table = []
-    strings_and_arrays = []
-    program_stack = []
+#_ops_and_funcs = [ f"<{x:02X}={ops_and_funcs[x]}>" for x in range(60) ]
 
-def handle_LOAD() -> None:
-    """Handle the LOAD command."""
-    print("OK")
+# --------------------------------------------------------------------------- #
+# Immediate Command Handlers
+# Interpret our own basic.py commands
+# --------------------------------------------------------------------------- #
 
-def handle_LIST() -> None:
-    """Handle the LIST command."""
-    """TODO: Handle one or two line number arguments"""
+def h_REM()  -> None: print("OK")
+def h_DATA() -> None: print("OK")
+def h_LOAD() -> None: print("OK")
+def h_SAVE() -> None: print("OK")
+
+def h_DOS() -> None: x_DOS()
+def h_BYE() -> None: x_BYE()
+def h_NEW() -> None: x_NEW()
+
+def h_LIST() -> None:
     print()
     list_program(abbrev=args_abbrev)
 
-def handle_CLIST() -> None:
-    """List the program with syntax highlighting."""
-    """TODO: Handle one or two line number arguments"""
+def h_CLIST() -> None:
     print()
     list_program(abbrev=args_abbrev, colorify=True)
-
-def handle_SAVE() -> None:
-    """Handle the SAVE command."""
-    print("OK")
-
-def handle_DOS() -> None:
-    """Return to the shell."""
-    exit(0)
-
-def handle_BYE() -> None:
-    """Return to the shell."""
-    exit(0)
-
 
 # --------------------------------------------------------------------------- #
 # Command dispatch table
@@ -254,14 +387,192 @@ def handle_BYE() -> None:
 
 # Placeholders. Real handlers will be looked up by token.
 COMMAND_HANDLERS: Dict[str, Callable[[], None]] = {
-    "NEW":   handle_NEW,
-    "LOAD":  handle_LOAD,
-    "LIST":  handle_LIST,
-    "CLIST": handle_CLIST,
-    "SAVE":  handle_SAVE,
-    "DOS":   handle_DOS,
-    "BYE":   handle_BYE,
+    "NEW":   h_NEW,
+    "LOAD":  h_LOAD,
+    "LIST":  h_LIST,
+    "CLIST": h_CLIST,
+    "SAVE":  h_SAVE,
+    "DOS":   h_DOS,
+    "BYE":   h_BYE,
 }
+
+# --------------------------------------------------------------------------- #
+# Statement Execution
+# --------------------------------------------------------------------------- #
+
+def x_REM()      -> None: pass
+def x_DATA()     -> None: pass
+def x_INPUT()    -> None: pass
+def x_COLOR()    -> None: pass
+def x_LIST()     -> None: pass
+def x_ENTER()    -> None: pass
+def x_LET()      -> None: pass
+def x_IF()       -> None: pass
+def x_FOR()      -> None: pass
+def x_NEXT()     -> None: pass
+def x_GOTO()     -> None: pass
+def x_GOTO()     -> None: pass
+def x_GOSUB()    -> None: pass
+def x_TRAP()     -> None: pass
+
+# XBYE - Execute BYE
+def x_BYE():
+    #do_CLSALL() # Close IOCB 1-7
+    #jmp BYELOC
+    exit(0)
+
+def x_CONT()     -> None: pass
+def x_COM()      -> None: pass
+def x_CLOSE()    -> None: pass
+def x_CLR()      -> None: pass
+def x_DEG()      -> None: pass
+def x_DIM()      -> None: pass
+def x_END()      -> None: pass
+
+def x_NEW()      -> None:
+    global variable_name_table
+    global variable_value_table
+    global statement_table
+    global strings_and_arrays
+    global program_stack
+    variable_name_table = []
+    variable_value_table = []
+    statement_table = []
+    strings_and_arrays = []
+    program_stack = []
+    pass
+
+def x_OPEN()     -> None: pass
+def x_LOAD()     -> None: pass
+def x_SAVE()     -> None: pass
+def x_STATUS()   -> None: pass
+def x_NOTE()     -> None: pass
+def x_POINT()    -> None: pass
+def x_XIO()      -> None: pass
+def x_ON()       -> None: pass
+def x_POKE()     -> None: pass
+def x_PRINT()    -> None: pass
+def x_RAD()      -> None: pass
+def x_READ()     -> None: pass
+def x_RESTORE()  -> None: pass
+def x_RETURN()   -> None: pass
+def x_RUN()      -> None: pass
+def x_STOP()     -> None: pass
+def x_POP()      -> None: pass
+def x_PRINT()    -> None: pass
+def x_GET()      -> None: pass
+def x_PUT()      -> None: pass
+def x_GRAPHICS() -> None: pass
+def x_PLOT()     -> None: pass
+def x_POSITION() -> None: pass
+
+# XDOS - Exit to DOS
+def x_DOS():
+    #do_CLSALL() # Close IOCB 1-7
+    #jmp (DOSLOC)
+    exit(0)
+
+def x_DRAWTO()   -> None: pass
+def x_SETCOLOR() -> None: pass
+def x_LOCATE()   -> None: pass
+def x_SOUND()    -> None: pass
+def x_LPRINT()   -> None: pass
+def x_CSAVE()    -> None: pass
+def x_CLOAD()    -> None: pass
+def x_ILET()     -> None: pass
+def x_ERROR()    -> None: pass
+
+# Statement Execution Table
+# - Contains Statement Execution refs
+# - Must be in same order as Statement Name Table
+handler_table = [
+    x_REM,      x_DATA,     x_INPUT,    x_COLOR,    x_LIST,
+    x_ENTER,    x_LET,      x_IF,       x_FOR,      x_NEXT,
+    x_GOTO,     x_GOTO,     x_GOSUB,    x_TRAP,     x_BYE,
+    x_CONT,     x_COM,      x_CLOSE,    x_CLR,      x_DEG,
+    x_DIM,      x_END,      x_NEW,      x_OPEN,     x_LOAD,
+    x_SAVE,     x_STATUS,   x_NOTE,     x_POINT,    x_XIO,
+    x_ON,       x_POKE,     x_PRINT,    x_RAD,      x_READ,
+    x_RESTORE,  x_RETURN,   x_RUN,      x_STOP,     x_POP,
+    x_PRINT,    x_GET,      x_PUT,      x_GRAPHICS, x_PLOT,
+    x_POSITION, x_DOS,      x_DRAWTO,   x_SETCOLOR, x_LOCATE,
+    x_SOUND,    x_LPRINT,   x_CSAVE,    x_CLOAD,    x_ILET,
+    x_ERROR
+]
+
+# Syntax tables encodes required patterns for each command
+s_REM      = ()
+s_DATA     = ()
+s_INPUT    = ()
+s_COLOR    = ()
+s_LIST     = ()
+s_ENTER    = ()
+s_LET      = ()
+s_IF       = ()
+s_FOR      = ()
+s_NEXT     = ()
+s_GOTO     = ()
+s_GOTO     = ()
+s_GOSUB    = ()
+s_TRAP     = ()
+s_BYE      = ()
+s_CONT     = ()
+s_COM      = ()
+s_CLOSE    = ()
+s_CLR      = ()
+s_DEG      = ()
+s_DIM      = ()
+s_END      = ()
+s_NEW      = ()
+s_OPEN     = ()
+s_LOAD     = ()
+s_SAVE     = ()
+s_STATUS   = ()
+s_NOTE     = ()
+s_POINT    = ()
+s_XIO      = ()
+s_ON       = ()
+s_POKE     = ()
+s_PRINT    = ()
+s_RAD      = ()
+s_READ     = ()
+s_RESTORE  = ()
+s_RETURN   = ()
+s_RUN      = ()
+s_STOP     = ()
+s_POP      = ()
+s_PRINT    = ()
+s_GET      = ()
+s_PUT      = ()
+s_GRAPHICS = ()
+s_PLOT     = ()
+s_POSITION = ()
+s_DOS      = ()
+s_DRAWTO   = ()
+s_SETCOLOR = ()
+s_LOCATE   = ()
+s_SOUND    = ()
+s_LPRINT   = ()
+s_CSAVE    = ()
+s_CLOAD    = ()
+s_ILET     = ()
+s_ERROR    = ()
+
+# Statement Syntax Table : Pointers to syntax tables from the "Statement Name Table"
+statement_syntax_table = [
+    s_REM,      s_DATA,     s_INPUT,    s_COLOR,    s_LIST,
+    s_ENTER,    s_LET,      s_IF,       s_FOR,      s_NEXT,
+    s_GOTO,     s_GOTO,     s_GOSUB,    s_TRAP,     s_BYE,
+    s_CONT,     s_COM,      s_CLOSE,    s_CLR,      s_DEG,
+    s_DIM,      s_END,      s_NEW,      s_OPEN,     s_LOAD,
+    s_SAVE,     s_STATUS,   s_NOTE,     s_POINT,    s_XIO,
+    s_ON,       s_POKE,     s_PRINT,    s_RAD,      s_READ,
+    s_RESTORE,  s_RETURN,   s_RUN,      s_STOP,     s_POP,
+    s_PRINT,    s_GET,      s_PUT,      s_GRAPHICS, s_PLOT,
+    s_POSITION, s_DOS,      s_DRAWTO,   s_SETCOLOR, s_LOCATE,
+    s_SOUND,    s_LPRINT,   s_CSAVE,    s_CLOAD,    s_ILET,
+    s_ERROR
+]
 
 # --------------------------------------------------------------------------- #
 # Lookup and conversion
@@ -479,7 +790,7 @@ def list_program(start=0, end=32767, abbrev=args_abbrev, colorify=None):
             if DEBUG_CODE: print(f"<{cmd_tok:02X}>", end='')
 
             # REM, DATA, ERROR
-            is_fluff = cmd_tok in (_REM, _DATA, _ERROR)
+            is_fluff = cmd_tok in (kREM, kDATA, kERROR)
             tok_type = 'data' if is_fluff else 'command'
 
             # Print the command (if it's not "implied LET")
