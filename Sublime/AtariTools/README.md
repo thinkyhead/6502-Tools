@@ -103,5 +103,8 @@ Python version of `atascii` converted from C++ with assistance from Mistral-smal
 ### `atascii.cpp`
 The C++ source code of `atascii` which converts ATASCII <-> Unicode. Requires `unistd.h`, `stdio.h`, `stdlib.h`, `libgen.h`.
 
+### `basic.py`
+WIP - Loader, tokenizer, and interpreter for AtariBASIC written in Python. It can load and list BAS files in tokenized form but it currently has no tokenizer or interpreter. See `basic.py -h` for command-line options.
+
 ### `xexinfo.py`
 Script to read a structured Atari XEX, COM, or BIN file and display its contents. See `xexinfo.py -h` for command-line options.
