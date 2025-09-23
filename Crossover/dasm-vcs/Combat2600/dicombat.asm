@@ -289,7 +289,7 @@ Vskip1  STA  WSYNC              ; Skip a few scanlines...
 	;
 	; Draw the score:
 	;
-	LDX  #$05      	        ; Score is five bytes high.
+	LDX  #$05               ; Score is five bytes high.
 	LDA  #$00               ; Clear number graphics.
 	STA  NUMG0              ; They won't be calculated yet,
 	STA  NUMG1              ; but first time through the loop

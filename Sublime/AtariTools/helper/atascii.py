@@ -175,7 +175,7 @@ def char_u_bytes(c) -> bytes:
 
 # --- Conversion functions ---
 
-# Convert from UTF-8 to ATASCII, writing to stdout
+# Convert from UTF-8 to ATASCII, writing to stdout.
 def unicode_to_atascii(filename, sflag):
     """Convert a UTF‑8 file to ATASCII and write the result to stdout."""
 
@@ -188,6 +188,7 @@ def unicode_to_atascii(filename, sflag):
     # Write the ATASCII bytes directly to stdout (binary mode)
     sys.stdout.buffer.write(out_bytes)
 
+# Convert a UTF‑8 string to ATASCII.
 def unicode_to_atascii_str(bindata: bytes, sflag=False) -> bytes:
     """Convert a UTF‑8 string to ATASCII."""
     state = ASCII
@@ -254,7 +255,7 @@ def unicode_to_atascii_str(bindata: bytes, sflag=False) -> bytes:
 
     return bytes(out)
 
-# Convert from ATASCII to UTF-8, writing to stdout
+# Convert from ATASCII to UTF-8, writing to stdout.
 def atascii_to_unicode(filename, pflag, iflag, aflag, nflag):
     """Convert an ATASCII file to UTF‑8 text and write the result to stdout."""
 
@@ -268,6 +269,7 @@ def atascii_to_unicode(filename, pflag, iflag, aflag, nflag):
     # Write the Unicode to stdout as UTF‑8
     sys.stdout.buffer.write(out_text.encode('utf-8'))
 
+# Convert an ATASCII string to UTF‑8.
 def atascii_to_unicode_str(bindata: bytes, pflag=False, iflag=False, aflag=False, nflag=False) -> bytes:
     """Convert an ATASCII string to UTF‑8."""
     got_lf = False
