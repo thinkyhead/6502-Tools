@@ -1,0 +1,7 @@
+MEMORY {
+  BASIC : start = $A000, size=$2000, file=%O;
+}
+
+SEGMENTS {
+  A000BFFF: load = BASIC;
+}
