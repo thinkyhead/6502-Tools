@@ -28,6 +28,7 @@ PTABW		=	$C9	; number of columns between tab stops
 
 		.include "sourcebook.inc"
 
+		; BasicString str - Output len-1 regular bytes and last byte OR'ed with 0x80
 		.macro	BasicString stringval
 		.repeat	.strlen (stringval)-1,i
 		.byte	.strat (stringval,i)
@@ -35,8 +36,9 @@ PTABW		=	$C9	; number of columns between tab stops
 		.byte	.strat (stringval,.strlen(stringval)-1) | $80
 		.endmacro
 
+		; WordBasicString adr,str - Output handler address and string
 		.macro WordBasicString wordval,stringval
-		.word wordval
+		.word wordval-1
 		BasicString stringval
 		.endmacro
 
@@ -48,9 +50,7 @@ COLDSTART:	LDA	LOADFLG		;Y IN MIDDLE OF LOAD
 		TXS			; TO TOS
 		CLD			; CLEAR DECIMAL MODE
 
-;
 ; XNEW - Execute NEW
-;
 
 XNEW:		LDX	LMADR		;LOAD LOW
 		LDY	LMADR+1		;MEM VALUE
@@ -91,11 +91,9 @@ XNEW:		LDX	LMADR		;LOAD LOW
 		LDA	#10		; SET PRINT TAB
 		STA	PTABW		; WIDTH TO 10
 
-;
 ; Warm Start
-;
-		;	WARMSTART - BASIC RESTART
-		;	            DOES NOT DESTROY CURRENT PGM
+;	WARMSTART - BASIC RESTART
+;	            DOES NOT DESTROY CURRENT PGM
 WARMSTART:	JSR	RUNINIT		; INIT FOR RUN
 SNX1:		JSR	CLSALL		; GO CLOSE DEVICE 1-7
 SNX2:		JSR	SETDZ		; SET E/L DEVICE 0
@@ -120,7 +118,7 @@ SYNTAX:		LDA	LOADFLG		; IF LOAD IN PROGRESS
 		LDA	#EPCHAR		; ]
 		STA	PROMPT
 		.if	BASIC_REVISION = 1
-		JSR	GLGO		;
+		JSR	GLGO
 		JSR	TSTBRK		; TEST BREAK
 		BNE	SYNTAX		; BR IF BREAK
 		.else
@@ -330,9 +328,9 @@ GETLNUM:	JSR	CVAFP		; GO CONVERT LINE #
 		LDA	TSLNUM+1	; OUTPUT HI
 		STA	BININT+1
 		JMP	_SETCODE	; AND RETURN
-;
+
 ; SYNENT - PERFORM LINE PRE-COMPILE
-;
+
 SYNENT:		LDY	#1		; GET PC HIGH
 		LDA	(POKADR),Y
 		STA	CPC+1		;SET PGM COUNTERS
@@ -499,27 +497,25 @@ FAIL:		JSR	NXSC		; GET NEXT CODE
 		STA	COX
 		JMP	NEXT		; TRY FOR SUCCESS HERE
 
-;
 ; Increment CPC
-;
-;		INCCPC - INC CPC BY ONE
-;
+
+; INCCPC - INC CPC BY ONE
+
 _INCCPC:	INC	CPC
 		BNE	@ICPCR
 		INC	CPC+1
 @ICPCR:		RTS
 
-;
+
 ; NXSC - GET NEXT SYNTAX CODE
-;
+
 NXSC:		JSR	_INCCPC		; INC PC
 		LDX	#0
 		LDA	(CPC,X)		; GET NEXT CODE
 		RTS			; RETURN
 
-;
 ; TERMTST - TEST A TERMINAL CODE
-;
+
 TERMTST:	CMP	#_CHNG		; TEST CODE=F
 		BEQ	ECHNG		; BR CODE = F
 		BCS	SRCONT		; BR CODE > F
@@ -539,9 +535,8 @@ TERMTST:	CMP	#_CHNG		; TEST CODE=F
 		PHA
 		JMP	_PUSH		; GO PUSH
 
-;
 ; ECHNG - EXTERNAL CODE TO CHANGE COX -1
-;
+
 ECHNG:		JSR	_INCCPC		; INC PC TO CODE
 		LDY	#0
 		LDA	(CPC),Y		; GET CODE
@@ -564,9 +559,8 @@ _SETCODE:	LDY	COX		;GET COX
 
 @SCOVF:		JMP	ERLTL		;GO TO LINE TOO LONG ERR
 
-;
 ; Exits for IF and REM
-;
+
 _EIF:		LDX	#$FF		; RESET STACK
 		TXS
 		LDA	COX		; SET STMT LENGTH
@@ -578,9 +572,8 @@ _EDATA:		LDX	#$FF		; RESET STACK
 		TXS
 		JMP	_XDATA		;GO CONTINUE DATA
 
-;
 ; SRCONT - SEARCH OP NAME TABLE AND TEST RESULT
-;
+
 SRCONT:		JSR	SKBLANK		; SKIP BLANKS
 _SRCNT1:	LDA	CIX		; GET CURRENT INPUT INDEX
 		CMP	SVONTX		; COMPARE WITH SAVED IX
@@ -635,9 +628,8 @@ _SRCNT1:	LDA	CIX		; GET CURRENT INPUT INDEX
 @SONF1:		SEC
 		RTS			; DONE
 
-;
 ; _TNVAR - EXTERNAL SUBROUTINE FOR TNVAR & TSVAR
-;
+
 _TNVAR:		LDA	#0		; SET NUMERIC TEST
 		BEQ	_TVAR
 
@@ -936,60 +928,60 @@ _SRC5:		LDA	#2		; IF NOT
 ;	EACH ENTRY HAS SYNTAX TBLE ADR PTR
 ;	FOLLOWED BY STMT NAME
 ;
-SNTAB:		WordBasicString _SREM-1,"REM"
-		WordBasicString _SDATA-1,"DATA"
-		WordBasicString _SINPUT-1,"INPUT"
-		WordBasicString _SCOLOR-1,"COLOR"
-		WordBasicString _SLIST-1,"LIST"
-		WordBasicString _SENTER-1,"ENTER"
-		WordBasicString _SLET-1,"LET"
-		WordBasicString _SIF-1,"IF"
-		WordBasicString _SFOR-1,"FOR"
-		WordBasicString _SNEXT-1,"NEXT"
-		WordBasicString _SGOTO-1,"GOTO"
-		WordBasicString _SGOTO-1,"GO TO"
-		WordBasicString _SGOSUB-1,"GOSUB"
-		WordBasicString _STRAP-1,"TRAP"
-		WordBasicString _SBYE-1,"BYE"
-		WordBasicString _SCONT-1,"CONT"
-		WordBasicString _SCOM-1,"COM"
-		WordBasicString _SCLOSE-1,"CLOSE"
-		WordBasicString _SCLR-1,"CLR"
-		WordBasicString _SDEG-1,"DEG"
-		WordBasicString _SDIM-1,"DIM"
-		WordBasicString _SEND-1,"END"
-		WordBasicString _SNEW-1,"NEW"
-		WordBasicString _SOPEN-1,"OPEN"
-		WordBasicString _SLOAD-1,"LOAD"
-		WordBasicString _SSAVE-1,"SAVE"
-		WordBasicString _SSTATUS-1,"STATUS"
-		WordBasicString _SNOTE-1,"NOTE"
-		WordBasicString _SPOINT-1,"POINT"
-		WordBasicString _SXIO-1,"XIO"
-		WordBasicString _SON-1,"ON"
-		WordBasicString _SPOKE-1,"POKE"
-		WordBasicString _SPRINT-1,"PRINT"
-		WordBasicString _SRAD-1,"RAD"
-		WordBasicString _SREAD-1,"READ"
-		WordBasicString _SREST-1,"RESTORE"
-		WordBasicString _SRET-1,"RETURN"
-		WordBasicString _SRUN-1,"RUN"
-		WordBasicString _SSTOP-1,"STOP"
-		WordBasicString _SPOP-1,"POP"
-		WordBasicString _SPRINT-1,"?"
-		WordBasicString _SGET-1,"GET"
-		WordBasicString _SPUT-1,"PUT"
-		WordBasicString _SGR-1,"GRAPHICS"
-		WordBasicString _SPLOT-1,"PLOT"
-		WordBasicString _SPOS-1,"POSITION"
-		WordBasicString _SDOS-1,"DOS"
-		WordBasicString _SDRAWTO-1,"DRAWTO"
-		WordBasicString _SSETCOLOR-1,"SETCOLOR"
-		WordBasicString _SLOCATE-1,"LOCATE"
-		WordBasicString _SOUND-1,"SOUND"
-		WordBasicString _SLPRINT-1,"LPRINT"
-		WordBasicString _SCSAVE-1,"CSAVE"
-		WordBasicString _SCLOAD-1,"CLOAD"
+SNTAB:		WordBasicString _SREM,"REM"
+		WordBasicString _SDATA,"DATA"
+		WordBasicString _SINPUT,"INPUT"
+		WordBasicString _SCOLOR,"COLOR"
+		WordBasicString _SLIST,"LIST"
+		WordBasicString _SENTER,"ENTER"
+		WordBasicString _SLET,"LET"
+		WordBasicString _SIF,"IF"
+		WordBasicString _SFOR,"FOR"
+		WordBasicString _SNEXT,"NEXT"
+		WordBasicString _SGOTO,"GOTO"
+		WordBasicString _SGOTO,"GO TO"
+		WordBasicString _SGOSUB,"GOSUB"
+		WordBasicString _STRAP,"TRAP"
+		WordBasicString _SBYE,"BYE"
+		WordBasicString _SCONT,"CONT"
+		WordBasicString _SCOM,"COM"
+		WordBasicString _SCLOSE,"CLOSE"
+		WordBasicString _SCLR,"CLR"
+		WordBasicString _SDEG,"DEG"
+		WordBasicString _SDIM,"DIM"
+		WordBasicString _SEND,"END"
+		WordBasicString _SNEW,"NEW"
+		WordBasicString _SOPEN,"OPEN"
+		WordBasicString _SLOAD,"LOAD"
+		WordBasicString _SSAVE,"SAVE"
+		WordBasicString _SSTATUS,"STATUS"
+		WordBasicString _SNOTE,"NOTE"
+		WordBasicString _SPOINT,"POINT"
+		WordBasicString _SXIO,"XIO"
+		WordBasicString _SON,"ON"
+		WordBasicString _SPOKE,"POKE"
+		WordBasicString _SPRINT,"PRINT"
+		WordBasicString _SRAD,"RAD"
+		WordBasicString _SREAD,"READ"
+		WordBasicString _SREST,"RESTORE"
+		WordBasicString _SRET,"RETURN"
+		WordBasicString _SRUN,"RUN"
+		WordBasicString _SSTOP,"STOP"
+		WordBasicString _SPOP,"POP"
+		WordBasicString _SPRINT,"?"
+		WordBasicString _SGET,"GET"
+		WordBasicString _SPUT,"PUT"
+		WordBasicString _SGR,"GRAPHICS"
+		WordBasicString _SPLOT,"PLOT"
+		WordBasicString _SPOS,"POSITION"
+		WordBasicString _SDOS,"DOS"
+		WordBasicString _SDRAWTO,"DRAWTO"
+		WordBasicString _SSETCOLOR,"SETCOLOR"
+		WordBasicString _SLOCATE,"LOCATE"
+		WordBasicString _SOUND,"SOUND"
+		WordBasicString _SLPRINT,"LPRINT"
+		WordBasicString _SCSAVE,"CSAVE"
+		WordBasicString _SCLOAD,"CLOAD"
 
 		.word	_SILET-1
 		.byte	$00,$80		; silent "LET"
@@ -1424,1519 +1416,2004 @@ _PUSR1:		.byte	CCOM,CHNG(CACOM),JS(_PUSR),_OR,_RTN
 ; OPNTAB - Operator Name Table
 ;
 
-OPNTAB:		.byte	$02+$80
-		.byte	$00+$80
+OPNTAB:		.byte	$02+$80			; 0x10 DOUBLE QUOTE (unused?)
+		.byte	$00+$80			; 0x11 DUMMY FOR SOE
 
 		BasicString ","
 		BasicString "$"
 		BasicString ":"
 		BasicString ";"
-		.byte	$1B+$80			; Escape
+		.byte	CR			; CARRIAGE RETURN
 		BasicString "GOTO"
 		BasicString "GOSUB"
 		BasicString "TO"
 		BasicString "STEP"
-
 		BasicString "THEN"
 		BasicString "#"
-		BasicString "<="
-		BasicString "<>"
-		BasicString ">="
-		BasicString "<"
-		BasicString ">"
-		BasicString "="
-		BasicString "^"
-		BasicString "*"
-		BasicString "+"
-		BasicString "-"
-		BasicString "/"
+						; START OF REAL OPS
+		BasicString "<="		; CLE
+		BasicString "<>"		; CNE
+		BasicString ">="		; CGE
+		BasicString "<"			; CGT
+		BasicString ">"			; CLT
+		BasicString "="			; CEQ
+		BasicString "^"			; CEXP - UP ARROW FOR EXP
+		BasicString "*"			; CMUL
+		BasicString "+"			; CPLUS
+		BasicString "-"			; CMINUS
+		BasicString "/"			; CDIV
 
-		BasicString "NOT"
-		BasicString "OR"
-		BasicString "AND"
-		BasicString "("
-		BasicString ")"
-		BasicString "="
-		BasicString "="
-		BasicString "<="
-		BasicString "<>"
-		BasicString ">="
-		BasicString "<"
-		BasicString ">"
-		BasicString "="
-		BasicString "+"
-		BasicString "-"
+		BasicString "NOT"		; CNOT
+		BasicString "OR"		; COR
+		BasicString "AND"		; CAND
+		BasicString "("			; CLPRN
+		BasicString ")"			; CRPRN
+		BasicString "="			; CAASN
+		BasicString "="			; CSASN
+		BasicString "<="		; CSLE
+		BasicString "<>"		; CSNE
+		BasicString ">="		; CSGE
+		BasicString "<"			; CSLT
+		BasicString ">"			; CSGT
+		BasicString "="			; CSEQ
+		BasicString "+"			; CUPLUS - UNARY PLUS
+		BasicString "-"			; CUMINUS - UNARY MINUS
 
-		.byte	$A8,$80,$80,$A8,$A8,$AC
+		BasicString "("			; CSLPRN - STRING LEFT PAREN
 
-		BasicString "STR$"
-		BasicString "CHR$"
-		BasicString "USR"
-		BasicString "ASC"
-		BasicString "VAL"
-		BasicString "LEN"
-		BasicString "ADR"
-		BasicString "ATN"
-		BasicString "COS"
-		BasicString "PEEK"
-		BasicString "SIN"
-		BasicString "RND"
-		BasicString "FRE"
-		BasicString "EXP"
-		BasicString "LOG"
-		BasicString "CLOG"
-		BasicString "SQR"
-		BasicString "SGN"
-		BasicString "ABS"
-		BasicString "INT"
-		BasicString "PADDLE"
-		BasicString "STICK"
-		BasicString "PTRIG"
-		BasicString "STRIG"
+		.byte	$80			; CALPRN - ARRAY LEFT PAREN - DOES NOT PRINT
+		.byte	$80			; CDLPRN - DIM LEFT PAREN - DOES NOT PRINT
+		BasicString "("			; CFLPRN - FUNCTION LEFT PAREN
+		BasicString "("			; CDSLPR - STRING LEFT PAREN
+		BasicString ","			; CACOM - ARRAY COMMA
+
+						; CNFNP
+		BasicString "STR$" 		; CSTR
+		BasicString "CHR$" 		; CCHR
+		BasicString "USR" 		; CUSR
+		BasicString "ASC" 		; CASC
+		BasicString "VAL" 		; CVAL
+		BasicString "LEN" 		; CLEN
+		BasicString "ADR" 		; CADR
+		BasicString "ATN" 		; CATN
+		BasicString "COS" 		; CCOS
+		BasicString "PEEK" 		; CPEEK
+		BasicString "SIN" 		; CSIN
+		BasicString "RND" 		; CRND
+		BasicString "FRE" 		; CFRE
+		BasicString "EXP" 		; CEXP
+		BasicString "LOG" 		; CLOG
+		BasicString "CLOG" 		; CCLOG
+		BasicString "SQR" 		; CSQR
+		BasicString "SGN" 		; CSGN
+		BasicString "ABS" 		; CABS
+		BasicString "INT" 		; CINT
+		BasicString "PADDLE" 		; CPADDLE
+		BasicString "STICK" 		; CSTICK
+		BasicString "PTRIG" 		; CPTRIG
+		BasicString "STRIG" 		; CSTRIG
 
 		.byte	0
 
-EXPLOW:		lda	#0
-A87C:		sty	$A4
-		sta	$A5
+		; END OF OPNTAB & FNTAB
+
+;
+; Memory Manager
+;
+
+; MEMORY MANAGEMENT CONSISTS OF EXPANDING AND
+; CONTRACTING TO INFORMATION AREA POINTED TO
+; 8Y THE ZERO PAGE POINTER TABLES. ROUTINES
+; MODIFY THE ADDRESS IN THE TABLES AND
+; MOVE DATA AS REQUIRED. THE TWO FUNDAMENTAL
+; ROUTINES ARE 'EXPAND' AND 'CONTRACT'
+
+; EXPAND
+;	X = ZERO PAGE ADDRESS OF TABLE AT WHICH
+;	EXPANSION IS TO START
+;	Y EXPANSION SIZE IN BYTES [LOW]
+;	A EXPANSION SIZE IN BYTES [HIGH]
+
+; EXPLOW - FOR EXPANSION < 256 BYTES
+;		SETS A = 0
+
+EXPLOW:		LDA	#0
+
+EXPAND:		STY	ECSIZE			; SAVE EXPAND SIZE
+		STA	ECSIZE+1
 
 		.if	BASIC_REVISION > 1
-		tya
+		TYA
 		.endif
 
-		sec
+		SEC
 
 		.if	BASIC_REVISION = 1
-		lda	MEMTOP
-		adc	$A4
-		tay
-		lda	MEMTOP+1
+		LDA	MEMTOP			; TEST MEMORY TO BE FULL
+		ADC	ECSIZE
+		TAY				; MEMTOP+ECSIZE+1
+		LDA	MEMTOP+1
 		.else
 		adc	MEMTOP
 		tay
 		lda	MEMTOP+1
 		.endif
 
-		adc	$A5
-		cmp	HIMEM+1
-		bcc	@2
-		bne	@1
-		cpy	HIMEM
-		bcc	@2
-		beq	@2
-@1:		jmp	B930
+		ADC	ECSIZE+1		; MUST BE LE
+		CMP	HIMEM+1
+		BCC	@EXP2			; HIMEM
+		BNE	@EXP1
+		CPY	HIMEM
+		BCC	@EXP2
+		BEQ	@EXP2
+@EXP1:		JMP	MEMFULL
 
-@2:		sec
-		lda	MEMTOP
-		sbc	0,X
-		sta	$A2
-		lda	MEMTOP+1
-		sbc	1,X
-		sta	$A3
-		clc
-		adc	1,X
-		sta	$9A
-		lda	0,X
-		sta	$99
-		sta	$97
-		adc	$A4
-		sta	$9B
-		lda	1,X
-		sta	$98
-		adc	$A5
-		adc	$A3
-		sta	$9C
-@3:		lda	0,X
-		adc	$A4
-		sta	0,X
-		lda	1,X
-		adc	$A5
-		sta	1,X
-		inx
-		inx
-		cpx	#MEOLFLG
-		bcc	@3
-		sta	APPMHI+1
-		lda	MEMTOP
-		sta	APPMHI
-		ldx	$A3
-		inx
-		ldy	$A2
-		bne	A8EC
+@EXP2:		SEC				; FORM MOVE LENGTH [MVLNG]
+		LDA	MEMTOP			; MOVE FROM ADR [MVFA]
+		SBC	0,X			; MVLNG = MEMTOP-EXPAND ADR
+		STA	MVLNG
+		LDA	MEMTOP+1		; MVFA[L] EXP ADR [L]
+		SBC	1,X
+		STA	MVLNG+1			; MVFA[H] EXP ADR[H] + MVLNG[H]
+
+		CLC				; DURING MOVE MVLNG[L]
+		ADC	1,X			; WILL BE ADDED SUCH
+		STA	MVFA+1			; THAT MVFA = MEMTOP
+
+		LDA	0,X			; SAVE PREMOVE EXPAND AT VALUE
+		STA	MVFA			; SET MVFA LOW
+		STA	SVESA			; FORM MOVE TO ADR [MVTA]
+		ADC	ECSIZE			; MVTA[L] = EXP ADR[L] + ECSIZE[L]
+
+		STA	MVTA			; MVTA[H) = [CARRY + EXP AD-[H]
+
+		LDA	1,X			; +ECSIZE[H]] + MVLNG[H]
+		STA	SVESA+1
+		ADC	ECSIZE+1		; DURING MOVE MVLNG[L]
+		ADC	MVLNG+1			; WILL BE ADDED SUCH THAT
+		STA	MVTA+1			; MVTA = MEMTOP + ECSIZE
+
+@EXP3:		LDA	0,X			; ADD ECSIZE TO
+		ADC	ECSIZE			; ALL TABLE ENTRIES
+		STA	0,X			; FROM EXPAND AT ADR
+		LDA	1,X			; TO HIMEM
+		ADC	ECSIZE+1
+		STA	1,X
+		INX
+		INX
+		CPX	#MEOLFLG
+		BCC	@EXP3
+		STA	APMH+1			; SET NEW APL
+		LDA	MEMTOP			; HI MEM TO
+		STA	APMH			; MEMTOP
+
+		LDX	MVLNG+1			; X = MVLNG[H]
+		INX				; PLUS ONE
+		LDY	MVLNG			; T = MVLNG[H]
+		BNE	@EXP6			; TEST ZERO LENGTH
 
 		.if	BASIC_REVISION = 1
-		beq	A8F3
+		BEQ	@EXP7			; BR IF LOW = 0
 		.elseif	BASIC_REVISION = 2
 		dex
-		bne	A8EC
+		bne	@EXP6
 		rts
 		.else
 		nop
-		beq	A8F3
+		beq	@EXP7			; BR IF LOW = 0
 		nop
 		.endif
 
-A8E3:		dey
-		dec	$9A
-		dec	$9C
-A8E8:		lda	($99),Y
-		sta	($9B),Y
-A8EC:		dey
-		bne	A8E8
-		lda	($99),Y
-		sta	($9B),Y
-A8F3:		dex
-		bne	A8E3
-		rts
+@EXP4:		DEY				; DEC MVLNG[L]
+		DEC	MVFA+1			; DEC MVFA[H]
+		DEC	MVTA+1			; DEC MVTA[H]
 
+@EXP5:		LDA	(MVFA),Y		; MVFA BYTE
+		STA	(MVTA),Y		; TO MVTA
+@EXP6:		DEY				; DEC COUNT LOW
+		BNE	@EXP5			; BR IF NOT ZERO
+
+		LDA	(MVFA),Y		; MOVE THE ZERO BYTE
+		STA	(MVTA),Y
+
+@EXP7:		DEX				; IF MVLNG[H] IS NOT
+		BNE	@EXP4			; ZERO THEN MOVE 256 MORE
+						; ELSE
+		RTS				; DONE
+
+; CONTRACT
+;	X ZERO PAGE ADR OF TABLE AT WHICH
+;		CONTRACTION WILL START
+;	Y CONTRACT SIZE IN BYTES [LOW]
+;	A CONTRACT SIZE IN BYTES [HI]
+; CONTLOW
+;	SETS A = 0
+;
 CONTLOW:	.if	BASIC_REVISION > 1
 		tay
 		.endif
+CONTLOW1:	LDA	#0
+CONTRACT:	STY	ECSIZE			; SAVE CONTRACT SIZE
+		STA	ECSIZE+1
 
-CONTLOW1:	lda	#0
-CONTRACT:	sty	$A4
-		sta	$A5
-		sec
-		lda	MEMTOP
-		sbc	0,X
-		eor	#$FF
-		tay
-		iny
-		sty	$A2
-		lda	MEMTOP+1
-		sbc	1,X
-		sta	$A3
-		lda	0,X
-		sbc	$A2
-		sta	$99
-		lda	1,X
-		sbc	#0
-		sta	$9A
-		stx	$9B
-A91D:		sec
-		lda	0,X
-		sbc	$A4
-		sta	0,X
-		lda	1,X
-		sbc	$A5
-		sta	1,X
-		inx
-		inx
-		cpx	#MEOLFLG
-		bcc	A91D
-		sta	APPMHI+1
-		lda	MEMTOP
-		sta	APPMHI
-		ldx	$9B
-		lda	0,X
-		sbc	$A2
-		sta	$9B
-		lda	1,X
-		sbc	#0
-		sta	$9C
-A944:		ldx	$A3
-		inx
-		ldy	$A2
+		SEC				; FORM MOVE LENGTH [LOW]
+		LDA	MEMTOP
+		SBC	0,X			; MVLNG[L] = $100-
+		EOR	#$FF			; [MEMTOP[L]] - CON AT VALUE [L]
+		TAY				; THIS MAKES START Y AT
+		INY				; MOVE HAVE A 2'S COMPLEMENT
+		STY	MVLNG			; REMAINDER IN IT
+
+		LDA	MEMTOP+1		; FORM MOVE LENGTH[HIGH]
+		SBC	1,X
+		STA	MVLNG+1
+
+		LDA	0,X			; FORM MOVE FROM ADR [MVFA]
+		SBC	MVLNG			; MVFA = CON AT VALUE
+		STA	MVFA			; MINUS MVLNG[L]
+		LDA	1,X			; DURING MOVE MVLNG[L]
+		SBC	#0			; WILL BE ADDED BACK INTO
+		STA	MVFA+1			; MVFA IN [IND],Y INST
+
+		STX	MVTA			; TEMP SAVE OF CON AT DISPL
+
+@CONT1:		SEC				; SUBTRACT ECSIZE FROM
+		LDA	0,X			; ALL TABLE ENTRY FROM
+		SBC	ECSIZE			; CON AT ADR TO HIMEM
+		STA	0,X
+		LDA	1,X
+		SBC	ECSIZE+1
+		STA	1,X
+		INX
+		INX
+		CPX	#MEMTOP+2
+		BCC	@CONT1
+		STA	APMH+1			; SET NEW APL
+		LDA	MEMTOP			; HI MEM TO
+		STA	APMH			; MEMTOP
+
+		LDX	MVTA
+
+		LDA	0,X			;FORM MOVE TO ADDR [MVTA]
+		SBC	MVLNG			; MVTA = NEW CON AT VALUE
+		STA	MVTA			; MINUS MVLNG [L]
+		LDA	1,X			; DURING MOVE MVLNG[L]
+		SBC	#0			; WILL BE ADDED BACK INTO
+		STA	MVTA+1			; MVTA IN [INO],Y INST
+
+FMOVER:		LDX	MVLNG+1			; GET MOVE LENGTH HIGH
+		INX				; INC SO MOVE CAN BNE
+		LDY	MVLNG			; GET MOVE LENGTH LOW
+		BNE	@CONT2			; IF NOT ZERO GO
+
 		.if	BASIC_REVISION = 1
-		bne	@2
-		beq	@3
-@1:		inc	$9A
-		inc	$9C
-@2:		lda	($99),Y
-		sta	($9B),Y
-		iny
-		bne	@2
-@3:		dex
-		bne	@1
-		rts
-EXECNL:		jsr	B819
-A961:		jsr	TSTBRK
-		.byte	$D0,$35
-A94F:
-A953:
+		BEQ	@CONT4			; BR IF LOW = 0
 		.else
-		bne	A953
 		dex
 		.if	BASIC_REVISION > 1
-		bne	A953
+		bne	@CONT2
 		.endif
 		rts
-
-A94F:		inc	$9A
-		inc	$9C
-A953:		lda	($99),Y
-		sta	($9B),Y
-		iny
-		bne	A953
-		dex
-		bne	A94F
-		rts
-
-EXECNL:		jsr	B819
-A961:		jsr	TSTBRK
-		beq	A99C
 		.endif
-		ldy	STMLBD
-		cpy	MAXCIX
-		bcs	A989
-		lda	(STMCUR),Y
-		sta	STMLBD
-		tya
-		iny
-		lda	(STMCUR),Y
-		iny
-		sty	$A8
-		jsr	JJTAB1
+
+@CONT3:		INC	MVFA+1			;INC MVFA[H]
+		INC	MVTA+1			; INC MVTA[H]
+
+@CONT2:		LDA	(MVFA),Y		; GET MOVE FROM BYTE
+		STA	(MVTA),Y		; GET MOVE TO BYTE
+		INY				; INCREMENT COUNT LOW
+		BNE	@CONT2			; BR IF NOT ZERO
+
+@CONT4:		DEX				; DECREMENT COUNT HIGH
+		BNE	@CONT3			;BR IF NOT ZERO
+		RTS				; ELSE DONE
+
+;
+; Execute Control
+;
+
+; EXECNL - Execute Next Line
+
+EXECNL:		JSR	SETLN1			; SET UP LIN & NXT STMT
+
+; EXECNS - Execute Next Statement
+
+EXECNS:		JSR	TSTBRK			; TEST BREAK
+
+		.if	BASIC_REVISION = 1
+		BNE	@EXBRK			; BR IF BREAK
+		.else
+		beq	@EXBRK			; BR IF BREAK
+		.endif
+
+		LDY	NXTSTD			;GET PTR TO NEXT STMT L
+		CPY	MAXCIX			;AT END OF LINE
+		BCS	@EXEOL			; BR IF EOL
+		LDA	(STMCUR),Y		;GET NEW STMT LENGTH
+		STA	NXTSTD			;SAVE AS FUTURE STMT LENGTH
+		TYA				;Y=DISPL TO THIS STMT LENGTH
+		INY				; PLUS 1 IS DISPL TO CODE
+		LDA	(STMCUR),Y		;GET CODE
+		INY				;INC TO STMT MEAT
+		STY	STINDEX			;SET WORK INDEX
+
+		JSR	@STGO			;GO EXECUTE
 
 		.if	BASIC_REVISION > 1
 		nop
 		.endif
 
-		jmp	A961
+		JMP	EXECNS			;THEN DO NEXT STMT
 
-JJTAB1:		asl
-		tax
-		lda	JTAB1,X
-		pha
-		lda	JTAB1+1,X
-		pha
-		rts
+@STGO:		ASL				;TOKEN*2
+		TAX
+		LDA	STETAB,X		; GET ADR AND
+		PHA				;PUSH TO STACK
+		LDA	STETAB+1,X		; AND GO TO
+		PHA				;VIA
+		RTS				;RTS
 
-A989:		ldy	#1
-		lda	(STMCUR),Y
-		bmi	A99F
-		lda	MAXCIX
-		jsr	GNXTL
-		jsr	A9E1
-		bpl	EXECNL
-		jmp	B78C
-A99C:		jmp	B792
-A99F:		jmp	SNX3
+@EXEOL:		LDY	#1
+		LDA	(STMCUR),Y
+		BMI	@EXFD			; BR IF DIR
 
-GETSTMT:	lda	STMCUR
-		sta	$BE
-		lda	STMCUR+1
-		sta	$BF
-		lda	STMTAB+1
-		ldy	STMTAB
-		sta	STMCUR+1
+		LDA	MAXCIX			;GET LINE LENGTH
+		JSR	GNXTL			;INC STMCUR
+		JSR	TENDST			;TEST END STMT TABLE
+		BPL	EXECNL			;BR NOT END
+
+@EXDONE:	JMP	XEND			; GO BACK TO SYNTAX
+@EXBRK:		JMP	XSTOP			; BREAK, DO STOP
+@EXFD:		JMP	SNX3			; GO TO SYNTAX VIA READY MSG
+
+; GETSTMT - Get Statement in Statement Table
+;	SEARCH FOR STMT THAT HAS TSLNUM
+;	SET STMCUR TO POINT TO IT IF FOUND
+;	OR TO WHERE IT WOULD GO IF NOT FOUND
+;	CARRY SET IF NOT FOUND
+GETSTMT:
+;	
+;	SAVE CURRENT LINE ADDR
+;
+		LDA	STMCUR
+		STA	SAVCUR
+		LDA	STMCUR+1
+		STA	SAVCUR+1
+		LDA	STMTAB+1		;START AT TOP OF TABLE
+		LDY	STMTAB
+
+		sta	STMCUR+1		;SET STMCUR
 		sty	STMCUR
-A9B2:		ldy	#1
-		lda	(STMCUR),Y
-		cmp	$A1
-		bcc	A9C7
-		bne	A9C6
-		dey
-		lda	(STMCUR),Y
-		cmp	$A0
-		bcc	A9C7
-		bne	A9C6
-		clc
-A9C6:		rts
 
-A9C7:		jsr	GETLL
-		jsr	GNXTL
-		jmp	A9B2
+@GS2:		LDY	#1
+		LDA	(STMCUR),Y		;GET STMT LNO [HI]
+		CMP	TSLNUM+1		;TEST WITH TSLNUM
+		BCC	@GS3			;BR IF S<TS
+		BNE	@GSRT1			;BR IF S>TS
+		DEY				;S=TS, TEST LOW BYTE
+		LDA	(STMCUR),Y
+		CMP	TSLNUM
+		BCC	@GS3			;BR S<TS
+		BNE	@GSRT1			;BR S>TS
+		CLC				;S=TS, CLEAR CARY
+@GSRT1:		RTS				;AND RETURN [FOUND]
 
-GNXTL:		clc			; STMCUR += accu
-		adc	STMCUR
-		sta	STMCUR
+@GS3:		JSR	GETLL			;GO GET THIS GUYS LENGTH
+		JSR	GNXTL
+		JMP	@GS2
+
+GNXTL:		CLC
+		ADC	STMCUR			;ADD LENGTH TO STMCUR
+		STA	STMCUR
+		.if	BASIC_REVISION = 1
+		TAY
+		.endif
+		LDA	STMCUR+1
+		ADC	#0
+		STA	STMCUR+1
+		RTS
+
+GETLL:		LDY	#2
+		LDA	(STMCUR),Y
+		RTS
+
+; TENDST - Test End of Statement Table
+
+TENDST:		LDY	#1
+		LDA	(STMCUR),Y
 
 		.if	BASIC_REVISION = 1
-		tay
-		.endif
-
-		lda	STMCUR+1
-		adc	#0
-		sta	STMCUR+1
-		rts
-
-GETLL:		ldy	#2
-		lda	(STMCUR),Y
-		rts
-
-A9E1:		ldy	#1
-		lda	(STMCUR),Y
-
-		.if	BASIC_REVISION = 1
-		rts
-		.endif
-
-A9E5:		rts			; execute REM, DATA
-
-A9E6:		jsr	CLSALL		; execute BYE
-		jmp	SELFSV
-
-A9EC:		jsr	CLSALL		; execute DOS
-		jmp	(DOSVEC)
-
-TSTBRK:		.if	BASIC_REVISION = 1
-		ldy	#0
-		lda	BRKKEY
-		bne	@1
-		ldy	#$FF
-		sty	BRKKEY
-		.else
-		ldy	BRKKEY
-		bne	@2
-		dec	BRKKEY
-		.endif
-@1:		tya
-@2:		rts
-
-JTAB1:		.dbyt	A9E5-1,A9E5-1,B33E-1,BA1F-1,B4B5-1,BAC5-1,AADA-1,B778-1
-		.dbyt	B67D-1,B700-1,B6D5-1,B6D5-1,B6D2-1,B7D8-1,A9E6-1,B7B5-1
-		.dbyt	B206-1,BC22-1,B766-1,B28D-1,B206-1,B78C-1,XNEW-1,BBF2-1
-		.dbyt	BAFB-1,BB6D-1,BC2F-1,BC3D-1,BC54-1,BBEC-1,B7E4-1,B278-1
-		.dbyt	B3DA-1,B291-1,B2AE-1,B296-1,BDA8-1,B74C-1,B792-1,B83E-1
-		.dbyt	B3DA-1,BC85-1,BC78-1,BA46-1,BA6C-1,BA0C-1,A9EC-1,BA27-1
-		.dbyt	B9AD-1,BC9E-1,B9D3-1,B496-1,BBD1-1,BB64-1,AADA-1,B912-1
-
-JTAB2:		.dbyt	ACA3-1,ACAC-1,ACC2-1,ACB2-1,ACB9-1,ACC9-1,B15E-1,AC83-1
-		.dbyt	BDFA-1,AC7A-1,AC8C-1,ACE4-1,ACD9-1,ACCF-1,RTS1-1,AD66-1
-		.dbyt	AD4A-1,AE8E-1,ACA3-1,ACAC-1,ACC2-1,ACB2-1,ACB9-1,ACC9-1
-		.dbyt	RTS2-1,AC95-1,AE11-1,AD71-1,AD6D-1,AD66-1,AD6D-1,AD64-1
-		.dbyt	B034-1,B052-1,B0A5-1,AFFD-1,AFEB-1,AFB5-1,B007-1,B118-1
-		.dbyt	B10F-1,AFCC-1,B106-1,B076-1,AFD6-1,B14A-1,B121-1,B13D-1
-		.dbyt	B153-1,AD04-1,B099-1,B0C8-1,B00D-1,B011-1,B015-1,B019-1
-
-AADA:		jsr	AB26		; execute LET
-AADD:		jsr	AB36
-		bcs	AAE7
-		jsr	ABB2
-
-		.if	BASIC_REVISION = 1
-		jmp	AADD
-		.else
-		bmi	AADD
-		.endif
-
-AAE7:		sta	$AB
-		tax
-		lda	AC35-$10,X
-		lsr
-		lsr
-		lsr
-		lsr
-		sta	$AC
-AAF3:		ldy	$A9
-		lda	(LOMEM),Y
-		tax
-		lda	AC35-$10,X
-		and	#%00001111
-		cmp	$AC
-		bcc	AB0E
-		tax
-		beq	RTS1
-AB04:		lda	(LOMEM),Y
-		inc	$A9
-		jsr	JJTAB2
-AB12:		jmp	AAF3
-AB0E:		lda	$AB
-		dey
-		sta	(LOMEM),Y
-		sty	$A9
-		jmp	AADD
-
-		.if	BASIC_REVISION = 1
-RTS1:		rts
-		.endif
-
-JJTAB2:		sec
-		sbc	#29
-		asl
-		tax
-		lda	JTAB2,X
-		pha
-		lda	JTAB2+1,X
-		pha
-		rts
-
-AB26:		ldy	#$FF
-		lda	#$11
-		sta	(LOMEM),Y
-		sty	$A9
-		iny
-		sty	$B0
-		sty	$AA
-		sty	$B1
-
-		.if	BASIC_REVISION > 1
-RTS1:
-RTS2:
-		.endif
-
-		rts
-
-AB36:		ldy	$A8
-		inc	$A8
-		lda	(STMCUR),Y
-		bmi	AB81
-		cmp	#$F
-		bcc	AB45
-		beq	AB57
-		rts
-
-AB45:		ldx	#0
-AB47:		iny
-		lda	(STMCUR),Y
-		sta	FR0,X
-		inx
-		cpx	#6
-		bcc	AB47
-
-		iny
-		lda	#0
-		tax
-		beq	AB79
-AB57:		iny
-		lda	(STMCUR),Y
-		ldx	#$8A
-AB5C:		sta	$D6
-		sta	$D8
-		iny
-		tya
-		clc
-		adc	$0,X
-		sta	FR0
-		lda	#0
-		sta	$D7
-		sta	$D9
-		adc	$1,X
-		sta	FR0+1
-		tya
-		adc	$D6
-		tay
-		ldx	#0
-		lda	#$83
-AB79:		sta	$D2
-		stx	$D3
-		sty	$A8
-		clc
-		rts
-
-AB81:		jsr	AC1E
-AB84:		lda	($9D),Y
-		sta	$D2,Y
-		iny
-		cpy	#8
-		bcc	AB84
-		clc
-		rts
-
-AB90:		jsr	ABE9
-AB93:		lda	#2
-		bit	$D2
-		bne	@rts
-		ora	$D2
-		sta	$D2
-		ror
-		bcc	@1
-		clc
-		lda	FR0
-		adc	STARP
-		sta	FR0
-		tay
-		lda	FR0+1
-		adc	$8D
-		sta	FR0+1
-@rts:		rts
-@1:		jsr	B922
-
-ABB2:		inc	$AA
-		lda	$AA
-		asl
-		asl
-		asl
-		cmp	$A9
-		bcs	ABCA
-		tay
-		dey
-		ldx	#$7
-@1:		lda	$D2,X
-		sta	(LOMEM),Y
-		dey
-		dex
-		bpl	@1
-ABC9:		rts
-ABCA:		jmp	B920
-
-ABCD:		jsr	ABD7
-		lda	FR0+1
-
-		.if	BASIC_REVISION = 1
-		bmi	@1
-		rts
-@1:		jmp	B926
-		.else
-		bpl	ABC9
-		jmp	B926
-		.endif
-
-ABD7:		jsr	AADA
-ABDA:		jsr	ABE9
-		jmp	CVFPI
-ABE0:		jsr	ABCD
-		bne	@1
-		rts
-@1:		jsr	B92E
-ABE9:		lda	$AA
-		dec	$AA
-		asl
-		asl
-		asl
-		tay
-		dey
-		ldx	#7
-@loop_x:	lda	(LOMEM),Y
-		sta	$D2,X
-		dey
-		dex
-		bpl	@loop_x
-		rts
-
-ABFD:		jsr	ABE9
-		jsr	FMOVE
-		jmp	ABE9
-AC06:		jsr	AADA
-
-		.if	BASIC_REVISION = 1
-		jsr	ABE9
-		rts
-		.else
-		jmp	ABE9
-		.endif
-
-AC0C:		lda	$D3
-		jsr	AC1E
-		ldx	#0
-@1:		lda	$D2,X
-		sta	($9D),Y
-		iny
-		inx
-		cpx	#8
-		bcc	@1
-		rts
-
-AC1E:		ldy	#0
-		sty	$9E
-		asl
-		asl
-		rol	$9E
-		asl
-		rol	$9E
-		clc
-		adc	VVTP
-		sta	$9D
-		lda	VVTP+1
-		adc	$9E
-		sta	$9E
-		rts
-
-AC35:		.byte	$00,$00,$00,$00,$00,$00,$00,$00
-		.byte	$00,$00,$00,$00,$00,$88,$88,$88
-		.byte	$88,$88,$88,$CC,$AA,$99,$99,$AA
-
-		.if	BASIC_REVISION = 1
-		.byte	$77
-		.else
-		.byte	$DD
-		.endif
-
-		.byte	$55,$66,$F2,$4E,$F1,$F1,$EE
-		.byte	$EE,$EE,$EE,$EE,$EE,$DD,$DD,$F2
-		.byte	$F2,$F2,$F2,$F2,$43,$F2,$F2,$F2
-		.byte	$F2,$F2,$F2,$F2,$F2,$F2,$F2,$F2
-		.byte	$F2,$F2,$F2,$F2,$F2,$F2,$F2,$F2
-		.byte	$F2,$F2,$F2,$F2,$F2
-
-		.if	BASIC_REVISION = 1
-BDFA:		jsr	ABFD
-		jsr	AD26
-		jmp	ABB2
-		.endif
-
-AC7A:		jsr	ABFD
-		jsr	AD2C
-		jmp	ABB2
-AC83:		jsr	ABFD
-		jsr	AD32
-		jmp	ABB2
-AC8C:		jsr	ABFD
-		jsr	AD38
-		jmp	ABB2
-AC95:		jsr	ABE9
-
-		lda	FR0
-
-		.if	BASIC_REVISION > 1
-		beq	@1
-		.endif
-
-		eor	#$80
-		sta	FR0
-@1:		jmp	ABB2
-
-		.if	BASIC_REVISION = 1
-RTS2:		rts
-		.endif
-
-ACA3:		jsr	AD11
-		bmi	ACF0
-		beq	ACF0
-		bpl	ACEB
-ACAC:		jsr	AD11
-
-		.if	BASIC_REVISION = 1
-		beq	ACEB
-		bne	ACF0
-		.else
-		jmp	ACE0
-		.endif
-
-ACB2:		jsr	AD11
-		bmi	ACF0
-		bpl	ACEB
-
-ACB9:		jsr	AD11
-		bmi	ACEB
-		beq	ACEB
-		bpl	ACF0
-
-ACC2:		jsr	AD11
-		bmi	ACEB
-		bpl	ACF0
-
-ACC9:		jsr	AD11
-		.if	BASIC_REVISION = 1
-		beq	ACF0
-		bne	ACEB
-		.else
-		jmp	ACE9
-		.endif
-
-ACCF:		jsr	ABFD
-		lda	FR0
-		and	FR1
-
-		.if	BASIC_REVISION = 1
-		beq	ACEB
-		bne	ACF0
-		.else
-		jmp	ACE0
-		.endif
-
-ACD9:		jsr	ABFD
-		lda	FR0
-		ora	FR1
-ACE0:		beq	ACEB
-		bne	ACF0
-
-ACE4:		jsr	ABE9
-		lda	FR0
-ACE9:		beq	ACF0
-ACEB:		lda	#0
-		tay
-		beq	ACF4
-ACF0:		lda	#$40
-ACF2:		ldy	#1
-ACF4:		sta	FR0
-		sty	FR0+1
-		ldx	#$D6
-		ldy	#4
-		jsr	__DA48
-		sta	$D2
-AD01:		jmp	ABB2
-
-AD04:		jsr	ABE9		; evaluate SGN()
-		lda	FR0
-		beq	AD01
-		bpl	ACF0
-		lda	#$C0
-		bmi	ACF2
-AD11:		ldy	$A9
-		dey
-		lda	(LOMEM),Y
-		cmp	#$2F
-		bcc	@1
-		jmp	AF6C
-
-@1:		jsr	ABFD
-AD20:		jsr	AD2C
-		lda	FR0
-		rts
-
-AD26:		jsr	FADD
-		bcs	AD3E
-		rts
-
-AD2C:		jsr	FSUB
-		bcs	AD3E
-		rts
-
-AD32:		jsr	FMUL
-		bcs	AD3E
-		rts
-
-AD38:		jsr	FDIV
-		bcs	AD3E
-		rts
-
-AD3E:		jsr	B91E
-CVFPI:		jsr	FPI
-		bcs	AD47
-		rts
-
-AD47:		jsr	B92E
-AD4A:		lda	$A9
-		cmp	#$FF
-		bne	AD5F
-		jsr	ABFD
-
-		ldx	#5	; copy FR1 -> FR0
-AD55:		lda	FR1,X
-		sta	FR0,X
-		dex
-		bpl	AD55
-		jmp	AC0C
-
-AD5F:		lda	#$80
-		sta	$B1
-		rts
-
-AD64:		inc	$B0
-AD66:		ldy	$A9
-		pla
-		pla
-		jmp	AB04
-
-AD6D:		lda	#$40
-		sta	$B1
-AD71:		bit	$B1
-		bpl	AD7B
-		lda	$AA
-		sta	STENUM
-		dec	$AA
-AD7B:		lda	#0
-		tay
-		cmp	$B0
-		beq	AD8D
-		dec	$B0
-		jsr	ABDA
-		lda	FR0+1
-		bmi	ADAE
-		ldy	FR0
-AD8D:		sta	$98
-		sty	$97
-		jsr	ABDA
-		lda	FR0
-		sta	$F5
-		lda	FR0+1
-		bmi	ADAE
-		sta	$F6
-		jsr	ABE9
-		bit	$B1
-		bvc	ADAA
-		lda	#0
-		sta	$B1
-		rts
-ADAA:		ror	$D2
-		bcs	ADB1
-ADAE:		jsr	B922
-ADB1:		lda	$F6
-		cmp	$D7
-		bcc	ADBF
-		bne	ADAE
-		lda	$F5
-		cmp	$D6
-		bcs	ADAE
-ADBF:		lda	$98
-		cmp	$D9
-		bcc	ADCD
-		bne	ADAE
-		lda	$97
-		cmp	$D8
-		bcs	ADAE
-ADCD:		jsr	AF48
-		lda	$97
-		ldy	$98
-		jsr	AF3D
-		jsr	AF31
-		lda	FR0
-		ldy	FR0+1
-		jsr	AF3D
-		lda	STARP
-		ldy	STARP+1
-		jsr	AF3D
-		bit	$B1
-		bpl	AE01
-		lda	STENUM
-		sta	$AA
-		jsr	ABE9
-		ldy	#5
-ADF5:		lda	FR0,Y
-		sta	($F5),Y
-		dey
-		bpl	ADF5
-		iny
-		sty	$B1
-		rts
-AE01:		ldy	#5
-AE03:		lda	($F5),Y
-		sta	$0D4,Y
-		dey
-		bpl	AE03
-		iny
-		sty	$D2
-		jmp	ABB2
-AE11:		lda	$B0
-		beq	AE1C
-		jsr	AE81
-		sty	$98
-		sta	$97
-AE1C:		jsr	AE81
-		sec
-		sbc	#1
-		sta	$F5
-		tya
-		sbc	#0
-		sta	$F6
-		jsr	ABE9
-		lda	$B1
-		bpl	AE3B
-		ora	$B0
-		sta	$B1
-		ldy	$D9
-		lda	$D8
-		jmp	AE3F
-AE3B:		lda	$D6
-		ldy	$D7
-AE3F:		ldx	$B0
-		beq	AE53
-		dec	$B0
-		cpy	$98
-		bcc	AE7E
-		bne	AE4F
-		cmp	$97
-		bcc	AE7E
-AE4F:		ldy	$98
-		lda	$97
-AE53:		sec
-		sbc	$F5
-		sta	$D6
-		tax
-		tya
-		sbc	$F6
-		sta	$D7
-		bcc	AE7E
-		tay
-		bne	AE66
-		txa
-		beq	AE7E
-AE66:		jsr	AB93
-		clc
-		lda	FR0
-		adc	$F5
-		sta	FR0
-		lda	FR0+1
-		adc	$F6
-		sta	FR0+1
-		bit	$B1
-		bpl	AE7B
-		rts
-AE7B:		jmp	ABB2
-AE7E:		jsr	B92A
-AE81:		jsr	ABDA
-		lda	FR0
-		ldy	FR0+1
-		bne	AE8D
-		tax
-		beq	AE7E
-AE8D:		rts
-
-AE8E:		jsr	AB90
-AE91:		lda	FR0
-		sta	$99
-		lda	FR0+1
-		sta	$9A
-		lda	FR0+2
-		sta	$A2
-		ldy	FR0+3
-		sty	$A3
-		ldy	$A9
-		cpy	#$FF
-		beq	AEB6
-		lda	#$80
-		sta	$B1
-		jsr	AB04
-		lda	$D7
-		ldy	$D6
-		rol	$B1
-		bcs	AEBD
-AEB6:		jsr	AB90
-		lda	$D9
-		ldy	$D8
-AEBD:		cmp	$A3
-		bcc	AEC7
-		bne	AECB
-		cpy	$A2
-		bcs	AECB
-AEC7:		sta	$A3
-		sty	$A2
-AECB:		clc
-		lda	FR0
-		adc	$A2
-		tay
-		lda	FR0+1
-		adc	$A3
-		tax
-		sec
-		tya
-		sbc	STARP
-		sta	$F9
-		txa
-		sbc	$8D
-		sta	$FA
-		sec
-		lda	#0
-		sbc	$A2
-		sta	$A2
-		sec
-		lda	$99
-		sbc	$A2
-		sta	$99
-		lda	$9A
-		sbc	#0
-		sta	$9A
-		sec
-		lda	FR0
-		sbc	$A2
-		sta	$9B
-		lda	FR0+1
-		sbc	#0
-		sta	$9C
-		jsr	A944
-		lda	$D3
-		jsr	AB81
-		sec
-		lda	$F9
-		sbc	FR0
-		tay
-		lda	$FA
-		sbc	FR0+1
-		tax
-		lda	#2
-		and	$B1
-		beq	AF2A
-		lda	#0
-		sta	$B1
-		cpx	$D7
-		bcc	AF29
-		bne	AF2A
-		cpy	$D6
-		bcs	AF2A
-AF29:		rts
-AF2A:		sty	$D6
-		stx	$D7
-		jmp	AC0C
-AF31:		asl	$F5
-		rol	$F6
-		ldy	$F6
-		lda	$F5
-		asl	$F5
-		rol	$F6
-AF3D:		clc
-		adc	$F5
-		sta	$F5
-		tya
-		adc	$F6
-		sta	$F6
-		rts
-AF48:		lda	#0
-		sta	$F7
-		sta	$F8
-		ldy	#$10
-AF50:		lda	$F5
-		lsr
-		bcc	AF61
-		clc
-		ldx	#$FE
-AF58:		lda	$F9,X
-		adc	$DA,X
-		sta	$F9,X
-		inx
-		bne	AF58
-AF61:		ldx	#3
-AF63:		ror	$F5,X
-		dex
-		bpl	AF63
-		dey
-		bne	AF50
-		rts
-AF6C:		jsr	AB90
-		jsr	FMOVE
-		jsr	AB90
-AF75:		ldx	#$D6
-		jsr	AFA7
-		php
-		ldx	#$E2
-		jsr	AFA7
-		beq	AF95
-		plp
-		beq	AF92
-		ldy	#0
-		lda	(FR0),Y
-		cmp	(FR1),Y
-		beq	AF99
-		bcc	AF92
-AF8F:		lda	#1
-		rts
-AF92:		lda	#$80
-		rts
-AF95:		plp
-		bne	AF8F
-		rts
-AF99:		inc	FR0
-		bne	AF9F
-		inc	FR0+1
-AF9F:		inc	FR1
-		bne	AF75
-		inc	FR1+1
-		bne	AF75
-
-AFA7:		lda	0,X
-		bne	AFB1
-		lda	1,X
-		beq	AFB4
-		dec	1,X
-AFB1:		dec	0,X
-		tay
-AFB4:		rts
-
-AFB5:		jsr	AB90		; evaluate LEN()
-		lda	FR0+2
-		ldy	FR0+3
-AFBC:		sta	FR0
-		sty	FR0+1
-AFC0:		jsr	IFP
-AFC3:		lda	#0
-		sta	$D2
-		sta	$D3
-		jmp	ABB2
-
-AFCC:		jsr	ABDA		; evaluate PEEK()
-		ldy	#0
-		lda	(FR0),Y
-		jmp	AFBC
-
-AFD6:		jsr	ABE9		; evaluate FRE()
-		sec
-		lda	HIMEM
-		sbc	MEMTOP
-		sta	FR0
-		lda	HIMEM+1
-		sbc	MEMTOP+1
-		sta	FR0+1
-		jmp	AFC0
-
-AFEB:		jsr	BD7D		; evaluate VAL()
-		lda	#0
-		sta	CIX
-		jsr	AFP
-		jsr	RSTSEOL
-		bcc	AFC3
-		jsr	B910
-
-AFFD:		jsr	AB90		; evaluate ASC()
-		ldy	#0
-		lda	(FR0),Y
-		jmp	AFBC
-
-B007:		jsr	AB90		; evaluate ADR()
-		jmp	AFC0
-
-B00D:		lda	#0		; evaluate PADDLE()
-		beq	B01B
-
-B011:		lda	#8		; evaluate STICK()
-		bne	B01B
-
-B015:		lda	#12		; evaluate PTRIG()
-		bne	B01B
-
-B019:		lda	#20		; evaluate STRIG()
-
-B01B:		pha
-		jsr	ABDA
-		lda	FR0+1
-		bne	B031
-		lda	FR0
-		pla
-		clc
-		adc	FR0
-		tax
-		lda	$270,X
-		ldy	#0
-		beq	AFBC
-B031:		jsr	B92E
-
-B034:		jsr	ABE9		; evaluate STR$()
-		jsr	FASC
-		lda	INBUFF
-		sta	FR0
-		lda	INBUFF+1
-		sta	FR0+1
-		ldy	#$FF
-@1:		iny
-		lda	(INBUFF),Y
-		bpl	@1
-		and	#$7F
-		sta	(INBUFF),Y
-		iny
-		sty	$D6
-		bne	B069
-
-B052:		jsr	ABE9		; evaluate CHR$()
-		jsr	CVFPI
-		lda	FR0
-		sta	$5C0
-		lda	#5
-		sta	FR0+1
-		lda	#$C0
-		sta	FR0
-		lda	#1
-		sta	FR0+2
-B069:		lda	#0
-		sta	FR0+3
-		sta	$D3
-		lda	#$83
-		sta	$D2
-		jmp	ABB2
-
-B076:		ldx	#<@FP65536	; evaluate RND()
-		ldy	#>@FP65536
-		jsr	FLD1R
-		jsr	ABE9
-		ldy	RANDOM
-		sty	FR0
-		ldy	RANDOM
-		sty	FR0+1
-		jsr	IFP
-		jsr	AD38
-		jmp	ABB2
-
-@FP65536:	.byte	$42,$06,$55,$36,$00,$00
-
-B099:		jsr	ABE9		; evaluate ABS()
-		lda	FR0
-		and	#$7F
-		sta	FR0
-		jmp	ABB2
-
-B0A5:		jsr	@1		; evaluate USR()
-		jsr	IFP
-		jmp	ABB2
-
-@1:		lda	$B0
-		sta	$C6
-@2:		jsr	ABDA
-		dec	$C6
-		bmi	@3
-		lda	FR0
-		pha
-		lda	FR0+1
-		pha
-		jmp	@2
-@3:		lda	$B0
-		pha
-		jmp	(FR0)
-
-B0C8:		jsr	ABE9		; evaluate INT()
-		jsr	@1
-		jmp	ABB2
-@1:		lda	FR0
-		and	#$7F
-		sec
-		sbc	#$3F
-		bpl	@2
-		lda	#0
-@2:		tax
-		lda	#0
-		tay
-@3:		cpx	#5
-		bcs	@4
-		ora	FR0+1,X
-		sty	FR0+1,X
-		inx
-		bne	@3
-@4:		ldx	FR0
-		bpl	@5
-		tax
-		beq	@5
-		ldx	#$E0
-		jsr	ZF1
-		lda	#$C0
-		sta	$E0
-		lda	#1
-		sta	$E1
-		.if	BASIC_REVISION > 3
-		jmp	AD26
-		nop
-		.else
-		JSR	AD26		; ADD IT
 		RTS
 		.endif
-@5:		jmp	__DC00
 
-B106:		jsr	ABE9		; evaluate SIN()
-		jsr	BE05
-		.if	BASIC_REVISION = 1
-		bcs	ex_cs
-		bcc	ex_cc
+		; Execute REM, DATA
+
+XREM:
+XDATA:
+TESTRTS:	RTS
+
+		; Execute BYE
+
+XBYE:		JSR	CLSALL
+		JMP	SELFSV
+
+		; Execute DOS
+
+XDOS:		JSR	CLSALL
+		JMP	(DOSVEC)
+
+TSTBRK:		.if	BASIC_REVISION = 1
+		LDY	#0
+
+		LDA	BRKBYT		; LOAD BREAK BYTE
+		BNE	@TB2
+		LDY	#$FF
+		STY	BRKBYT
 		.else
-		jmp	B159
+		ldy	BRKBYT
+		bne	@TBX
+		dec	BRKBYT
+		.endif
+@TB2:		TYA			; SET COND DONE
+@TBX:		RTS			; DONE
+
+;
+; Statement Execution Table
+;
+
+;	STETAB	- STATEMENT EXECUTION TABLE
+;		- CONTAINS STMT EXECUTION ADR
+;		- MUST BE IN SAME ORDER AS SNTAB
+
+STETAB:		.dbyt	XREM-1,XDATA-1,XINPUT-1,XCOLOR-1,XLIST-1,XENTER-1,XLET-1,XIF-1
+		.dbyt	XFOR-1,XNEXT-1,XGOTO-1,XGOTO-1,XGOSUB-1,XTRAP-1,XBYE-1,XCONT-1
+		.dbyt	XCOM-1,XCLOSE-1,XCLR-1,XDEG-1,XDIM-1,XEND-1,XNEW-1,XOPEN-1
+		.dbyt	XLOAD-1,XSAVE-1,XSTATUS-1,XNOTE-1,XPOINT-1,XXIO-1,XON-1,XPOKE-1
+		.dbyt	XPRINT-1,XRAD-1,XREAD-1,XREST-1,XRTN-1,XRUN-1,XSTOP-1,XPOP-1
+		.dbyt	XPRINT-1,XGET-1,XPUT-1,XGR-1,XPLOT-1,XPOS-1,XDOS-1,XDRAWTO-1
+		.dbyt	XSETCOLOR-1,XLOCATE-1,XSOUND-1,XLPRINT-1,XCSAVE-1,XCLOAD-1,XLET-1,XERR-1
+
+;
+; Operator Execution Table
+;
+
+;	OPETAB	- OPERATOR EXECUTION TABLE
+;		- CONTAINS OPERATOR EXECUTION ADR
+;		- MUST BE IN SAME ORDER AS OPNTAB
+
+OPETAB:		.dbyt	XPLE-1,XPNE-1,XPGE-1,XPLT-1,XPGT-1,XPEQ-1,XPPOWER-1,XPMUL-1
+		.dbyt	XPPLUS-1,XPMINUS-1,XPDIV-1,XPNOT-1,XPOR-1,XPAND-1,XPLPRN-1,XPRPRN-1
+		.dbyt	XPAASN-1,XSAASN-1,XPSLE-1,XPSNE-1,XPSGE-1,XPSLT-1,XPSGT-1,XPEQ-1
+		.dbyt	XPUPLUS-1,XPUMINUS-1,XPSLPRN-1,XPALPRN-1,XPDLPRN-1,XPFLPRN-1,XDPSLP-1,XPACOM-1
+		.dbyt	XPSTR-1,XPCHR-1,XPUSR-1,XPASC-1,XPVAL-1,XPLEN-1,XPADR-1,XPATN-1
+		.dbyt	XPCOS-1,XPPEEK-1,XPSIN-1,XPRND-1,XPFRE-1,XPEXP-1,XPLOG-1,XPL10-1
+		.dbyt	XPSQR-1,XPSGN-1,XPABS-1,XPINT-1,XPPDL-1,XPSTICK-1,XPPTRIG-1,XPSTRIG-1
+;
+; Execute Expression
+;
+
+		; Execute LET
+XLET:
+EXEXPR:
+		JSR	EXPINT			; GO INIT
+
+_EXNXT:		JSR	_EGTOKEN		; GO GET TOKEN
+		BCS	@EXOT			; BR IF OPERATOR
+
+		JSR	ARGPUSH			; PUSH ARG
+
+		.if	BASIC_REVISION = 1
+		JMP	_EXNXT			; GO FOR NEXT TOKEN
+		.else
+		bmi	_EXNXT
 		.endif
 
-B10F:		jsr	ABE9		; evaluate COS()
-		jsr	BE0F
+@EXOT:		STA	EXSVOP			; SAVE OPERATOR
+		TAX
+		LDA	OPRTAB-16,X		; GET OP PREC
+		LSR
+		LSR
+		LSR
+		LSR
+		STA	EXSVPR			; SAVE GOES ON PREC
+
+_EXPTST:	LDY	OPSTKX			; GET OP STACK INDEX
+		LDA	(ARGSTK),Y		; GET TOP OP
+		TAX
+		LDA	OPRTAB-16,X		; GET TOP OP PREC
+		AND	#$0F
+		CMP	EXSVPR			; [TOP OP]: [NEW OP]
+		BCC	_EOPUSH			; IF T<N, PUSH NEW
+						;	ELSE POP
+		TAX				; IF POP SOE
+		BEQ	_EXEND			; THEN DONE
+
+_EXOPOP:	LDA	(ARGSTK),Y		; RE-GET TOS OP
+		INC	OPSTKX			; DEC OP STACK INDEX
+		JSR	_EXOP			; GET EXECUTE OP
+		JMP	_EXPTST			; GO TEST OP WITH NEW TOS
+
+_EOPUSH:	LDA	EXSVOP			; GET OP TO PUSH
+		DEY				; DEC TO NEXT ENTRY
+		STA	(ARGSTK),Y		; SET OP IN STACK
+		STY	OPSTKX			; SAVE NEW OP STACK INDEX
+		JMP	_EXNXT			; GO GET NEXT TOKEN
+
 		.if	BASIC_REVISION = 1
-		bcs	ex_cs
-		bcc	ex_cc
-		.else
-		jmp	B159
+_EXEND:
+XPLPRN:		RTS				; DONE EXECUTE EXPR
 		.endif
 
-B118:		jsr	ABE9		; evaluate ATN()
-		jsr	BED5
+_EXOP:		SEC				; SUBTRACT FOR REL 0
+		SBC	#CSROP			; VALUE OF FIRST REAL OP
+		ASL				; VALUE * 2
+		TAX
+		LDA	OPETAB,X		; PUT OP EXECUTION
+		PHA				; ROUTINE ON STACK
+		LDA	OPETAB+1,X		; AND GOTO
+		PHA				; VIA
+		RTS				; RTS
+
+;
+; Initialize Expression Parameters
+;
+
+EXPINT:		LDY	#$FF
+		LDA	#CSOE			; OPERATOR
+		STA	(ARGSTK),Y		; STACK
+		STY	OPSTKX
+		INY				; AND INITIALIZE
+		STY	COMCNT
+		STY	ARSTKX			; ARG STACK
+		STY	ADFLAG			; ASSIGN FLAG
+
+		.if	BASIC_REVISION > 1
+_EXEND:
+XPLPRN:
+; Unary plus
+XPUPLUS:
+		.endif
+
+		RTS
+
+;
+; GETTOK - Get Next Token and Classify
+;
+GETTOK:
+_EGTOKEN:	LDY	STINDEX			; GET STMT INDEX
+		INC	STINDEX			; INC TO NEXT
+		LDA	(STMCUR),Y		; GET TOKEN
+		BMI	_EGTVAR			; BR IF VAR
+
+		CMP	#$0F			; TOKEN: $0F
+		BCC	@EGNC			; BR IF $0E, NUMERIC CONST
+		BEQ	_EGSC			; BR IF $0F, STR CONST
+		RTS				; RTN IF OPERATOR
+
+@EGNC:
+
+NCTOFR0:	LDX	#0
+@EGT1:		INY				; INC LINE INDEX
+		LDA	(STMCUR),Y		; GET VALUE FROM STMT TBL
+		STA	FR0,X			; AND PUT INTO FR0
+		INX
+		CPX	#6
+		BCC	@EGT1
+
+		INY				; INY Y BEYOND CONST
+		LDA	#EVSCALER		; ACU=SCALER
+		TAX				; X = VAL NO 0
+		BEQ	_EGST			; GO SET REM
+
+_EGSC:		INY				; INC Y TO LENGTH BYTE
+		LDA	(STMCUR),Y		; GET LENGTH
+		LDX	#STMCUR			; POINT TO STMCUR
+RISC:		STA	VTYPE+EVSLEN		; SET AS LENGTH
+		STA	VTYPE+EVSDIM		; AND DIM
+		INY
+		TYA				; ACU=DISPL TO STR
+		CLC
+		ADC	$0,X			; DISPL PLUS ADR
+		STA	VTYPE+EVSADR		; IS STR ADR
+		LDA	#0			; SET = 0
+		STA	VTYPE+EVSLEN+1		; LENGTH HIGH
+		STA	VTYPE+EVSDIM+1		; DIM HIGH
+		ADC	$1,X			; FINISH ADR
+		STA	VTYPE+EVSADR+1
+		TYA				; ACU=DISPL TO STR
+		ADC	VTYPE+EVSLEN		; PLUS STR LENGTH
+		TAY				; IS NEW INDEX
+		LDX	#0			; VAR NO = 0
+		LDA	#EVSTR+EVSDTA+EVDIM	; TYPE = STR
+_EGST:		STA	VTYPE			; SET TYPE
+		STX	VNUM			; SET NUM
+		STY	STINDEX			; SET NEW INDEX
+		CLC				; INDICATE VALUE
+		RTS				; RETURN
+
+GETVAR:
+_EGTVAR:	JSR	GVVTADR			; GET VVT ADR
+@EGT2:		LDA	(WVVTPT),Y		; MOVE VVT ENTRY
+		STA	VTYPE,Y			; TO FR0
+		INY
+		CPY	#8
+		BCC	@EGT2
+		CLC				; INDICATE VALUE
+		RTS				; RETURN
+
+AAPSTR:		JSR	ARGPOP
+
+;
+; GSTRAD -- Get String [ABS] Address
+;
+GSTRAD:		LDA	#EVSDTA			; LOAD TRANSFORMED BIT
+		BIT	VTYPE			; TEST STRING ADR TRANSFORM
+		BNE	@GSARTS			; BR IF ALREADY TRANSFORMED
+		ORA	VTYPE			; TURN ON TRANS BIT
+		STA	VTYPE			; AND SET
+		ROR				; SHIFT DIM BIT TO CARRY
+		BCC	@1
+
+		CLC
+		LDA	VTYPE+EVSADR		; STRING ADR = STRING DISPL + STARP
+		ADC	STARP
+		STA	VTYPE+EVSADR
+		TAY
+		LDA	VTYPE+EVSADR+1
+		ADC	STARP+1
+		STA	VTYPE+EVSADR+1
+@GSARTS:	RTS
+@1:		JSR	ERRDIM
+
+ARGPUSH:	INC	ARSLVL			; INC ARG STK LEVEL
+		LDA	ARSLVL			; ACU = ARG STACK LEVEL
+		ASL				; TIMES 8
+		ASL
+		ASL
+		CMP	OPSTKX			; TEXT EXCEED MAX
+		BCS	_APERR			; BR IF GT MAX
+		TAY				; Y = NEXT ENTRY ADR
+		DEY				; MINUS ONE
+		LDX	#7			; X = 7 FOR 8
+
+@APH1:		LDA	VTYPE,X			; MOVE FR0
+		STA	(LOMEM),Y		; TO ARGOPS
+		DEY				; BACKWARDS
+		DEX
+		BPL	@APH1
+_APRTS:		RTS				; DONE
+
+_APERR:		JMP	ERRAOS			; STACK OVERFLOW
+
+;
+; GETPINT -- Get Positive Integer from Expression
+;
+GETPINT:	JSR	GETINT			; GO GET INT
+		LDA	FR0+1			; GET HIGH BYTE
+
 		.if	BASIC_REVISION = 1
-		bcs	ex_cs
-		bcc	ex_cc
+		BMI	@GPIERR			; BR > 32767
+		RTS				; DONE
+@GPIERR:	JMP	ERRLN
 		.else
-		jmp	B159
+		bpl	_APRTS			; BR < 32768 DONE
+		jmp	ERRLN			; JMP > 32767
+		.endif
+
+;
+; GETINT -- Get Integer from Expression
+;
+GETINT:		JSR	XLET			; EVAL EXPR
+GTINTO:		JSR	ARGPOP			; POP VALUE TO FR0
+		JMP	CVFPI			; GO CONVERT FR0 TO INT & RETURN
+
+;
+; GET1INT - Get One-Byte Integer from Expression
+;
+GET1INT:	JSR	GETPINT			; GET INT <32768
+		BNE	@ERV1			; IF NOT 1 BYTE, THEN ERROR
+		RTS
+@ERV1:		JSR	ERVAL
+
+;
+; ARGPOP -- Pop Argument Stack Entry to FR0 or FR1
+;
+ARGPOP:		LDA	ARSLVL			; GET ARG STACK LEVEL
+		DEC	ARSLVL			; DEC AS LEVEL
+		ASL				; AS LEVEL * 8
+		ASL
+		ASL
+		TAY				; Y = START OF NEXT ENTRY
+		DEY				; MINUS ONE
+		LDX	#7			; X = 7 FOR 8
+
+@APOP0:		LDA	(ARGOPS),Y		; MOVE ARG ENTRY
+		STA	VTYPE,X
+		DEY				; BACKWARDS
+		DEX
+		BPL	@APOP0
+		RTS				; DONE
+
+;
+; ARGP2 -- Pop TOS to FR1, TOS-1 to FR0
+;
+ARGP2:		JSR	ARGPOP
+		JSR	MV0TO1
+		JMP	ARGPOP
+
+;
+; POP1 -- Get a Value in FR0
+;
+;	- EVALUATE EXPRESSION IN STMT LINE &
+;	  POP IT INTO FR0
+;
+POP1:		JSR	EXEXPR			; EVALUATE EXPRESSION
+
+		.if	BASIC_REVISION = 1
+		JSR	ARGPOP			; PUSH INTO FR0
+		RTS
+		.else
+		jmp	ARGPOP
+		.endif
+
+;
+; RTNVAR -- Return Variable to Variable Value Table from FR0
+;
+RTNVAR:		LDA	VNUM			; GET VAR NUMBER
+		JSR	GVVTADR
+		LDX	#0
+
+@RV1:		LDA	VTYPE,X			; MOVE FR0 TO
+		STA	(WVVTPT),Y		; VAR VALUE TABLE
+		INY
+		INX
+		CPX	#8
+		BCC	@RV1
+		RTS				; DONE
+
+; Get Value's Value Table Entry Address
+
+GVVTADR:	LDY	#0			; CLEAR ADR HI
+		STY	WVVTPT+1
+		ASL				; MULT VAR NO
+		ASL				; BY 8
+		ROL	WVVTPT+1
+		ASL
+		ROL	WVVTPT+1
+		CLC				; THEN
+		ADC	VVTP			; ADD VVTP VALIE
+		STA	WVVTPT			; TO FORM ENTRY
+		LDA	VVTP+1			; ADR
+		ADC	WVVTPT+1
+		STA	WVVTPT+1
+		RTS
+
+;
+; Operator Precedence Table
+;
+
+OPRTAB:		.byte	$00	; CDQ
+		.byte	$00	; CSOE
+		.byte	$00	; CCOM
+		.byte	$00	; CDOL
+		.byte	$00	; CEOS
+		.byte	$00	; CSC
+		.byte	$00	; CCR
+		.byte	$00	; CGTO
+		.byte	$00	; CGS
+		.byte	$00	; CTO
+		.byte	$00	; CSTEP
+		.byte	$00	; CTHEN
+		.byte	$00	; CPND
+		.byte	$88	; CLE
+		.byte	$88	; CNE
+		.byte	$88	; CGE
+		.byte	$88	; CGT
+		.byte	$88	; CLT
+		.byte	$88	; CEQ
+		.byte	$CC	; CEXP
+		.byte	$AA	; CMUL
+		.byte	$99	; CPLUS
+		.byte	$99	; CMINUS
+		.byte	$AA	; CDIV
+		.if	BASIC_REVISION = 1
+		.byte	$77	; CNOT
+		.else
+		.byte	$DD	; CNOT
+		.endif
+		.byte	$55	; COR
+		.byte	$66	; CAND
+		.byte	$F2	; CLPRN
+		.byte	$4E	; CRPRN
+		.byte	$F1	; CAASN
+		.byte	$F1	; CSASN
+		.byte	$EE	; CSLE
+		.byte	$EE	; CSNE
+		.byte	$EE	; CSGE
+		.byte	$EE	; CSGT
+		.byte	$EE	; CSLT
+		.byte	$EE	; CSEQ
+		.byte	$DD	; CUPLUS
+		.byte	$DD	; CUMINUS
+		.byte	$F2	; CSLPRN
+		.byte	$F2	; CALPRN
+		.byte	$F2	; CDLPRN
+		.byte	$F2	; CFLPRN
+		.byte	$F2	; CDSLPR
+		.byte	$43	; CACOM
+
+				; FUNCTIONS
+		.byte	$F2,$F2,$F2,$F2,$F2,$F2,$F2,$F2
+		.byte	$F2,$F2,$F2,$F2,$F2,$F2,$F2,$F2
+		.byte	$F2,$F2,$F2,$F2,$F2,$F2,$F2,$F2
+
+;
+; Miscellaneous Operators
+;
+
+; Miscellaneous Operators' Executors
+
+		.if	BASIC_REVISION = 1
+; Math Operator +
+XPPLUS:		JSR	ARGP2
+		JSR	FRADD
+		JMP	ARGPUSH
+		.endif
+
+; Math Operator -
+XPMINUS:	JSR	ARGP2
+		JSR	FRSUB
+		JMP	ARGPUSH
+; Operator *
+XPMUL:		JSR	ARGP2
+		JSR	FRMUL
+		JMP	ARGPUSH
+; Operator /
+XPDIV:		JSR	ARGP2
+		JSR	FRDIV
+		JMP	ARGPUSH
+; Unary minus
+XPUMINUS:	JSR	ARGPOP
+
+		LDA	FR0
+
+		.if	BASIC_REVISION > 1
+		beq	@XPM1			; Avoid Negative Zero
+		.endif
+
+		EOR	#$80
+		STA	FR0
+@XPM1:		JMP	ARGPUSH
+
+		.if	BASIC_REVISION = 1
+; Unary plus
+XPUPLUS:	RTS
+		.endif
+
+; Comparison Operator <=
+XPLE:
+XPSLE:		JSR	XCMP
+		BMI	XTRUE
+		BEQ	XTRUE
+		BPL	XFALSE
+
+; Comparison Operator <>
+XPNE:
+XPSNE:		JSR	XCMP
+		.if	BASIC_REVISION = 1
+		BEQ	XFALSE
+		BNE	XTRUE
+		.else
+		jmp	_TFNEAR
+		.endif
+
+; Comparison Operator <
+XPLT:
+XPSLT:		JSR	XCMP
+		BMI	XTRUE
+		BPL	XFALSE
+
+; Comparison Operator >
+XPGT:
+XPSGT:		JSR	XCMP
+		BMI	XFALSE
+		BEQ	XFALSE
+		BPL	XTRUE
+
+; Comparison Operator >=
+XPGE:
+XPSGE:		JSR	XCMP
+		BMI	XFALSE
+		BPL	XTRUE
+
+; Comparison Operator =
+XPEQ:		JSR	XCMP
+		.if	BASIC_REVISION = 1
+		BEQ	XTRUE
+		BNE	XFALSE
+		.else
+		jmp	_TFNEAR2
+		.endif
+
+; Logical AND
+XPAND:		JSR	ARGP2
+		LDA	FR0
+		AND	FR1
+
+		.if	BASIC_REVISION = 1
+		BEQ	XFALSE
+		BNE	XTRUE
+		.else
+		jmp	_TFNEAR
+		.endif
+
+; Logical OR
+XPOR:		JSR	ARGP2
+		LDA	FR0
+		ORA	FR1
+
+		; 0 FALSE, else TRUE
+_TFNEAR:	BEQ	XFALSE
+		BNE	XTRUE
+
+; Logical NOT
+XPNOT:		JSR	ARGPOP
+		LDA	FR0
+
+		; 0 FALSE, else TRUE
+_TFNEAR2:	BEQ	XTRUE
+XFALSE:		LDA	#0
+		TAY
+		BEQ	XTF
+
+XTRUE:		LDA	#$40
+
+XTI:		LDY	#1
+
+XTF:		STA	FR0
+		STY	FR0+1
+		LDX	#$D6
+		LDY	#4
+		JSR	__DA48
+		STA	$D2
+
+XPUSH:		JMP	ARGPUSH
+
+
+; XPSGN -- Sign Function
+
+XPSGN:		JSR	ARGPOP
+		LDA	FR0
+		BEQ	XPUSH
+		BPL	XTRUE
+		LDA	#$C0			; GET MINUS EXPONENT
+		BMI	XTI
+
+; XCMP -- Compare Executor
+
+XCMP:		LDY	OPSTKX			; GET OPERATOR THAT
+		DEY				; GOT US HERE
+		LDA	(LOMEM),Y
+		CMP	#CSLE			; IF OP WAS ARITHMETIC
+		BCC	FRCMPP			; THEN DO FP REG COMP
+		JMP	STRCMP			; ELSE DO STRING COMPARE
+
+FRCMPP:		JSR	ARGP2
+
+;
+; FRCMP -- Compare Two Floating Point Numbers
+;
+;	ON ENTRY	FR0 & FR1 CONTAIN FLOATING POINT #'S
+;
+;	ON EXIT		CC = + FRO > FR1
+;			CC = - FR0 < FR1
+;			CC = 0 FRE0 = FR1
+;
+FRCMP:		JSR	FRSUB			; SUBTRACT FR1 FROM FR0
+		LDA	FR0			; GET FR0 EXPONENT
+		RTS				; RETURN WITH CC SET
+
+;
+; FRADD -- Floating Point Add
+;	DOES NOT RETURN IF ERROR
+;
+FRADD:		JSR	FADD			; ADD TWO #
+		BCS	_ERROV			; BR IF ERROR
+		RTS
+
+;
+; FRSUB -- Floating Point Subtract
+;	DOES NOT RETURN IF ERROR
+;
+FRSUB:		JSR	FSUB			; SUB TWO #
+		BCS	_ERROV
+		RTS
+
+;
+; FRMUL -- Floating Point Multiply
+;	DOES NOT RETURN IF ERROR
+;
+FRMUL:		JSR	FMUL
+		BCS	_ERROV
+		RTS
+
+;
+; FRDIV -- Floating Point Divide
+;	DOES NOT RETURN IF ERROR
+;
+FRDIV:		JSR	FDIV			; DIVIDE TWO #
+		BCS	_ERROV			; BR IF ERROR
+		RTS
+
+_ERROV:		JSR	EROVFL
+
+;
+; CVFPI -- Convert Floating Point to Integer
+;	DOES NOT RETURN IF ERROR
+;
+CVFPI:		JSR	FPI			; GO CONVERT TO INTEGER
+		BCS	@ERRVAL			; IF ERROR, BR
+		RTS				; ELSE RETURN
+
+@ERRVAL:	JSR	ERVAL			; VALUE ERROR
+
+
+; XPAASN -- Arithmetic Assignment Operator
+
+XPAASN:		LDA	OPSTKX			; GET OP STACK INDEX
+		CMP	#$FF			; AT STACK START
+		BNE	@AAMAT			; BR IF NOT, [MAT ASSIGN]
+						;	DO SCALER ASSIGN
+		JSR	ARGP2			; GO POP TO P2 ARGS
+		LDX	#5			; MOVE FR1 VALUE
+@AASN1:		LDA	FR1,X			; TO FR0
+		STA	FR0,X
+		DEX
+		BPL	@AASN1
+		JMP	RTNVAR			; FR0 TO VVT & RETURN
+
+@AAMAT:		LDA	#$80			; SET ASSIGN FLAG BIT ON
+		STA	ADFLAG			; IN ASSIGN/DIM FLAG
+		RTS				; GO POP REM OFF OPS
+
+
+; XPACOM -- Array Comma Operator
+
+XPACOM:		INC	COMCNT			; INCREMENT COMMA COUNT
+
+;
+; XPRPRN -- Right Parenthesis Operator
+;	XPFLPRN - FUNCTION RIGHT PAREN OPERATOR
+;
+XPRPRN:
+XPFLPRN:	LDY	OPSTKX
+		PLA
+		PLA
+		JMP	_EXOPOP
+
+; XPDLPRN -- DIM Left Parenthesis Operator
+
+XDPSLP:
+XPDLPRN:	LDA	#$40			; SET DIM FLAG BIT
+		STA	ADFLAG			; IN ADFLAG
+						;	FALL THRU TO XPALPRN
+
+; XPALPRN -- Array Left Parenthesis Operator
+
+XPALPRN:	BIT	ADFLAG
+		BPL	@ALP1
+
+		LDA	ARSLVL
+		STA	ATEMP
+		DEC	ARSLVL
+
+@ALP1:		LDA	#0
+		TAY
+		CMP	COMCNT
+		BEQ	@ALP2
+
+		DEC	COMCNT
+		JSR	GTINTO
+		LDA	FR0+1
+		BMI	@ALPER
+		LDY	FR0
+
+@ALP2:		STA	INDEX2+1
+		STY	INDEX2
+		JSR	GTINTO
+		LDA	FR0
+		STA	ZTEMP1
+		LDA	FR0+1
+		BMI	@ALPER
+		STA	ZTEMP1+1
+		JSR	ARGPOP
+		BIT	ADFLAG
+		BVC	@ALP3
+		LDA	#0
+		STA	ADFLAG
+		RTS
+
+@ALP3:		ROR	VTYPE
+		BCS	@ALP4
+@ALPER:		JSR	ERRDIM
+
+@ALP4:		LDA	ZTEMP1+1
+		CMP	VTYPE+EVAD1+1
+		BCC	@ALP5
+		BNE	@ALPER
+		LDA	ZTEMP1
+		CMP	VTYPE+EVAD1
+		BCS	@ALPER
+
+@ALP5:		LDA	INDEX2+1
+		CMP	VTYPE+EVAD2+1
+		BCC	@ALP6
+		BNE	@ALPER
+		LDA	INDEX2
+		CMP	VTYPE+EVAD2
+		BCS	@ALPER
+
+@ALP6:		JSR	AMUL1
+		LDA	INDEX2
+		LDY	INDEX2+1
+		JSR	AADD
+		JSR	AMUL2
+		LDA	FR0
+		LDY	FR0+1
+		JSR	AADD
+		LDA	STARP
+		LDY	STARP+1
+		JSR	AADD
+
+		BIT	ADFLAG
+		BPL	@ALP8
+
+		LDA	ATEMP
+		STA	ARSLVL
+		JSR	ARGPOP
+
+		LDY	#5
+@ALP7:		LDA	FR0,Y
+		STA	(ZTEMP1),Y
+		DEY
+		BPL	@ALP7
+		INY
+		STY	ADFLAG
+		RTS
+@ALP8:		LDY	#5
+@ALP9:		LDA	(ZTEMP1),Y
+		STA	FR0,Y
+		DEY
+		BPL	@ALP9
+		INY
+		STY	VTYPE
+		JMP	ARGPUSH
+
+; XPSLPRN -- String Left Parenthesis
+
+XPSLPRN:	LDA	COMCNT
+		BEQ	@XSLP2
+
+		JSR	@XSPV
+		STY	INDEX2+1
+		STA	INDEX2
+
+@XSLP2:		JSR	@XSPV
+		SEC
+		SBC	#1
+		STA	ZTEMP1
+		TYA
+		SBC	#0
+		STA	ZTEMP1+1
+		JSR	ARGPOP
+		LDA	ADFLAG
+		BPL	@XSLP3
+		ORA	COMCNT
+		STA	ADFLAG
+		LDY	VTYPE+EVSDIM+1
+		LDA	VTYPE+EVSDIM
+		JMP	@XSLP4
+
+@XSLP3:		LDA	VTYPE+EVSLEN
+		LDY	VTYPE+EVSLEN+1
+
+@XSLP4:		LDX	COMCNT
+		BEQ	@XSLP6
+		DEC	COMCNT
+		CPY	INDEX2+1
+		BCC	@XSLER
+		BNE	@XSLP5
+		CMP	INDEX2
+		BCC	@XSLER
+
+@XSLP5:		LDY	INDEX2+1
+		LDA	INDEX2
+
+@XSLP6:		SEC
+		SBC	ZTEMP1
+		STA	VTYPE+EVSLEN
+		TAX
+		TYA
+		SBC	ZTEMP1+1
+		STA	VTYPE+EVSLEN+1
+		BCC	@XSLER
+		TAY
+		BNE	@XSLP7
+		TXA
+		BEQ	@XSLER
+
+@XSLP7:		JSR	GSTRAD
+		CLC
+		LDA	VTYPE+EVSADR
+		ADC	ZTEMP1
+		STA	VTYPE+EVSADR
+		LDA	VTYPE+EVSADR+1
+		ADC	ZTEMP1+1
+		STA	VTYPE+EVSADR+1
+
+		BIT	ADFLAG
+		BPL	@XSLP8
+		RTS
+
+@XSLP8:		JMP	ARGPUSH
+
+@XSLER:		JSR	ERRSSL
+
+;
+; XSPV -- Pop Index Value as Integer and Insure Not Zero
+;
+@XSPV:		JSR	GTINTO
+		LDA	FR0
+		LDY	FR0+1
+		BNE	@XSPVR
+		TAX
+		BEQ	@XSLER
+@XSPVR:		RTS
+
+;
+; XSAASN -- String Assign Operator
+;
+XSAASN:		JSR	AAPSTR
+RISASN:		LDA	VTYPE+EVSADR
+		STA	MVFA
+		LDA	VTYPE+EVSADR+1
+		STA	MVFA+1
+		LDA	VTYPE+EVSLEN
+		STA	MVLNG
+		LDY	VTYPE+EVSLEN+1
+		STY	MVLNG+1
+		LDY	OPSTKX
+		CPY	#$FF
+		BEQ	@XSA1
+		LDA	#$80
+		STA	ADFLAG
+		JSR	_EXOPOP
+		LDA	VTYPE+EVSLEN+1
+		LDY	VTYPE+EVSLEN
+		ROL	ADFLAG
+		BCS	@XSA2A
+
+@XSA1:		JSR	AAPSTR
+		LDA	VTYPE+EVSDIM+1
+		LDY	VTYPE+EVSDIM
+
+@XSA2A:		CMP	MVLNG+1
+		BCC	@XSA3
+		BNE	@XSA4
+		CPY	MVLNG
+		BCS	@XSA4
+@XSA3:		STA	MVLNG+1
+		STY	MVLNG
+
+@XSA4:		CLC
+		LDA	VTYPE+EVSADR
+		ADC	MVLNG
+		TAY
+		LDA	VTYPE+EVSADR+1
+		ADC	MVLNG+1
+		TAX
+
+		SEC
+		TYA
+		SBC	STARP
+		STA	ZTEMP3
+		TXA
+		SBC	STARP+1
+		STA	ZTEMP3+1
+
+		SEC
+		LDA	#0
+		SBC	MVLNG
+		STA	MVLNG
+
+		SEC
+		LDA	MVFA
+		SBC	MVLNG
+		STA	MVFA
+		LDA	MVFA+1
+		SBC	#0
+		STA	MVFA+1
+
+		SEC
+		LDA	VTYPE+EVSADR
+		SBC	MVLNG
+		STA	MVTA
+		LDA	VTYPE+EVSADR+1
+		SBC	#0
+		STA	MVTA+1
+
+		JSR	FMOVER
+
+		LDA	VNUM
+		JSR	GETVAR
+
+		SEC
+		LDA	ZTEMP3
+		SBC	VTYPE+EVSADR
+		TAY
+		LDA	ZTEMP3+1
+		SBC	VTYPE+EVSADR+1
+		TAX
+
+		LDA	#2
+		AND	ADFLAG
+		BEQ	@XSA5
+		LDA	#0
+		STA	ADFLAG
+
+		CPX	VTYPE+EVSLEN+1
+		BCC	@XSA6
+		BNE	@XSA5
+		CPY	VTYPE+EVSLEN
+		BCS	@XSA5
+@XSA6:		RTS
+
+@XSA5:		STY	VTYPE+EVSLEN
+		STX	VTYPE+EVSLEN+1
+		JMP	RTNVAR
+;
+; AMUL2 -- Integer Multiplication of ZTEMP1 by 6
+;
+AMUL2:		ASL	ZTEMP1
+		ROL	ZTEMP1+1
+		LDY	ZTEMP1+1
+		LDA	ZTEMP1
+		ASL	ZTEMP1
+		ROL	ZTEMP1+1
+;
+; AADD -- Integer Addition of [A,Y] to ZTEMP1
+;
+AADD:		CLC
+		ADC	ZTEMP1
+		STA	ZTEMP1
+		TYA
+		ADC	ZTEMP1+1
+		STA	ZTEMP1+1
+		RTS
+;
+; AMUL -- Integer Multiplication of ZTEMP1 by DIM2
+;
+AMUL1:		LDA	#0
+		STA	ZTEMP4
+		STA	ZTEMP4+1
+		LDY	#$10
+
+@AM1:		LDA	ZTEMP1
+		LSR
+		BCC	@AM3
+		CLC
+		LDX	#$FE
+@AM2:		LDA	ZTEMP4+2,X
+		ADC	VTYPE+EVAD2+2,X
+		STA	ZTEMP4+2,X
+		INX
+		BNE	@AM2
+
+@AM3:		LDX	#3
+@AM4:		ROR	ZTEMP1,X
+
+		DEX
+		BPL	@AM4
+
+		DEY
+		BNE	@AM1
+
+		RTS
+;
+; STRCMP -- String Compare
+;
+STRCMP:		JSR	AAPSTR
+		JSR	MV0TO1
+		JSR	AAPSTR
+@SC1:		LDX	#FR0-2+EVSLEN
+		JSR	ZPADEC
+		PHP
+		LDX	#FR1-2+EVSLEN
+		JSR	ZPADEC
+		BEQ	@SC2
+		PLP
+		BEQ	@SCLT
+
+		LDY	#0
+		LDA	(FR0-2+EVSADR),Y
+		CMP	(FR1-2+EVSADR),Y
+		BEQ	@SC3
+		BCC	@SCLT
+
+@SCGT:		LDA	#1
+		RTS
+
+@SCLT:		LDA	#$80
+		RTS
+
+@SC2:		PLP
+		BNE	@SCGT
+		RTS
+@SC3:		INC	FR0-2+EVSADR
+		BNE	@SC4
+		INC	FR0-1+EVSADR
+@SC4:		INC	FR1-2+EVSADR
+		BNE	@SC1
+		INC	FR1-1+EVSADR
+		BNE	@SC1
+;
+; ZPADEC -- Decrement a Zero-Page Double Word
+;
+ZPADEC:		LDA	0,X
+		BNE	@ZPAD1
+		LDA	1,X
+		BEQ	@ZPADR
+		DEC	1,X
+@ZPAD1:		DEC	0,X
+		TAY
+@ZPADR:		RTS
+
+;
+; Functions
+;
+
+; XPLEN -- Length Function
+
+XPLEN:		JSR	AAPSTR
+		LDA	VTYPE+EVSLEN
+		LDY	VTYPE+EVSLEN+1
+XPIFP:		STA	FR0
+		STY	FR0+1
+XPIFP1:		JSR	IFP
+XPIFP2:		LDA	#0
+		STA	VTYPE
+		STA	VNUM
+		JMP	ARGPUSH
+
+; XPPEEK -- PEEK Function
+
+XPPEEK:		JSR	GTINTO
+		LDY	#0
+		LDA	(FR0),Y
+		JMP	XPIFP
+
+; XPFRE -- FRE Function
+
+XPFRE:		JSR	ARGPOP
+		SEC
+		LDA	HIMEM
+		SBC	MEMTOP
+		STA	FR0
+		LDA	HIMEM+1
+		SBC	MEMTOP+1
+		STA	FR0+1
+		JMP	XPIFP1
+
+; XPVAL -- VAL Function
+
+XPVAL:		JSR	SETSEOL
+
+		LDA	#0
+		STA	CIX
+		JSR	CVAFP
+; Restore Character
+		JSR	RSTSEOL
+
+		BCC	XPIFP2
+
+@VERR:		JSR	ERSVAL
+
+
+; XPASC -- ASC Function
+
+XPASC:		JSR	AAPSTR
+; Get 1>T Byte of St
+		LDY	#0
+		LDA	(FR0),Y
+		JMP	XPIFP
+
+; XPADR -- ADR Function
+
+XPADR:		JSR	AAPSTR
+		JMP	XPIFP1
+
+; XPPDL -- Function Paddle
+
+XPPDL:		LDA	#0		; evaluate PADDLE()
+		BEQ	_GRF
+
+; XPSTICK -- Function Joystick
+
+XPSTICK:	LDA	#8		; evaluate STICK()
+		BNE	_GRF
+
+; XPPTRIG -- Function Paddle Trigger
+
+XPPTRIG:	LDA	#12		; evaluate PTRIG()
+		BNE	_GRF
+
+; XPSTRIG -- Function Joystick Trigger
+
+XPSTRIG:	LDA	#20		; evaluate STRIG()
+
+_GRF:		PHA
+		JSR	GTINTO
+		LDA	FR0+1
+		BNE	@ERGRF
+		LDA	FR0
+
+		PLA
+		CLC
+		ADC	FR0
+		TAX
+
+		LDA	GRFBAS,X
+		LDY	#0
+		BEQ	XPIFP
+
+@ERGRF:		JSR	ERVAL
+
+; XPSTR -- STR Function
+
+XPSTR:		JSR	ARGPOP
+
+		JSR	CVFASC
+
+; Build String Element
+
+		LDA	INBUFF
+		STA	FR0-2+EVSADR
+		LDA	INBUFF+1
+		STA	FR0-1+EVSADR
+
+		LDY	#$FF
+@XSTR1:		INY
+		LDA	(INBUFF),Y
+		BPL	@XSTR1
+		AND	#$7F
+		STA	(INBUFF),Y
+		INY
+		STY	FR0-2+EVSLEN
+		BNE	_CHR
+
+; XPCHR -- CHR Function
+
+XPCHR:		JSR	ARGPOP
+		JSR	CVFPI
+		LDA	FR0
+		STA	LBUFF+$40
+
+; Build String Element
+
+		LDA	#>(LBUFF+$40)
+		STA	FR0-1+EVSADR
+		LDA	#<(LBUFF+$40)
+		STA	FR0-2+EVSADR
+		LDA	#1
+		STA	FR0-2+EVSLEN
+_CHR:		LDA	#0
+		STA	FR0-1+EVSLEN
+		STA	VNUM
+		LDA	#EVSTR+EVSDTA+EVDIM
+		STA	VTYPE
+		JMP	ARGPUSH
+
+; XPRND -- RND Function
+
+XPRND:		LDX	#<RNDDIV
+		LDY	#>RNDDIV
+		JSR	FLD1R
+
+		JSR	ARGPOP
+
+		LDY	RNDLOC
+		STY	FR0
+		LDY	RNDLOC
+		STY	FR0+1
+		JSR	CVIFP
+		JSR	FRDIV
+
+		JMP	ARGPUSH
+
+RNDDIV:		.byte	$42,$06,$55,$36,0,0
+
+; XPABS -- ABS Function
+
+XPABS:		JSR	ARGPOP
+		LDA	FR0
+		AND	#$7F
+		STA	FR0
+		JMP	ARGPUSH
+
+; XPUSR -- USR Function
+
+XPUSR:		JSR	@USR
+		JSR	CVIFP
+		JMP	ARGPUSH
+@USR:
+		LDA	COMCNT
+		STA	ZTEMP2
+@USR1:
+		JSR	GTINTO
+		DEC	ZTEMP2
+		BMI	@USR2
+		LDA	FR0
+		PHA
+		LDA	FR0+1
+		PHA
+		JMP	@USR1
+@USR2:
+		LDA	COMCNT
+		PHA
+		JMP	(FR0)
+
+; XPINT -- INT Function
+
+XPINT:		JSR	ARGPOP
+		JSR	XINT
+		JMP	ARGPUSH
+
+; XINT -- Take Integer Part of FR0
+
+XINT:		LDA	FR0
+		AND	#$7F
+		SEC
+		SBC	#$3F
+
+		BPL	@XINT1
+		LDA	#0
+
+@XINT1:		TAX
+		LDA	#0
+		TAY
+@INT2:
+		CPX	#FMPREC
+		BCS	@XINT3
+		ORA	FR0M,X
+		STY	FR0M,X
+		INX
+		BNE	@INT2
+@XINT3:
+		LDX	FR0
+		BPL	@XINT4
+		TAX
+		BEQ	@XINT4
+;
+;	# IS NEGATIVE AND NOT A WHOLE # [ADD -1]
+		LDX	#$E0
+		JSR	ZF1
+		LDA	#$C0
+		STA	FR1
+		LDA	#1
+		STA	FR1+1
+		.if	BASIC_REVISION > 3
+		jmp	FRADD
+		nop
+		.else
+		JSR	FRADD		; ADD IT
+		RTS
+		.endif
+@XINT4:
+		JMP	NORM
+
+; XPSIN -- Sine Function
+
+XPSIN:		JSR	ARGPOP
+		JSR	SIN
+		.if	BASIC_REVISION = 1
+		BCS	_TBAD
+		BCC	_TGOOD
+		.else
+		jmp	_TEVAL
+		.endif
+
+; XPCOS -- Cosine Function
+
+XPCOS:		JSR	ARGPOP
+		JSR	COS
+		.if	BASIC_REVISION = 1
+		BCS	_TBAD
+		BCC	_TGOOD
+		.else
+		jmp	_TEVAL
+		.endif
+
+; XPATN -- Arc Tangent Function
+
+XPATN:		JSR	ARGPOP
+		JSR	ATAN
+		.if	BASIC_REVISION = 1
+		BCS	_TBAD
+		BCC	_TGOOD
+		.else
+		jmp	_TEVAL
 		.endif
 
 		.if	BASIC_REVISION = 1
 
-B121:		jsr	ABE9		; evaluate LOG()
-		jsr	LOG
-		bcs	ex_cs
-		bcc	ex_cc
+; XPLOG -- LOG Function
 
-B13D:		jsr	ABE9		; evaluate CLOG()
-		jsr	LOG10
-		bcs	ex_cs
-		bcc	ex_cc
+XPLOG:		JSR	ARGPOP
+		JSR	LOG
+		BCS	_TBAD
+		BCC	_TGOOD
 
-B14A:		jsr	ABE9		; evaluate EXP()
-		jsr	EXP
-		bcs	ex_cs
-		bcc	ex_cc
+; XPL10 -- LOG Base 10
 
-B153:		jsr	ABE9		; evaluate SQR()
-		jsr	BF43
-		bcs	ex_cs
-ex_cc:		jmp	ABB2
-ex_cs:		jsr	B92E
+XPL10:		JSR	ARGPOP
+		JSR	LOG10
+		BCS	_TBAD
+		BCC	_TGOOD
 
-B15E:		jsr	ABFD
+		.else
+
+; XPLOG -- LOG Function
+
+XPLOG:		jsr	ARGPOP
 		lda	FR0
-		.byte	$d0,$0b
-		lda	$E0
-		beq	@4
-		.byte	$10,$ed
-		.byte	$30,$ee
-@4:		jmp	ACF0
-		.byte	$10,$30
-		and	#$7F
-		sta	FR0
-		lda	$E0
-		and	#$7F
-		sec
-		sbc	#$40
-		.byte	$30,$dc
-		ldx	#6
-		cmp	#5
-		bcc	@2
-		ldy	#1
-		bne	@1
-@2:		sta	$F5
-		sec
-		lda	#5
-		sbc	$F5
-		tay
-@1:		dex
-		dey
-		beq	@6
-		lda	$E0,X
-		.byte	$D0,$C2
-		beq	@1
-@6:		ldy	#$80
-		lda	$E0,X
-		lsr
-		bcs	@5
-@3:		ldy	#0
-@5:		tya
-		pha
-		ldx	#5
-@7:		lda	$E0,X
-		pha
-		dex
-		bpl	@7
-		jsr	LOG10
-		.byte	$B0,$A8
-		ldx	#0
-		ldy	#5
-@8:		pla
-		sta	$E0,X
-		inx
-		dey
-		bpl	@8
-		jsr	AD32
-		jsr	EXP10
-		.byte	$b0,$09
-		pla
-		.byte	$10,$8f
-		ora	FR0
-		sta	FR0
-		.byte	$d0,$89
-
-		.else
-
-B121:		jsr	ABE9		; evaluate CLOG()
-		lda	FR0
-		beq	B15B
+		beq	_TBAD
 		jsr	LOG
-B12B:		bcs	B15B
+LOGCHK:		bcs	_TBAD
 		lda	FR0
 		eor	#$3B
-		bne	B16C
+		bne	_TGOOD
 		lda	FR0+1
 		and	#$F8
-		bne	B16C
+		bne	_TGOOD
 		sta	FR0
-		beq	B16C
+		beq	_TGOOD
 
-B13D:		jsr	ABE9		; evaluate CLOG()
+; XPL10 -- LOG Base 10
+
+XPL10:		jsr	ARGPOP		; evaluate CLOG()
 		lda	FR0
-		beq	B15B
+		beq	_TBAD
 		jsr	LOG10
-		jmp	B12B
+		jmp	LOGCHK
 
-B14A:		jsr	ABE9		; evaluate EXP()
-		jsr	EXP
-		jmp	B159
+		.endif
 
-B153:		jsr	ABE9		; evaluate SQR()
-		jsr	BF43
-B159:		bcc	B16C
-B15B:		jsr	B92E
+; XPEXP -- EXP Function
 
-B15E:		jsr	ABFD
+XPEXP:		JSR	ARGPOP
+		JSR	EXP
+		.if	BASIC_REVISION = 1
+		BCS	_TBAD
+		BCC	_TGOOD
+		.else
+		jmp	_TEVAL
+		.endif
+
+		.if	BASIC_REVISION = 1
+
+; XPSQR -- Square Root Function
+
+XPSQR:		JSR	ARGPOP
+		JSR	SQR
+		BCS	_TBAD
+
+;	FALL THREE TO _TGOOD
+
+_TGOOD:		JMP	ARGPUSH
+
+_TBAD:		JSR	ERVAL
+
+; XPPOWER -- Exponential Operator [A**B]
+
+XPPOWER:	JSR	ARGP2		;GET ARGUMENT IN FR0,FR1
+		LDA	FR0		;IS BASE = 0 ?
+		BNE	@N0		;IF BASE NOT 0, BRANCH
+		LDA	FR1		;TEST EXPONENT
+		BEQ	@P0		;IF = 0 ; BRANCH
+		BPL	_TGOOD		;IF >0, ANSWER = 0
+		BMI	_TBAD		;IF <0, VALUE ERROR
+@P0:
+		JMP	XTRUE		;IF =0, ANSWER = 1
+@N0:
+		BPL	@SPEVEN		; IF BASE + THEN NO SPECIAL PROCESS
+
+		AND	#$7F		; AND OUT SIGN BIT
+		STA	FR0		; SET AS BASE EXPONENT
+
+		LDA	FR1		; GET EXPONENT OF POWER
+		AND	#$7F		; AND OUT SIGN BIT
+		SEC
+		SBC	#$40		; IS POWER <1?
+		BMI	_TBAD		; IF YES, ERROR
+
+		LDX	#6		; GET INDEX TO LAST DIGIT
+
+		CMP	#5		; IF # CAN HAVE DECIMAL
+		BCC	@SP4		; PORTION, THEN BR
+		LDY	#1
+		BNE	@SP3
+
+@SP4:		STA	ZTEMP1		;
+		SEC			;
+		LDA	#5		;
+		SBC	ZTEMP1		;
+		TAY			;
+
+@SP3:		DEX			;
+		DEY			;
+		BEQ	@SP2		;
+		LDA	FR1,X		;
+		BNE	_TBAD		;
+		BEQ	@SP3		;
+
+@SP2:		LDY	#$80		;
+		LDA	FR1,X		;
+		LSR			;
+		BCS	@POWR		;
+
+@SPEVEN:	LDY	#0		;
+@POWR:		TYA			;
+		PHA			;
+
+; Save Exponent [from FR1]
+
+		LDX	#FMPREC		;
+@POWR1:		LDA	FR1,X		;
+		PHA			;
+		DEX			;
+		BPL	@POWR1		;
+
+		JSR	LOG10		;
+		BCS	_TBAD		;
+
+; Pull Exponent into FR1 [from CPU Stack]
+
+		LDX	#0		;
+		LDY	#FMPREC		;
+@POWR2:		PLA			;
+		STA	FR1,X		;
+		INX			;
+		DEY			;
+		BPL	@POWR2		;
+
+		JSR	FRMUL		;
+		JSR	EXP10		;
+		BCS	EROV		;
+
+		PLA			;
+		BPL	_TGOOD		;
+
+		ORA	FR0		;
+		STA	FR0		;
+		BNE	_TGOOD		;
+
+		.else	; BASIC_REVISION > 1
+
+XPSQR:		jsr	ARGPOP		; evaluate SQR()
+		jsr	SQR
+_TEVAL:		bcc	_TGOOD
+_TBAD:		jsr	ERVAL
+
+XPPOWER:	jsr	ARGP2
 		lda	FR1
-		beq	B16F
+		beq	_XPP1
 		rol
 		ldy	FR0
-		bne	B172
-		bcs	B15B
-B16C:		jmp	ABB2
-B16F:		jmp	ACF0
-B172:		ldx	#$D4
+		bne	_XPP2
+		bcs	_TBAD
+_TGOOD:		jmp	ARGPUSH
+_XPP1:		jmp	XTRUE
+_XPP2:		ldx	#$D4
 		jsr	BA76
 		ror
 		pha
 		ldx	#$E0
 		jsr	BA76
 		tya
-		bpl	B19F
+		bpl	_XPP5
 		and	#$7F
 		sta	FR0
-		bcs	B18A
+		bcs	_XPP3
 		pla
-		bcc	B15B
-B18A:		lda	FR1
-		bpl	B18F
+		bcc	_TBAD
+_XPP3:		lda	FR1
+		bpl	_XPP4
 		clc
-B18F:		php
+_XPP4:		php
 		ldx	$F7
 		cpx	#5
-		bcs	B1A5
+		bcs	_XPP7
 		lda	$E1,X
 		ror
-		bcc	B1A5
+		bcc	_XPP7
 		lda	#$80
-		bne	B1A7
-B19F:		lda	$E0
-		bpl	B1A4
+		bne	_XPP8
+_XPP5:		lda	$E0
+		bpl	_XPP6
 		clc
-B1A4:		php
-B1A5:		lda	#0
-B1A7:		pha
+_XPP6:		php
+_XPP7:		lda	#0
+_XPP8:		pha
 		ldx	#5
 
-B1AA:		lda	FR1,X
+@XPP9:		lda	FR1,X
 		pha
 		dex
-		bpl	B1AA
+		bpl	@XPP9
 		jsr	LOG10
 		ldx	#0
 		ldy	#5
-B1B7:		pla
+@XPP10:		pla
 		sta	FR1,X
 		inx
 		dey
-		bpl	B1B7
-		jsr	AD32
+		bpl	@XPP10
+		jsr	FRMUL
 		jsr	EXP10
-		bcs	B203
+		bcs	EROV
 		pla
 		ora	FR0
 		sta	FR0
 		plp
 		pla
-		bpl	B16C
-		bcc	B16C
+		bpl	_TGOOD
+		bcc	_TGOOD
 		ldx	#$D4
 		jsr	BA76
-		bcs	B16C
+		bcs	_TGOOD
 		lda	FR0
 		sec
 		and	#$7F
 		sbc	#$3F
 		cmp	#6
-		bcs	B200
+		bcs	@XPOUT
 		tax
 		tay
 		sed
 		sec
-B1E7:		lda	FR0,X
+@XPACC:		lda	FR0,X
 		adc	#0
 		sta	FR0,X
 		dex
-		bne	B1E7
+		bne	@XPACC
 		cld
-		bcc	B1F7
+		bcc	@XPP11
 		inc	FR0
 		inc	FR0+1
-B1F7:		iny
+@XPP11:		iny
 		cpy	#6
-		bcs	B200
+		bcs	@XPOUT
 		stx	FR0,Y
-		bcc	B1F7
-B200:		jmp	ABB2
+		bcc	@XPP11
+@XPOUT:		jmp	ARGPUSH
 
-		.endif
+		.endif	; BASIC_REVISION > 1
 
-B203:		jsr	B91E
+EROV:		JSR	EROVFL
 
-B206:		ldy	$A8		; execute COM, DIM
-		cpy	$A7
-		bcc	B20D
+; XDIM & XCOM -- Execute DIM and COMMON Statements
+
+;DIM:
+XDIM:
+XCOM:		ldy	STINDEX
+		cpy	NXTSTD
+		bcc	@DC2
 		rts
-B20D:		jsr	AADA
+@DC2:		jsr	XLET
 		lda	$D2
 		ror
 		bcc	B218
-B215:		jsr	B922
+B215:		jsr	ERRDIM
 B218:		sec
 		rol
 		sta	$D2
@@ -2959,8 +3436,8 @@ B228:		sty	$D6
 		bmi	B215
 B23A:		sty	$D8
 		stx	$D9
-		jsr	AF48
-		jsr	AF31
+		jsr	AMUL1
+		jsr	AMUL2
 		ldy	$F5
 		lda	$F6
 		bmi	B215
@@ -2982,7 +3459,7 @@ B24C:		lda	#0
 		cpy	#0
 		beq	B215
 B260:		ldx	#$8E
-		jsr	A87C
+		jsr	EXPAND
 		sec
 		lda	$97
 		sbc	STARP
@@ -2990,21 +3467,25 @@ B260:		ldx	#$8E
 		lda	$98
 		sbc	$8D
 		sta	FR0+1
-		jsr	AC0C
-		jmp	B206
+		jsr	RTNVAR
+		jmp	XDIM
 
-B278:		jsr	ABD7		; execute POKE
+		; Execute POKE
+
+XPOKE:		jsr	GETINT
 		lda	FR0
 		sta	POKADR
 		lda	FR0+1
 		sta	POKADR+1
-		jsr	ABE0
+		jsr	GET1INT
 		lda	FR0
 		ldy	#0
 		sta	(POKADR),Y
 		rts
 
-B28D:		lda	#6		; execute DEG
+		; Execute DEG
+
+XDEG:		lda	#6
 
 		.if	BASIC_REVISION = 1
 		sta	$FB
@@ -3013,24 +3494,30 @@ B28D:		lda	#6		; execute DEG
 		bne	B293
 		.endif
 
-B291:		lda	#0		; execute RAD
+		; Execute RAD
+
+XRAD:		lda	#0
 B293:		sta	$FB
 		rts
 
-B296:		lda	#0		; execute RESTORE
+		; Execute RESTORE
+
+XREST:		lda	#0
 		sta	DATAD
 		jsr	B904
 		bcc	B2A2
 		tay
 		beq	B2A9
-B2A2:		jsr	ABCD
+B2A2:		jsr	GETPINT
 		lda	FR0+1
 		ldy	FR0
 B2A9:		sta	DATALN+1
 		sty	DATALN
 		rts
 
-B2AE:		lda	$A8		; execute READ
+		; Execute READ
+
+XREAD:		lda	STINDEX
 		pha
 		jsr	B6F9
 		lda	DATALN
@@ -3042,9 +3529,9 @@ B2AE:		lda	$A8		; execute READ
 		sta	INBUFF
 		lda	STMCUR+1
 		sta	INBUFF+1
-		jsr	BDA8
+		jsr	XRTN
 		pla
-		sta	$A8
+		sta	STINDEX
 B2CD:		ldy	#0
 		sty	CIX
 		jsr	B32F
@@ -3116,11 +3603,13 @@ B32F:		ldy	CIX
 		beq	B33A
 		cmp	#CR
 B33A:		rts
-B33B:		jsr	B928
+B33B:		jsr	ERROOD
 
-B33E:		lda	#$3F		; execute INPUT
+		; Execute INPUT
+
+XINPUT:		lda	#$3F
 		sta	$C2
-		jsr	AB36
+		jsr	_EGTOKEN
 		dec	$A8
 		bcc	B34E
 		jsr	BD07
@@ -3139,7 +3628,7 @@ B34E:		jsr	INTLBF
 		ldy	#0
 		sty	DIRFLG
 		sty	CIX
-B35F:		jsr	AB36
+B35F:		jsr	_EGTOKEN
 		inc	$A8
 		lda	$D2
 		bmi	B382
@@ -3147,7 +3636,7 @@ B35F:		jsr	AB36
 		bcs	B37B
 		jsr	B32F
 		bne	B37B
-		jsr	AC0C
+		jsr	RTNVAR
 		jmp	B3AD
 
 B378:		.if	BASIC_REVISION = 1
@@ -3155,13 +3644,13 @@ B378:		.if	BASIC_REVISION = 1
 		bne	@1
 		rts
 		.endif
-@1:		jmp	B792
+@1:		jmp	XSTOP
 
 B37B:		lda	#0
 		sta	$B4
-		jsr	B924
-B382:		jsr	AB26
-		jsr	ABB2
+		jsr	ERRINP
+B382:		jsr	EXPINT
+		jsr	ARGPUSH
 		dec	CIX
 		lda	CIX
 		sta	$F5
@@ -3177,10 +3666,10 @@ B39C:		ldy	$F5
 		pha
 		txa
 		ldx	#INBUFF
-		jsr	AB5C
+		jsr	RISC
 		pla
 		sta	$A8
-		jsr	AE91
+		jsr	RISASN
 B3AD:		bit	DIRFLG
 		bvc	B3C0
 		inc	DATAD
@@ -3201,7 +3690,9 @@ B3CD:		jsr	B32F
 B3D5:		inc	CIX
 		jmp	B35F
 
-B3DA:		lda	PTABW		; execute PRINT, ?
+		; Execute PRINT, ?
+
+XPRINT:		lda	PTABW
 		sta	STENUM
 		lda	#0
 		sta	COX
@@ -3225,8 +3716,8 @@ B3E2:		ldy	$A8
 		beq	B474
 		cmp	#$1C
 		beq	B46A
-		jsr	AADA
-		jsr	ABE9
+		jsr	XLET
+		jsr	ARGPOP
 		dec	$A8
 		bit	$D2
 		bmi	B428
@@ -3251,7 +3742,7 @@ B419:		ldy	CIX
 		pla
 		bpl	B419
 		bmi	B3E2
-B428:		jsr	AB93
+B428:		jsr	GSTRAD
 		lda	#0
 		sta	CIX
 B42F:		lda	$D6
@@ -3320,7 +3811,9 @@ B48F:		and	#$7F
 B491:		inc	COX
 		jmp	BA99
 
-B496:		lda	#<@printerdev	; execute LPRINT
+		; Execute LPRINT
+
+XLPRINT:	lda	#<@printerdev
 		sta	INBUFF
 		lda	#>@printerdev
 		sta	INBUFF+1
@@ -3330,12 +3823,14 @@ B496:		lda	#<@printerdev	; execute LPRINT
 		ldy	#8
 		jsr	BBD8
 		jsr	BCBB
-		jsr	B3DA
+		jsr	XPRINT
 		jmp	BCF7
 
 @printerdev:	.byte	"P:",$9B
 
-B4B5:		ldy	#0		; execute LIST
+		; Execute LIST
+
+XLIST:		ldy	#0
 		sty	$A0
 		sty	$A1
 		dey
@@ -3352,7 +3847,7 @@ B4B5:		ldy	#0		; execute LIST
 		bcs	@4
 		lda	$A8
 		pha
-		jsr	AC06
+		jsr	POP1
 		pla
 		sta	$A8
 		lda	$D2
@@ -3360,20 +3855,20 @@ B4B5:		ldy	#0		; execute LIST
 		jsr	BACF
 		jmp	@1
 
-@2:		jsr	ABCD
+@2:		jsr	GETPINT
 		sta	$A1
 		lda	FR0
 		sta	$A0
 		ldy	$A8
 		cpy	$A7
 		beq	@3
-		jsr	ABCD
+		jsr	GETPINT
 @3:		lda	FR0
 		sta	$AD
 		lda	FR0+1
 		sta	$AE
 @4:		jsr	GETSTMT
-@5:		jsr	A9E1
+@5:		jsr	TENDST
 		bmi	@7
 		ldy	#1
 		lda	(STMCUR),Y
@@ -3404,7 +3899,7 @@ B4B5:		ldy	#0		; execute LIST
 		lda	#0
 		sta	$B5
 @8:		sta	$2FE
-		jmp	BDA8
+		jmp	XRTN
 
 B53E:		stx	$AA
 		jsr	@5
@@ -3507,7 +4002,7 @@ B5E0:		jsr	B661
 @1:		cmp	#15
 		beq	@3
 		bcs	@6
-		jsr	AB45
+		jsr	NCTOFR0
 		dec	$A8
 		jsr	FASC
 		lda	INBUFF
@@ -3565,15 +4060,17 @@ B66F:		sta	STENUM
 		jsr	B53E
 		jmp	B586
 
-B67D:		jsr	B883		; execute FOR
-		jsr	AADA
+		; Execute FOR
+
+XFOR:		jsr	B883
+		jsr	XLET
 		lda	$D3
 		ora	#$80
 		pha
 		jsr	B823
 		lda	#$C
 		jsr	B871
-		jsr	AC06
+		jsr	POP1
 		ldx	#$D4
 		ldy	#0
 		jsr	B888
@@ -3584,7 +4081,7 @@ B67D:		jsr	B883		; execute FOR
 		sta	FR0
 		jsr	B904
 		bcs	@1
-		jsr	AC06
+		jsr	POP1
 @1:		ldx	#$D4
 		ldy	#6
 		jsr	B888
@@ -3608,9 +4105,13 @@ B6B5:		pha
 		sta	($C4),Y
 		rts
 
-B6D2:		jsr	B6F9		; execute GOSUB
+		; Execute GOSUB
 
-B6D5:		jsr	ABCD		; execute GOTO, GO TO
+XGOSUB:		jsr	B6F9
+
+		; Execute GOTO, GO TO
+
+XGOTO:		jsr	GETPINT
 B6D8:		lda	FR0+1
 		sta	$A1
 		lda	FR0
@@ -3622,10 +4123,10 @@ B6E0:		jsr	GETSTMT
 		jmp	EXECNL
 
 B6EA:		jsr	B6F0
-		jsr	B91C
-B6F0:		lda	$BE
+		jsr	ERRNOLN
+B6F0:		lda	SAVCUR
 		sta	STMCUR
-		lda	$BF
+		lda	SAVCUR+1
 		sta	STMCUR+1
 		rts
 B6F9:		jsr	B883
@@ -3637,10 +4138,12 @@ B6FC:		lda	#0
 		beq	B6B5
 		.endif
 
-B700:		ldy	$A8		; execute NEXT
+		; Execute NEXT
+
+XNEXT:		ldy	$A8
 		lda	(STMCUR),Y
 		sta	$C7
-@1:		jsr	B83E
+@1:		jsr	XPOP
 		bcs	B749
 		beq	B749
 		cmp	$C7
@@ -3650,18 +4153,18 @@ B700:		ldy	$A8		; execute NEXT
 		lda	$E0
 		pha
 		lda	$C7
-		jsr	AB81
-		jsr	AD26
-		jsr	AC0C
+		jsr	_EGTVAR
+		jsr	FRADD
+		jsr	RTNVAR
 		ldy	#0
 		jsr	B897
 		pla
 		bpl	B732
-		jsr	AD20
+		jsr	FRCMP
 		bpl	B73A
 		rts
 
-B732:		jsr	AD20
+B732:		jsr	FRCMP
 		beq	B73A
 		bmi	B73A
 B739:		rts
@@ -3675,11 +4178,13 @@ B73A:		lda	#$10
 		.byte	$d0,$32
 		rts
 
-B749:		jsr	B91A
+B749:		jsr	ERNOFOR
 
-BDA8:		jsr	B83E		; execute RETURN
+		; Execute RETURN
+
+XRTN:		jsr	XPOP
 		.byte	$b0,$16
-		bne	BDA8
+		bne	XRTN
 		jsr	YYY
 		cmp	#12
 		beq	@1
@@ -3691,7 +4196,7 @@ BDA8:		jsr	B83E		; execute RETURN
 		bne	zzz
 @1:		rts
 
-		jsr	B914
+		jsr	ERBRTN
 YYY:		jsr	B816
 		bcs	zzz
 		ldy	$b2
@@ -3703,8 +4208,11 @@ YYY:		jsr	B816
 		rts
 
 zzz:		jsr	B6F0
-		jsr	B916
-B74C:		jsr	B904		; execute RUN
+		jsr	ERGFDEL
+
+		; Execute RUN
+
+XRUN:		jsr	B904
 		bcs	B754
 		jsr	BAF7
 B754:
@@ -3716,8 +4224,11 @@ B73A:		lda	#$10
 		cmp	#8
 		beq	B739
 		jmp	BDC2
-B749:		jsr	B91A
-B74C:		jsr	B904		; execute RUN
+B749:		jsr	ERNOFOR
+
+		; Execute RUN
+
+XRUN:		jsr	B904
 		bcs	B754
 		jsr	BAF7
 B754:		nop
@@ -3728,11 +4239,13 @@ B754:		nop
 		sta	$A0
 		sta	$A1
 		jsr	B816
-		jsr	A9E1
+		jsr	TENDST
 		bmi	B775
 		jsr	RUNINIT
 
-B766:		jsr	B8B9		; execute CLR
+		; Execute CLR
+
+XCLR:		jsr	B8B9
 		jsr	B8A8
 		lda	#0
 		sta	DATALN
@@ -3742,28 +4255,34 @@ B766:		jsr	B8B9		; execute CLR
 
 B775:		jmp	SNX1
 
-B778:		jsr	AC06		; execute IF
+		; Execute IF
+
+XIF:		jsr	POP1
 		lda	FR0+1
 		beq	B787
 		jsr	B904
 
 		.if	BASIC_REVISION = 1
 		bcs	@1
-		jmp	B6D5
+		jmp	XGOTO
 @1:		rts
 		.else
 		bcs	B78B
-		jmp	B6D5
+		jmp	XGOTO
 		.endif
 
 B787:		lda	MAXCIX
 		sta	$A7
 B78B:		rts
 
-B78C:		jsr	B7A6		; execute END
+		; Execute END
+
+XEND:		jsr	B7A6
 		jmp	SNX1
 
-B792:		jsr	B7A6		; execute STOP
+		; Execute STOP
+
+XSTOP:		jsr	B7A6
 		jsr	BD79
 
 		lda	#<STOPPED_STR
@@ -3773,7 +4292,7 @@ B792:		jsr	B7A6		; execute STOP
 
 		jsr	outstr
 		jmp	B968
-B7A6:		jsr	A9E1
+B7A6:		jsr	TENDST
 		bmi	B7B2
 		sta	STOPLN+1
 		dey
@@ -3785,30 +4304,36 @@ B7B2:		jmp	SETDZ
 STOPPED_STR:	BasicString "STOPPED "
 		.endif
 
-B7B5:		jsr	A9E1		; execute CONT
+		; Execute CONT
+
+XCONT:		jsr	TENDST
 		bpl	B7B2
 		lda	STOPLN
 		sta	$A0
 		lda	STOPLN+1
 		sta	$A1
 		jsr	GETSTMT
-		jsr	A9E1
+		jsr	TENDST
 		bmi	B775
 		jsr	GETLL
 		jsr	GNXTL
-		jsr	A9E1
+		jsr	TENDST
 		bmi	B775
-		jmp	B819
+		jmp	SETLN1
 
-B7D8:		jsr	ABD7		; execute TRAP
+		; Execute TRAP
+
+XTRAP:		jsr	GETINT
 		lda	FR0
 		sta	$BC
 		lda	FR0+1
 		sta	$BD
 		rts
 
-B7E4:		jsr	B883		; execute ON
-		jsr	ABE0
+		; Execute ON
+
+XON:		jsr	B883
+		jsr	GET1INT
 		lda	FR0
 		.if	BASIC_REVISION = 1
 		.byte	$f0,$20
@@ -3826,7 +4351,7 @@ B7E4:		jsr	B883		; execute ON
 		jsr	B6FC
 B7FB:		lda	FR0
 		sta	SVONTX
-B7FF:		jsr	ABCD
+B7FF:		jsr	GETPINT
 		dec	SVONTX
 		.if	BASIC_REVISION = 1
 		.byte	$f0,$06
@@ -3844,14 +4369,14 @@ B812:
 		.else
 		plp
 		beq	B811
-		jsr	B83E
+		jsr	XPOP
 B811:		rts
 B812:		plp
 		jmp	B6D8
 		.endif
 
 B816:		jsr	GETSTMT
-B819:		ldy	#2
+SETLN1:		ldy	#2
 		lda	(STMCUR),Y
 		sta	MAXCIX
 		iny
@@ -3859,7 +4384,7 @@ B819:		ldy	#2
 		rts
 B823:		sta	$C7
 		jsr	B87A
-B828:		jsr	B83E
+B828:		jsr	XPOP
 		bcs	B835
 		beq	B835
 		cmp	$C7
@@ -3880,7 +4405,9 @@ B83D:		rts
 		rts
 		.endif
 
-B83E:		lda	RUNSTK+1	; execute POP
+		; Execute POP
+
+XPOP:		lda	RUNSTK+1
 		cmp	MEMTOP+1
 		.if	BASIC_REVISION = 1
 		.byte	$90,$08
@@ -3975,11 +4502,11 @@ B89D:		lda	(MEMTOP),Y
 B8A8:		lda	STARP
 		sta	RUNSTK
 		sta	MEMTOP
-		sta	APPMHI
+		sta	APMH
 		lda	STARP+1
 		sta	RUNSTK+1
 		sta	MEMTOP+1
-		sta	APPMHI+1
+		sta	APMH+1
 		rts
 
 B8B9:		ldx	VVTP
@@ -4049,28 +4576,32 @@ B904:		ldx	$A8
 		cpx	$A7
 		rts
 
-B90A:		inc	$B9
-B90C:		inc	$B9
-B90E:		inc	$B9
-B910:		inc	$B9
-B912:		inc	$B9		; execute "ERROR-"
-B914:		inc	$B9
-B916:		inc	$B9
-ERLTL:		inc	$B9
-B91A:		inc	$B9
-B91C:		inc	$B9
-B91E:		inc	$B9
-B920:		inc	$B9
-B922:		inc	$B9
-B924:		inc	$B9
-B926:		inc	$B9
-B928:		inc	$B9
-B92A:		inc	$B9
-ERRVSF:		inc	$B9
-B92E:		inc	$B9
-B930:		inc	$B9
-		inc	$B9
-B934:		lda	#0
+ERRNSF:		inc	ERRNUM		; FILE NOT SAVE FILE		21 = Bad LOAD
+ERRDNO:		inc	ERRNUM		; #DN0 > 7			20 = Bad Device #
+ERRPTL:		inc	ERRNUM		; LOAD PGM TOO BIG		19 = Insufficient RAM
+ERSVAL:		inc	ERRNUM		; STRING NOT VALID		18 = Bad string / val
+XERR:		inc	ERRNUM		;EXECUTION OF GARBAGE		17 = Bad line - "ERROR -  "; execute "ERROR-"
+ERBRTN:		inc	ERRNUM		; BAD RETURNS			16 = RETURN without GOSUB
+ERGFDEL:	inc	ERRNUM		; GOSUB/FOR LINE DELETED	15 = Deleted NEXT/RETURN
+ERLTL:		inc	ERRNUM		; LINE TOO LONG			14 = Statement Too Long / Complex
+ERNOFOR:	inc	ERRNUM		; NO MATCHING FOR		13 = NEXT without FOR
+ERRNOLN:	inc	ERRNUM		; LINE NOT FOUND [GOSUB/GOTO]	12 = Line Not Found
+EROVFL:		inc	ERRNUM		; FLOATING POINT OVERFLOW	11 = FP Overflow
+ERRAOS:		inc	ERRNUM		; ARG STACK OVERFLOW		10 = Too many GOSUBs
+ERRDIM:		inc	ERRNUM		; ARRAY/STRING DIM ERROR	 9 = DIM error
+ERRINP:		inc	ERRNUM		; INPUT STMT ERROR		 8 = INPUT, READ type mismatch
+ERRLN:		inc	ERRNUM		;VALUE NOT <32768		 7 = Bad Value
+ERROOD:		inc	ERRNUM		; READ OUT OF DATA		 6 = Out of DATA
+ERRSSL:		inc	ERRNUM		; STRING LENGTH ERROR		 5 = String overflow
+ERRVSF:		inc	ERRNUM		; VARIABLE TABLE FULL		 4 = Out of Variables
+ERVAL:		inc	ERRNUM		; VALUE ERROR			 3 = Out of Range
+MEMFULL:	inc	ERRNUM		; MEMORY FULL			 2 = Memory Full
+ERON:		inc	ERRNUM		; NO LINE # FOR EXP IN ON	 1 = Line Not Found for ON EXP
+
+;
+; Error Routine
+;
+ERROR:		lda	#0
 		sta	$2FE
 		jsr	B7A6
 		lda	$BD
@@ -4093,7 +4624,7 @@ B934:		lda	#0
 		lda	#0
 		sta	FR0+1
 		jsr	B993
-B968:		jsr	A9E1
+B968:		jsr	TENDST
 		bmi	@1
 		lda	#<ATLINE_STR
 		sta	POKADR
@@ -4130,19 +4661,21 @@ B993:		jsr	IFP
 
 ATLINE_STR:	BasicString " AT LINE "
 
-B9AD:		jsr	ABE0		; execute SETCOLOR
+		; Execute SETCOLOR
+
+XSETCOLOR:	jsr	GET1INT
 		lda	FR0
 		cmp	#5
 		bcs	B9D0
 		pha
-		jsr	ABD7
+		jsr	GETINT
 		lda	FR0
 		asl
 		asl
 		asl
 		asl
 		pha
-		jsr	ABD7
+		jsr	GETINT
 		pla
 		clc
 		adc	FR0
@@ -4153,9 +4686,11 @@ B9AD:		jsr	ABE0		; execute SETCOLOR
 		sta	$2C4,X
 		rts
 
-B9D0:		jsr	B92E
+B9D0:		jsr	ERVAL
 
-B9D3:		jsr	ABE0		; execute SOUND
+		; Execute SOUND
+
+XSOUND:		jsr	GET1INT
 		lda	FR0
 		cmp	#4
 		bcs	B9D0
@@ -4165,20 +4700,20 @@ B9D3:		jsr	ABE0		; execute SOUND
 		sta	AUDCTL
 		lda	#3
 		sta	SKCTL
-		jsr	ABD7
+		jsr	GETINT
 		pla
 		pha
 		tax
 		lda	FR0
 		sta	$D200,X
-		jsr	ABD7
+		jsr	GETINT
 		lda	FR0
 		asl
 		asl
 		asl
 		asl
 		pha
-		jsr	ABD7
+		jsr	GETINT
 		pla
 		tay
 		pla
@@ -4189,22 +4724,28 @@ B9D3:		jsr	ABE0		; execute SOUND
 		sta	$D201,X
 		rts
 
-BA0C:		jsr	ABD7		; execute POSITION
+		; Execute POSITION
+
+XPOS:		jsr	GETINT
 		lda	FR0
 		sta	$55
 		lda	FR0+1
 		sta	$56
-		jsr	ABE0
+		jsr	GET1INT
 		lda	FR0
 		sta	$54
 		rts
 
-BA1F:		jsr	ABD7		; execute COLOR
+		; Execute COLOR
+
+XCOLOR:		jsr	GETINT
 		lda	FR0
 		sta	$C8
 		rts
 
-BA27:		jsr	BA0C		; execute DRAWTO
+		; Execute DRAWTO
+
+XDRAWTO:	jsr	XPOS
 		lda	$C8
 		sta	$2FB
 		lda	#$11
@@ -4217,10 +4758,12 @@ BA27:		jsr	BA0C		; execute DRAWTO
 		jsr	BD29
 		jmp	BCBB
 
-BA46:		ldx	#6		; execute GRAPHICS
+		; Execute GRAPHICS
+
+XGR:		ldx	#6
 		stx	$C1
 		jsr	BCF7
-		jsr	ABD7
+		jsr	GETINT
 		ldx	#<@screendev
 		ldy	#>@screendev
 		stx	INBUFF
@@ -4236,7 +4779,9 @@ BA46:		ldx	#6		; execute GRAPHICS
 
 @screendev:	.byte	"S:",$9B
 
-BA6C:		jsr	BA0C		; execute PLOT
+		; Execute PLOT
+
+XPLOT:		jsr	XPOS
 		lda	$C8
 		ldx	#6
 		jmp	BA9B
@@ -4309,7 +4854,9 @@ BABE:		sta	$C0
 BAC0:		stx	$C1
 		jmp	BCAF
 
-BAC5:		lda	#4		; execute ENTER
+		; Execute ENTER
+
+XENTER:		lda	#4
 		jsr	BAD7
 		sta	$B4
 		jmp	SYNTAX
@@ -4340,7 +4887,9 @@ FP_two:		.byte	$40,$02,$00,$00,$00,$00
 BAF7:		lda	#$FF
 		bne	W1
 
-BAFB:		lda	#0	; execute LOAD
+		; Execute LOAD
+
+XLOAD:		lda	#0
 W1:		pha
 		lda	#4
 		jsr	BAD7
@@ -4381,7 +4930,7 @@ W2:		pha
 		bne	@4
 		cpy	HIMEM
 		bcc	@5
-@4:		jmp	B90E
+@4:		jmp	ERRPTL
 @5:		sta	1,X
 		sty	0,X
 		dex
@@ -4389,7 +4938,7 @@ W2:		pha
 		cpx	#VNTP
 		bcs	@3
 		jsr	W9
-		jsr	B766
+		jsr	XCLR
 		lda	#0
 		sta	LOADFLG
 		pla
@@ -4399,17 +4948,21 @@ W2:		pha
 
 @7:		lda	#0
 		sta	LOADFLG
-		jsr	B90A
+		jsr	ERRNSF
 
 		.if	BASIC_REVISION > 1
 
-BB64:		lda	#4		; execute CLOAD
+		; Execute CLOAD
+
+XCLOAD:		lda	#4
 		jsr	BBB4
 		lda	#0
 		beq	W2
 		.endif
 
-BB6D:		lda	#8		; execute SAVE
+		; Execute SAVE
+
+XSAVE:		lda	#8
 		jsr	BAD7
 BB72:		lda	#$B
 		sta	$C0
@@ -4442,18 +4995,28 @@ W9:		jsr	BCAF
 		jsr	BCBB
 		jmp	BCF7
 
-BBB4:		.if	BASIC_REVISION = 1
-BBD1:		lda	#8		; execute CSAVE
+BBB4:
+		.if	BASIC_REVISION = 1
+
+		; Execute CSAVE
+
+XCSAVE:		lda	#8
 		jsr	ZZZ
 		jmp	BB72
 
-BB64:		lda	#4		; execute CLOAD
+
+		; Execute CLOAD
+
+XCLOAD:		lda	#4
 		jsr	ZZZ
 		lda	#0
 		jmp	W2
+
 		.else
+
 		nop
 		nop
+
 		.endif
 
 ZZZ:		pha
@@ -4474,7 +5037,9 @@ BBCE:		.byte	"C:",$9B
 
 		.if	BASIC_REVISION > 1
 
-BBD1:		lda	#8	; execute CSAVE
+		; Execute CSAVE
+
+XCSAVE:		lda	#8
 		jsr	BBB4
 		bne	BB72
 		.endif
@@ -4489,10 +5054,14 @@ BBD8:		pha
 		jsr	BD1E
 		jmp	INTLBF
 
-BBEC:		jsr	BD09	; execute XIO
+		; Execute XIO
+
+XXIO:		jsr	BD09
 		jmp	BBF4
 
-BBF2:		lda	#3	; execute OPEN
+		; Execute OPEN
+
+XOPEN:		lda	#3
 BBF4:		sta	$C0
 		jsr	BCA8
 		jsr	BD09
@@ -4503,8 +5072,8 @@ BBF4:		sta	$C0
 BC02:		pha
 		tya
 		pha
-		jsr	AADA
-		jsr	BD7D
+		jsr	XLET
+		jsr	SETSEOL
 		jsr	BCAF
 		pla
 		sta	$34B,X
@@ -4515,19 +5084,25 @@ BC02:		pha
 		jsr	INTLBF
 		jmp	BCBB
 
-BC22:		lda	#12		; execute CLOSE
+		; Execute CLOSE
+
+XCLOSE:		lda	#12
 BC24:		sta	$C0
 		jsr	BCA8
 BC29:		jsr	BD29
 		jmp	BCBB
 
-BC2F:		jsr	BCA8		; execute STATUS
+		; Execute STATUS
+
+XSTATUS:	jsr	BCA8
 		lda	#13
 		jsr	BD2B
 		jsr	BD00
 		jmp	BD31
 
-BC3D:		lda	#$26		; execute NOTE
+		; Execute NOTE
+
+XNOTE:		lda	#$26
 		jsr	BC24
 		lda	$34C,X
 		ldy	$34D,X
@@ -4536,14 +5111,16 @@ BC3D:		lda	#$26		; execute NOTE
 		lda	$34E,X
 		jmp	BD31
 
-BC54:		jsr	BCA8		; execute POINT
-		jsr	ABCD
+		; Execute POINT
+
+XPOINT:		jsr	BCA8
+		jsr	GETPINT
 		jsr	BCAF
 		lda	FR0
 		sta	$34C,X
 		lda	FR0+1
 		sta	$34D,X
-		jsr	ABCD
+		jsr	GETPINT
 		jsr	BCAF
 		lda	FR0
 		sta	$34E,X
@@ -4555,13 +5132,17 @@ BC54:		jsr	BCA8		; execute POINT
 		bne	BC29
 		.endif
 
-BC78:		jsr	BCA8		; execute PUT
-		jsr	ABD7
+		; Execute PUT
+
+XPUT:		jsr	BCA8
+		jsr	GETINT
 		lda	FR0
 		ldx	$C1
 		jmp	BA9B
 
-BC85:		.if	BASIC_REVISION > 1	; execute GET
+		; Execute GET
+
+XGET:		.if	BASIC_REVISION > 1
 		jsr	INTLBF
 		.endif
 		jsr	BCA8
@@ -4574,7 +5155,9 @@ BC8B:		lda	#7
 		lda	(INBUFF),Y
 		jmp	BD31
 
-BC9E:		jsr	BA0C		; execute LOCATE
+		; Execute LOCATE
+
+XLOCATE:	jsr	XPOS
 		ldx	#6
 		jsr	BAC0
 		bne	BC8B
@@ -4595,7 +5178,7 @@ BCAF:		lda	$C1
 		.if	BASIC_REVISION = 1
 		rts
 		.endif
-BCB8:		jsr	B90C
+BCB8:		jsr	ERRDNO
 BCBB:		jsr	BD00
 BCBE:		.if	BASIC_REVISION = 1
 		.byte	$30,$01
@@ -4628,7 +5211,7 @@ BCD8:		sta	$B9
 		bne	BCE1
 		jsr	BCF7
 BCE1:		jsr	SETDZ
-		jmp	B934
+		jmp	ERROR
 BCE7:		cpy	#7
 		bne	BCD8
 		ldx	#$5D
@@ -4649,7 +5232,7 @@ BD00:		jsr	BCAF
 BD06:		rts
 
 BD07:		inc	$A8
-BD09:		jsr	ABCD
+BD09:		jsr	GETPINT
 		lda	FR0
 		rts
 BD0F:		ldy	#$FF
@@ -4676,13 +5259,13 @@ BD31:		ldy	#0
 BD33:		pha
 		tya
 		pha
-		jsr	AC06
+		jsr	POP1
 		pla
 		sta	FR0+1
 		pla
 		sta	FR0
 		jsr	IFP
-		jmp	AC0C
+		jmp	RTNVAR
 
 CLSALL:		lda	#0
 		ldx	#7
@@ -4724,7 +5307,7 @@ SETDZ:		lda	#0
 		rts
 		.endif
 
-BD7D:		jsr	AB90
+SETSEOL:		jsr	AAPSTR
 		lda	FR0
 		sta	INBUFF
 		lda	FR0+1
@@ -4753,9 +5336,11 @@ RSTSEOL:	ldy	$98
 
 		.else
 
-BDA8:		jsr	B83E		; execute RETURN
+		; Execute RETURN
+
+XRTN:		jsr	XPOP
 		bcs	BDC8
-		bne	BDA8
+		bne	XRTN
 		jsr	BDCB
 		cmp	#12
 		beq	BDDA
@@ -4766,8 +5351,8 @@ BDA8:		jsr	B83E		; execute RETURN
 		cmp	#$22
 		beq	BDDA
 BDC2:		jsr	B6F0
-		jsr	B916
-BDC8:		jsr	B914
+		jsr	ERGFDEL
+BDC8:		jsr	ERBRTN
 BDCB:		jsr	B816
 		bcs	BDC2
 		ldy	SVONTL
@@ -4792,21 +5377,21 @@ GLGO2:		ldx	$B4
 		jsr	BD0F
 		jmp	BCBB
 
-BDFA:		jsr	ABFD
-		jsr	AD26
-		jmp	ABB2
+XPPLUS:		jsr	ARGP2
+		jsr	FRADD
+		jmp	ARGPUSH
 
 		.endif
 
 BE03:		sec
 		rts
 
-BE05:		lda	#4
+SIN:		lda	#4
 		bit	FR0
 		bpl	BE11
 		lda	#2
 		bne	BE11
-BE0F:		lda	#1
+COS:		lda	#1
 BE11:		sta	$F0
 		lda	FR0
 		and	#$7F
@@ -4843,7 +5428,7 @@ BE11:		sta	$F0
 		adc	$F0
 		sta	$F0
 		stx	$F1
-		jsr	FMOVE
+		jsr	MV0TO1
 		ldx	$F1
 		lda	#0
 @3:		sta	$E2,X
@@ -4853,7 +5438,7 @@ BE11:		sta	$F0
 		jsr	FSUB
 @4:		lsr	$F0
 		bcc	@5
-		jsr	FMOVE
+		jsr	MV0TO1
 		ldx	#<BECF
 		ldy	#>BECF
 		jsr	FLD0R
@@ -4861,7 +5446,7 @@ BE11:		sta	$F0
 @5:		ldx	#$E6
 		ldy	#5
 		jsr	FSTOR
-		jsr	FMOVE
+		jsr	MV0TO1
 		jsr	FMUL
 		bcs	BE03
 		lda	#6
@@ -4891,7 +5476,7 @@ BE9F:		.byte	$BD,$03,$55,$14,$99,$39
 BEC9:		.byte	$3F,$01,$74,$53,$29,$25
 BECF:		.byte	$40,$01,$00,$00,$00,$00	;  1.00000000
 
-BED5:		lda	#0
+ATAN:		lda	#0
 		sta	$F0
 		sta	$F1
 		lda	FR0
@@ -4911,7 +5496,7 @@ BED5:		lda	#0
 @1:		ldx	#$E6
 		ldy	#5
 		jsr	FSTOR
-		jsr	FMOVE
+		jsr	MV0TO1
 		jsr	FMUL
 		bcs	@rts
 		lda	#11
@@ -4944,7 +5529,7 @@ BED5:		lda	#0
 BF41:		sec
 		rts
 
-BF43:		lda	#0
+SQR:		lda	#0
 		sta	$F1
 		lda	FR0
 		bmi	BF41
@@ -4967,7 +5552,7 @@ BF43:		lda	#0
 		ldx	#$E6
 		ldy	#5
 		jsr	FSTOR
-		jsr	FMOVE
+		jsr	MV0TO1
 		ldx	#<FP_two
 		ldy	#>FP_two
 		jsr	FLD0R
@@ -4979,7 +5564,7 @@ BF43:		lda	#0
 @3:		ldx	#$EC
 		ldy	#5
 		jsr	FSTOR
-		jsr	FMOVE
+		jsr	MV0TO1
 		ldx	#$E6
 		ldy	#5
 		jsr	FLD0R
