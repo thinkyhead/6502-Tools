@@ -26,7 +26,6 @@ PTABW		=	$C9	; number of columns between tab stops
 		.include "../include/atari.inc"
 		.include "../include/pokey.inc"
 
-		.include "sourcebook.inc"
 
 		.macro	BasicString stringval
 		.repeat	.strlen (stringval)-1,i
@@ -40,958 +39,810 @@ PTABW		=	$C9	; number of columns between tab stops
 		BasicString stringval
 		.endmacro
 
-COLDSTART:	LDA	LOADFLG		;Y IN MIDDLE OF LOAD
-		BNE	@COLD1		; DO COLDSTART
-		LDA	WARMST		; IF WARM START
-		BNE	WARMSTART	; THEN BRANCH
-@COLD1:		LDX	#$FF		; SET ENTRY STACK
-		TXS			; TO TOS
-		CLD			; CLEAR DECIMAL MODE
+A000:		lda	$CA
+		bne	@1
+		lda	WARMST
+		bne	L3
+@1:		ldx	#$FF
+		txs
+		cld
 
-;
-; XNEW - Execute NEW
-;
+A00C:		ldx	MEMLO		; execute NEW
+		ldy	MEMLO+1
+		stx	LOMEM
+		sty	LOMEM+1
+		lda	#0
+		sta	$92
+		sta	$CA
+		iny
+		txa
 
-XNEW:		LDX	LMADR		;LOAD LOW
-		LDY	LMADR+1		;MEM VALUE
-		STX	LOMEM		; SET LOMEM
-		STY	LOMEM+1
-		LDA	#0		; RESET MODIFIED
-		STA	MEOLFLG		; EOL FLAG
-		STA	LOADFLG		; RESET LOAD FLAG
-		INY			; ALLOW 256 FOR OUTBUFF
-		TXA			;VNTP
+		ldx	#$82
+@2:		sta	0,X
+		inx
+		sty	0,X
+		inx
+		cpx	#$92
+		bcc	@2
 
-		LDX	#VNTP		; GET ZPG DISPC TO VNTP
-@CS1:		STA	0,X		; SET TABLE ADR LOW
-		INX
-		STY	0,X		; SET TABLE ADR HIGH
-		INX
-		CPX	#MEMTOP+2	; AT LIMIT
-		BCC	@CS1		; BR IF NOT
+		ldx	#$86
+		ldy	#1
+		jsr	A87A
+		ldx	#$8C
+		ldy	#3
+		jsr	A87A
+		lda	#0
+		tay
+		sta	(VNTD),Y
+		sta	(STMCUR),Y
+		iny
+		lda	#$80
+		sta	(STMCUR),Y
+		iny
+		lda	#3
+		sta	(STMCUR),Y
+		lda	#10		;  tab stops -> 10
+		sta	PTABW
+L3:		jsr	B8F1
+A050:		jsr	BD45
+A053:		jsr	BD5B
+		lda	$92
+		beq	A05D
+		jsr	BD9D
+A05D:		jsr	BD62
 
-		LDX	#VVTP		; EXPAND VNT BY ONE
-		LDY	#1		; FOR END OF VNT
-		JSR	EXPLOW		; ZERO BYTE
-		LDX	#STARP		; EXPAND STMT TBL
-		LDY	#3		; BY 3 BYTES
-		JSR	EXPLOW		; GO DO IT
-
-		LDA	#0		; SET 0
-		TAY
-		STA	(VNTD),Y	; INTO VVTP
-		STA	(STMCUR),Y	; INTO STMCUR+0
-		INY
-		LDA	#$80		; $80 INTO
-		STA	(STMCUR),Y	; STMCUR+1
-		INY
-		LDA	#$03		; $03 INTO
-		STA	(STMCUR),Y	; STMCUR+2
-
-		LDA	#10		; SET PRINT TAB
-		STA	PTABW		; WIDTH TO 10
-
-;
-; Warm Start
-;
-		;	WARMSTART - BASIC RESTART
-		;	            DOES NOT DESTROY CURRENT PGM
-WARMSTART:	JSR	RUNINIT		; INIT FOR RUN
-SNX1:		JSR	CLSALL		; GO CLOSE DEVICE 1-7
-SNX2:		JSR	SETDZ		; SET E/L DEVICE 0
-		LDA	MEOLFLG		; IF AN EOL INSERTED
-		BEQ	SNX3
-		JSR	RSTSEOL		; THEN UN-INSERT IT
-SNX3:		JSR	PREADY		; PRINT READY MESSAGE
-
-;
-; Syntax
-;
-
-;
-; Editor - Get Lines of Input
-;
-
-SYNTAX:		LDA	LOADFLG		; IF LOAD IN PROGRESS
-		BNE	COLDSTART	; GO DO COLDSTART
-		LDX	#$FF		; RESTORE STACK
-		TXS
-		JSR	INTLBF		; GO INT LBUFF
-		LDA	#EPCHAR		; ]
-		STA	PROMPT
+A060:		lda	$CA
+		bne	A000
+		ldx	#$FF
+		txs
+		jsr	__DA51
+		lda	#$5D
+		sta	$C2
 		.if	BASIC_REVISION = 1
-		JSR	GLGO		;
-		JSR	TSTBRK		; TEST BREAK
-		BNE	SYNTAX		; BR IF BREAK
+		jsr	BA92
+		jsr	A9F2
+		bne	A060
 		.else
-		jsr	GLGO2
-		jsr	TSTBRK
-		beq	SYNTAX
+		jsr	BDED
+		jsr	A9F2
+		beq	A060
 		.endif
 
-		LDA	#0		; INIT CURRENT
-		STA	CIX		;INPUT INDEX TO ZERO
-		STA	MAXCIX
-		STA	COX		;OUTPUT INDEX TO ZERO
-		STA	DIRFLG		;SET DIRECT SMT
-		STA	SVONTX		; SET SAVE ONT CIX
-		STA	SVONTC
-		STA	SVVVTE		; VALUE IN CASE
-		LDA	VNTD		; OF SYNTAX ERROR
-		STA	SVVNTP
-		LDA	VNTD+1
-		STA	SVVNTP+1
+		lda	#0
+		sta	CIX
+		sta	$9F
+		sta	$94
+		sta	$A6
+		sta	$B3
+		sta	$B0
+		sta	$B1
 
-		JSR	SKBLANK		; SKIP BLANKS
-		JSR	GETLNUM		;CONVERT AND PUT IN BUFFER
-		JSR	_SETCODE	; SET DUMMY FOR LINE LENGTH
-		LDA	BININT+1
-		BPL	@SYN0
-		STA	DIRFLG
-@SYN0:		JSR	SKBLANKS	; SKIP BLANKS
-		LDY	CIX		;GET INDEX
-		STY	STMSTRT		;SAVE INCASE OF SYNTAX ERROR
-		LDA	(INBUFF),Y	;GET NEXT CHAR
-		CMP	#CR		;IS IT CR
-		BNE	SYN1		;BR NOT CR
-		BIT	DIRFLG		; IF NO LINE NO.
-		BMI	SYNTAX		; THEN NO. DELETE
-		JMP	SDEL		;GO DELETE STMT
+		lda	VNTD
+		sta	$AD
+		lda	VNTD+1
+		sta	$AE
 
-_XIF:
-SYN1:		LDA	COX		;SAVE COX
-		STA	STMLBD		;AS PM TO STMT LENGTH BYTE
-		JSR	_SETCODE	; DUMMY FOR STMT LENGTH
+		jsr	SKIP_SPACES
+		jsr	A19A
+		jsr	A2C4
+		lda	FR0+1
+		bpl	@4
+		sta	$A6
+@4:		jsr	SKIP_SPACES
+		ldy	CIX
+		sty	$A8
+		lda	(INBUFF),Y
+		cmp	#$9B
+		bne	A0B1
+		bit	$A6
+		bmi	A060
+		jmp	A186
 
-		JSR	SKBLANK		;GO SKIP BLANKS
-		LDA	#>SNTAB		; SET UP FOR STMT
-		LDY	#<SNTAB		;NAME SEARCH
-		LDX	#2
-		JSR	SEARCH		;AND DO IT
-		STX	CIX
-		LDA	STENUM		;GET STMT NUMBER
-		JSR	_SETCODE	;GO SET CODE
-		JSR	SKBLANK
-		JSR	SYNENT		;AND GO SYNTAX HIM
-		BCC	SYNOK		;BR IF OK SYNTAX
-					;ELSE SYNTAX ERROR
-		LDY	MAXCIX		; GET MAXCIX
-		LDA	(INBUFF),Y	; LOAD MAXCIX CHAR
-		CMP	#CR		; WAS IT CR
-		BNE	@SYN3A		; BR IF NOT CR
-		INY			; MOVE CR RIGHT ONE
-		STA	(INBUFF),Y
-		DEY			; THEN PUT A
-		LDA	#' '		; BLANK IN ITS PLACE
-@SYN3A:		ORA	#$80		; SET MAXCIX CHAR
-		STA	(INBUFF),Y	; TO FLASH
-
-		LDA	#$40		;INDICATE SYNTAX ERROR
-		ORA	DIRFLG
-		STA	DIRFLG		; IN DIRFLG
-		LDY	STMSTRT		;RESTORE STMT START
-		STY	CIX
-		LDX	#3		;SET FOR FIRST STMT
-		STX	STMLBD
-		INX			;INC TO CODE
-		STX	COX		;AND SET COX
-		LDA	#CERR		; GARBAGE CODE
-SYN3:		JSR	_SETCODE	;GO SET CODE
-
-_XDATA:		LDY	CIX		;GET INDEX
-		LDA	(INBUFF),Y	;GET INDEX CHAR
-		INC	CIX		;INC TO NXT
-		CMP	#CR		;IS IT CR
-		BNE	SYN3		;BR IF NOT
-		JSR	_SETCODE
-
-SYNOK:		LDA	COX		; GET DISPL TO END OF STMT
-		LDY	STMLBD
-		STA	(OUTBUFF),Y	;SET LENGTH BYTE
-		LDY	CIX		;GET INPUT DISPL
-		DEY
-		LDA	(INBUFF),Y	;GET LAST CHAR
-		CMP	#CR		;IS IT CR
-		BNE	SYN1		;BR IF NOT
-
-		LDY	#2		; SET LINE LENGTH
-		LDA	COX		; INTO STMT
-		STA	(OUTBUFF),Y
-
-		JSR	GETSTMT		;GO GET STMT
-		LDA	#0
-		BCS	@8
-		JSR	GETLL		;GO GET LINE LENGTH
-@8:		SEC
-		SBC	COX		;ACU=LENGTH[OLD-NEW]
-		BEQ	@10		; BR NEW=OLD
-		BCS	@9		;BR OLD<NEW
-					;OLD<NEW
-		EOR	#$FF		;COMPLEMENT RESULT
-		TAY
-		INY
-		LDX	#STMCUR		;POINT TO STMT CURRENT
-		JSR	EXPLOW		;GO EXPAND
-		LDA	SVESA		;RESET STMCUR
-		STA	STMCUR
-		LDA	SVESA+1
-		STA	STMCUR+1
-		BNE	@10
+A0B1:		lda	$94
+		sta	$A7
+		jsr	A2C4
+		jsr	SKIP_SPACES
+		lda	#>A49F
+		ldy	#<A49F
+		ldx	#2
+		jsr	A454
+		stx	CIX
+		lda	$AF
+		jsr	A2C4
+		jsr	SKIP_SPACES
+		jsr	A1BE
+		bcc	L7
+		ldy	$9F
+		lda	(INBUFF),Y
+		cmp	#$9B
+		bne	@5
+		iny
+		sta	(INBUFF),Y
+		dey
+		lda	#$20
+@5:		ora	#$80
+		sta	(INBUFF),Y
+		lda	#$40
+		ora	$A6
+		sta	$A6
+		ldy	$A8
+		sty	CIX
+		ldx	#3
+		stx	$A7
+		inx
+		stx	$94
+		lda	#$37
+L6:		jsr	A2C4
+A0FB:		ldy	CIX
+		lda	(INBUFF),Y
+		inc	CIX
+		cmp	#$9B
+		bne	L6
+		jsr	A2C4
+L7:		lda	$94
+		ldy	$A7
+		sta	(LOMEM),Y
+		ldy	CIX
+		dey
+		lda	(INBUFF),Y
+		cmp	#$9B
+		bne	A0B1
+		ldy	#2
+		lda	$94
+		sta	(LOMEM),Y
+		jsr	A9A2
+		lda	#0
+		bcs	@8
+		jsr	A9DC
+@8:		sec
+		sbc	$94
+		beq	@10
+		bcs	@9
+		eor	#$FF
+		tay
+		iny
+		ldx	#$8A
+		jsr	A87A
+		lda	$97
+		sta	STMCUR
+		lda	$98
+		sta	STMCUR+1
+		bne	@10
 
 @9:		.if	BASIC_REVISION = 1
-		PHA			; CONTRACT LENGTH
-		JSR	GNXTL
-		PLA
-		TAY
+		pha
+		jsr	A9D0
+		pla
+		tay
 		.else
 		tay
-		jsr	GNXTL
+		jsr	A9D0
 		.endif
 
-		LDX	#STMCUR		;POINT TO STMT CURRENT
-		JSR	CONTLOW1	;GO CONTRACT
-
-@10:		LDY	COX		; STMT LENGTH
-@11:		DEY			; MINUS ONE
-		LDA	(LOMEM),Y	; GET BUFF CHAR
-		STA	(STMCUR),Y	;PUT INTO STMT TBL
-		TYA			; TEST END
-		BNE	@11		; BR IF NOT
-		BIT	DIRFLG		;TEST FOR SYNTAX ERROR
-		BVC	L13		;BR IF NOT
-		LDA	SVVVTE		; CONTRACT VVT
-		ASL
-		ASL
-		ASL
+		ldx	#$8A
+		jsr	A8F8
+@10:		ldy	$94
+@11:		dey
+		lda	(LOMEM),Y
+		sta	(STMCUR),Y
+		tya
+		bne	@11
+		bit	$A6
+		bvc	L13
+		lda	$B1
+		asl
+		asl
+		asl
 
 		.if	BASIC_REVISION = 1
-		TAY
+		tay
 		.endif
 
-		LDX	#ENDVVT
-		JSR	CONTLOW
-		SEC
-		LDA	VNTD		; CONTRACT VNT
-		SBC	SVVNTP
-		TAY
-		LDA	VNTD+1
-		SBC	SVVNTP+1
-		LDX	#VNTD
-		JSR	CONTRACT
-		BIT	DIRFLG		; IF STMT NOT DIRECT
-		BPL	@12		; THE BRANCH
-		JSR	LDLINE		; ELSE LIST DIRECT LINE
-		JMP	SYNTAX		; THEN BACK TO SYNTAX
-@12:		JSR	LLINE		; LIST ENTIRE LINE
+		ldx	#$88
+		jsr	A8F7
+		sec
+		lda	VNTD
+		sbc	$AD
+		tay
+		lda	VNTD+1
+		sbc	$AE
+		ldx	#$84
+		jsr	A8FA
+		bit	$A6
+		bpl	@12
+		jsr	B5AA
+		jmp	A060
+@12:		jsr	B58E
 
-SYN9:		JMP	SYNTAX
-L13:		BPL	SYN9
-		JMP	EXECNL		; GO TO PROGRAM EXECUTOR
+A17E:		jmp	A060
+L13:		bpl	A17E
+		jmp	A95E
 
-SDEL:		JSR	GETSTMT		; GO GET LINE
-		BCS	SYN9		; BR NOT FOUND
-		JSR	GETLL		;GO GET LINE LENGTH
+A186:		jsr	A9A2
+		bcs	A17E
+		jsr	A9DC
 
 		.if	BASIC_REVISION = 1
-		PHA			; Y
-		JSR	GNXTL
-		PLA
-		TAY
+		pha
+		jsr	A9D0
+		pla
+		tay
 		.else
 		tay
-		jsr	GNXTL
+		jsr	A9D0
 		.endif
 
-		LDX	#STMCUR		;GET STMCUR DISPL
-		JSR	CONTLOW1	; GO DELETE
-		JMP	SYNTAX		;GO FOR NEXT LINE
+		ldx	#$8A
+		jsr	A8F8
+		jmp	A060
 
-;
-; Get a Line Number
-;
-;	GETLNUM - GET A LINE NO FROM ASCLT IN INBUFF
-;		  TO BINARY INTO OUTBUFF
-GETLNUM:	JSR	CVAFP		; GO CONVERT LINE #
-		BCC	@GLNUM		; BR IF GOOD LINE #
+A19A:		jsr	AFP
+		bcc	@2
+@1:		lda	#0
+		sta	CIX
+		ldy	#$80
+		bmi	@3
+@2:		jsr	AD41
+		ldy	FR0+1
+		bmi	@1
+		lda	FR0
+@3:		sty	$A1
+		sta	$A0
+		jsr	A2C4
+		lda	$A1
+		sta	FR0+1
+		jmp	A2C4
 
-@GLN1:		LDA	#0		; SET LINE #
-		STA	CIX
-		LDY	#$80		; =$8000
-		BMI	@SLNUM
-
-@GLNUM:		JSR	CVFPI		; CONVERT FP TO INT
-		LDY	BININT+1	; LOAD RESULT
-		BMI	@GLN1		; BR IF LNO>32767
-		LDA	BININT
-
-@SLNUM:		STY	TSLNUM+1	; SET LINE # HIGH
-		STA	TSLNUM		; AND LOW
-		JSR	_SETCODE	; OUTPUT LOW
-		LDA	TSLNUM+1	; OUTPUT HI
-		STA	BININT+1
-		JMP	_SETCODE	; AND RETURN
-;
-; SYNENT - PERFORM LINE PRE-COMPILE
-;
-SYNENT:		LDY	#1		; GET PC HIGH
-		LDA	(POKADR),Y
-		STA	CPC+1		;SET PGM COUNTERS
-		STA	SPC+1
-		DEY
-		LDA	(POKADR),Y
-		STA	CPC
-		STA	SPC
+A1BE:		ldy	#1
+		lda	(POKADR),Y
+		sta	$9E
+		sta	$483
+		dey
+		lda	(POKADR),Y
+		sta	$9D
+		sta	$482
 		.if	BASIC_REVISION = 1
-		LDA	#0		;SET STKLVL
-		STA	STKLVL		;SET STKLVL
+		lda	#0
+		sta	$A9
 		.else
-		sty	STKLVL
+		sty	$A9
 		.endif
-		LDA	COX		;MOVE
-		STA	SOX		;COX TO SOX
-		LDA	CIX		;MOVE
-		STA	SIX		;CIX TO SIX
+		lda	$94
+		sta	$481
+		lda	CIX
+		sta	$480
+A1DB:		jsr	A293
+		bmi	@2
+		cmp	#1
+		bcc	@4
+		bne	@1
+		jsr	@4
 
-; NEXT		GET NEXT SYNTAX CODE
-;		AS LONG AS NOT FAILING
-
-NEXT:		JSR	NXSC		; GET NEXT CODE
-
-		BMI	@ERNTV		; BR IF REL-NON-TERMINAL
-
-		CMP	#1		; TEST CODE=1
-		BCC	@4		; BR CODE=0 [ABS-NON-TERMINAL]
-		BNE	@TSTSUC		; BR CODE >1
-
-		JSR	@4		; CODE=1 [EXTERNAL SUBROUTINE]
 		.if	BASIC_REVISION = 1
-		BCC	NEXT		; BR IF SUB REPORTS SUCCESS
-		JMP	FAIL		; ELSE GO TO FAIL CODE
+		bcc	A1DB
+		jmp	A25E
 		.else
-		jmp	FAIL2
+		jmp	A259
 		.endif
 
-@TSTSUC:	CMP	#5		; TEST CODE = 5
-		BCC	POP		; CODE = [2,3,or 4] POP UP TO
-					; NEXT SYNTAX CODE
-		JSR	TERMTST		; CODE=5 GO TEST TERMINAL
+@1:		cmp	#5
+		bcc	A245
+		jsr	A29B
 
 		.if	BASIC_REVISION = 1
-		BCC	NEXT		; BR IF SUCCESS
-		JMP	FAIL		; ELSE GO TO FAIL CODE
+		bcc	A1DB
+		jmp	A25E
 		.else
-		jmp	FAIL2
+		jmp	A259
 		.endif
 
-@ERNTV:		SEC			; RELATIVE NON TERMINAL
+@2:		sec
 
 		.if	BASIC_REVISION = 1
-		LDX	#0		; TOKEN MINUS
+		ldx	#0
 		.endif
 
-		SBC	#$C1
-		BCS	@ERN1		; BR IF RESULT PLUS
-		LDX	#$FF		; ADD A MINUS
-@ERN1:		CLC
-		ADC	CPC		; RESULT PLUS CPC
-		PHA			; IS NEW CPC-1
-		TXA
-		ADC	CPC+1
-		PHA			; SAVE NEW PC HIGH
-		JMP	_PUSH
+		sbc	#$C1
+		bcs	@3
+		ldx	#$FF
+@3:		clc
+		adc	$9D
+		pha
+		txa
+		adc	$9E
+		pha
+		jmp	A21B
 
-@4:		JSR	NXSC		; GET NEXT CODE
-		PHA			; SAVE ON STACK
-		JSR	NXSC		; GET NEXT CODE
-		PHA			; SAVE ON STACK
-		BCC	_PUSH		; BR IF CODE =0
-		PLA			; EXCHANGE TOP
-		TAY			; 2 ENTRIES ON
-		PLA			; CPU STACK
-		TAX
-		TYA
-		PHA
-		TXA
-		PHA
-NRTS1:		RTS			; ELSE GOTO EXTERNAL SRT VIA RTS
+@4:		jsr	A293
+		pha
+		jsr	A293
+		pha
+		bcc	A21B
+		pla
+		tay
+		pla
+		tax
+		tya
+		pha
+		txa
+		pha
+A21A:		rts
 
-; PUSH		PUSH TO NEXT STACK LEVEL
+A21B:		ldx	$A9
+		inx
+		inx
+		inx
+		inx
+		beq	@1
+		stx	$A9
+		lda	CIX
+		sta	$480,X
+		lda	$94
+		sta	$481,X
+		lda	$9D
+		sta	$482,X
+		lda	$9E
+		sta	$483,X
+		pla
+		sta	$9E
+		pla
+		sta	$9D
+		jmp	A1DB
+@1:		jmp	B918
 
-_PUSH:		LDX	STKLVL		; GET STACK LEVEL
-		INX			; PLUS 4
-		INX
-		INX
-		INX
-		BEQ	@SSTB		;BR STACK TOO  BIG
-		STX	STKLVL		; SAVE NEW STACK LEVEL
-
-		LDA	CIX		; CIX TO
-		STA	SIX,X		; STACK IX
-		LDA	COX		; COX TO
-		STA	SOX,X		; STACK OX
-		LDA	CPC		; CPC TO
-		STA	SPC,X		; STACK CPC
-		LDA	CPC+1
-		STA	SPC+1,X
-
-		PLA			; MOVE STACKED
-		STA	CPC+1		; PC TO CPC
-		PLA
-		STA	CPC
-		JMP	NEXT		; GO FOR NEXT
-
-@SSTB:		JMP	ERLTL
-
-; POP		LOAD CPC FROM STACK PC
-;		AND DECREMENT TO PREVIOUS STACK LEVEL
-
-POP:		LDX	STKLVL		; GET STACK LEVEL
+A245:		ldx	$A9
 
 		.if	BASIC_REVISION = 1
-		BNE	@POP1		; BR NOT TOP OF STACK
-		RTS			; TO SYNTAX CALLER
+		bne	@1
+		rts
 		.else
-		beq	NRTS1
+		beq	A21A
 		.endif
 
-@POP1:		LDA	SPC,X		; MOVE STACK PC
-		STA	CPC		; TO CURRENT PC
-		LDA	SPC+1,X
-		STA	CPC+1
+@1:		lda	$482,X
+		sta	$9D
+		lda	$483,X
+		sta	$9E
+		dex
+		dex
+		dex
+		dex
+		stx	$A9
+A259:		bcs	A25E
+		jmp	A1DB
 
-		DEX			; X=X-4
-		DEX
-		DEX
-		DEX
-		STX	STKLVL
+A25E:		jsr	A293
+		bmi	A25E
+		cmp	#2
+		bcs	A26F
+		jsr	A28C
+		jsr	A28C
+		bne	A25E
+A26F:		cmp	#3
+		beq	A245
+		bcs	A25E
+		lda	CIX
+		cmp	$9F
+		bcc	A27D
+		sta	$9F
+A27D:		ldx	$A9
+		lda	$480,X
+		sta	CIX
+		lda	$481,X
+		sta	$94
+		jmp	A1DB
 
-FAIL2:		BCS	FAIL		; BR IF CALLER FAILING
-		JMP	NEXT		; ELSE GO TO NEXT
+A28C:		inc	$9D
+		bne	A292
+		inc	$9E
+A292:		rts
 
-; FAIL
-;		TERMINAL FAILED
-;		LOOK FOR ALTERNATIVE [OR] OR
-;		A RETURN INDICATOR
-;
-FAIL:		JSR	NXSC		; GET NEXT CODE
+A293:		jsr	A28C
+		ldx	#0
+		lda	($9D,X)
+		rts
 
-		BMI	FAIL		; BR IF RNTV
-
-		CMP	#2		; TEST CODE =2
-		BCS	@TSTOR		; BR IF POSSIBLE OR
-
-		JSR	_INCCPC		; CODE = 0 OR 1
-		JSR	_INCCPC		; INC PC BY TWO
-		BNE	FAIL		; AND CONTINUE FAIL PROCESS
-
-@TSTOR:		CMP	#3		; TEXT CODE=3
-		BEQ	POP		; BR CODE =3 [RETURN]
-		BCS	FAIL		; CODE>3 [RNTV] CONTINUE
-
-		LDA	CIX		; IF THIS CIX
-		CMP	MAXCIX		; IS A NEW MAX
-		BCC	@SCIX
-		STA	MAXCIX		; THEN SET NEW MAX
-@SCIX:		LDX	STKLVL		; CODE=2 [OR]
-		LDA	SIX,X		; MOVE STACK INDEXES
-		STA	CIX		; TO CURRENT INDEXES
-		LDA	SOX,X
-		STA	COX
-		JMP	NEXT		; TRY FOR SUCCESS HERE
-
-;
-; Increment CPC
-;
-;		INCCPC - INC CPC BY ONE
-;
-_INCCPC:	INC	CPC
-		BNE	@ICPCR
-		INC	CPC+1
-@ICPCR:		RTS
-
-;
-; NXSC - GET NEXT SYNTAX CODE
-;
-NXSC:		JSR	_INCCPC		; INC PC
-		LDX	#0
-		LDA	(CPC,X)		; GET NEXT CODE
-		RTS			; RETURN
-
-;
-; TERMTST - TEST A TERMINAL CODE
-;
-TERMTST:	CMP	#_CHNG		; TEST CODE=F
-		BEQ	ECHNG		; BR CODE = F
-		BCS	SRCONT		; BR CODE > F
+A29B:		cmp	#$0F
+		beq	A2B6
+		bcs	A2E1
 
 		.if	BASIC_REVISION > 1
-		cmp	#_UNKN		; TEST CODE=D
-		bne	@TT1
-		jsr	_INCCPC		; NEXT CPC
-		jmp	_SRCNT1
+		cmp	#$0D
+		bne	A2AB
+		jsr	A28C
+		jmp	A2E4
 		.endif
 
-@TT1:		PLA			; POP RTN ADR
-		PLA
-		LDA	#<(_EXP-1)	; PUSH EXP ADR
-		PHA			; FOR SPECIAL
-		LDA	#>(_EXP-1)	; EXP ANTV CALL
-		PHA
-		JMP	_PUSH		; GO PUSH
+A2AB:		pla
+		pla
 
-;
-; ECHNG - EXTERNAL CODE TO CHANGE COX -1
-;
-ECHNG:		JSR	_INCCPC		; INC PC TO CODE
-		LDY	#0
-		LDA	(CPC),Y		; GET CODE
-		LDY	COX		; GET COX
-		DEY			; MINUS 1
-		STA	(OUTBUFF),Y	; SET NEW CODE
-		CLC			; SET SUCCESS
-_ECRTS:		RTS			; RETURN
+		lda	#<(A605-1)
+		pha
+		lda	#>(A605-1)
+		pha
 
-_SETCODE:	LDY	COX		;GET COX
-		STA	(OUTBUFF),Y	;SET CHAR
-		INC	COX		;INC COD
+		jmp	A21B
+
+A2B6:		jsr	A28C
+		ldy	#0
+		lda	($9D),Y
+		ldy	$94
+		dey
+		sta	(LOMEM),Y
+		clc
+A2C3:		rts
+
+A2C4:		ldy	$94
+		sta	(LOMEM),Y
+		inc	$94
 
 		.if	BASIC_REVISION = 1
-		BEQ	@SCOVF		;BR IF NOT ZERO
-		RTS			;DONE
+		beq	@1
+		rts
 		.else
-		bne	_ECRTS
+		bne	A2C3
 		.endif
 
-@SCOVF:		JMP	ERLTL		;GO TO LINE TOO LONG ERR
+@1:		jmp	B918
 
-;
-; Exits for IF and REM
-;
-_EIF:		LDX	#$FF		; RESET STACK
-		TXS
-		LDA	COX		; SET STMT LENGTH
-		LDY	STMLBD
-		STA	(OUTBUFF),Y
-		JMP	_XIF		; GO CONTINUE IF
-_EREM:
-_EDATA:		LDX	#$FF		; RESET STACK
-		TXS
-		JMP	_XDATA		;GO CONTINUE DATA
+A2CF:		ldx	#$FF
+		txs
+		lda	$94
+		ldy	$A7
+		sta	(LOMEM),Y
+		jmp	A0B1
 
-;
-; SRCONT - SEARCH OP NAME TABLE AND TEST RESULT
-;
-SRCONT:		JSR	SKBLANK		; SKIP BLANKS
-_SRCNT1:	LDA	CIX		; GET CURRENT INPUT INDEX
-		CMP	SVONTX		; COMPARE WITH SAVED IX
-		BEQ	@SONT1		; BR IF SAVED IX SAME
-		STA	SVONTX		; SAVE NEW IX
+A2DB:		ldx	#$FF
+		txs
+		jmp	A0FB
 
-		LDA	#>OPNTAB	; SET UP FOR ONT
-		LDY	#<OPNTAB	; SEARCH
-		LDX	#0
-		JSR	SEARCH		; GO SEARCH
-		BCS	@SONF		; BR NOT FOUND
-		STX	SVONTL		; SAVE NEW CIX
+A2E1:		jsr	SKIP_SPACES
+A2E4:		lda	CIX
+		cmp	$B3
+		beq	@1
+		sta	$B3
+		lda	#>A7DE
+		ldy	#<A7DE
+		ldx	#0
+		jsr	A454
+		bcs	@5
+		stx	$B2
 
 		.if	BASIC_REVISION = 1
-		CLC
+		clc
 		.endif
 
-		LDA	STENUM		; ADD $10 TO
-		ADC	#$10		; ENTRY NUMBER TO
-		STA	SVONTC		; GET OPERATOR CODE
-
-@SONT1:		LDY	#0
-		LDA	($9D),Y		; GET SYNTAX REQ CODE
-		CMP	SVONTC		; DOES IT MATCH THE FOUND
-		BEQ	@SONT2		; BR IF MATCH
-		CMP	#CNFNP		; WAS REQ NFNP
+		lda	$AF
+		adc	#$10
+		sta	$B0
+@1:		ldy	#0
+		lda	($9D),Y
+		cmp	$B0
+		beq	@4
+		cmp	#$44
 
 		.if	BASIC_REVISION = 1
-		BNE	@SONTF		; BR IF NOT
-		LDA	SVONTC		; GET WHAT WE GOT
-		CMP	#CNFNP		; IS IT NFNA
-		BCS	@SONTS		; BR IF IT IS
-
-@SONTF:		SEC			; REPORT FAIL
-		RTS
-@SONTS:		LDA	SVONTC		; GET REAL CODE
+		bne	@2
+		lda	$B0
+		cmp	#$44
+		bcs	@3
+@2:		sec
+		rts
+@3:		lda	$B0
 		.else
-		bne	@SONF1
-		lda	SVONTC
-		cmp	#CNFNP
-		bcc	@SONF1
+		bne	@6
+		lda	$B0
+		cmp	#$44
+		bcc	@6
 		.endif
 
-@SONT2:		JSR	_SETCODE		; GO SET CODE
-		LDX	SVONTL		; INC CIX BY
-		STX	CIX
-		CLC			; REPORT SUCCESS
-		RTS			; DONE
+@4:		jsr	A2C4
+		ldx	$B2
+		stx	CIX
+		clc
+		rts
 
-@SONF:		LDA	#0		; SET ZERO AS
-		STA	SVONTC		; SAVED CODE
-@SONF1:		SEC
-		RTS			; DONE
+@5:		lda	#0
+		sta	$B0
+@6:		sec
+		rts
 
-;
-; _TNVAR - EXTERNAL SUBROUTINE FOR TNVAR & TSVAR
-;
-_TNVAR:		LDA	#0		; SET NUMERIC TEST
-		BEQ	_TVAR
+A320:		lda	#0
+		beq	A326
 
-_TSVAR:		LDA	#$80		; SET STR TEST
-_TVAR:		STA	TVTYPE		; SAVE TEST TYPE
-		JSR	SKPBLANK	; SKIP LEADING BLANKS
-		LDA	CIX		; GET INDEX
-		STA	TVSCIX		; FOR SAVING
+A324:		lda	#$80
+A326:		sta	$D2
+		jsr	SKIP_SPACES
+		lda	CIX
+		sta	$AC
+		jsr	A3E8
+		bcs	@2
+		jsr	A2E1
+		lda	$B0
+		beq	@1
+		ldy	$B2
+		lda	(INBUFF),Y
+		cmp	#$30
+		bcc	@2
+@1:		inc	CIX
+		jsr	A3E8
+		bcc	@1
+		jsr	__DBAF
+		bcc	@1
+		lda	(INBUFF),Y
+		cmp	#$24
+		beq	@3
+		bit	$D2
+		bpl	@4
+@2:		sec
+		rts
 
-		JSR	_TSALPH		; GO TEST FIRST CHAR
-		BCS	@TVFAIL		; BR NOT ALPHA
-		JSR	SRCONT		; IF THIS IS A
-		LDA	SVONTC		; RESVD NAME
-		BEQ	@TV1		; BR NOT RSVDNAME
-		LDY	SVONTL		; IF NEXT CHAR AFTER
-		LDA	(INBUFF),Y	; RESERVED NAME
-		CMP	#'0'		; NOT ALARM NUMERIC
-		BCC	@TVFAIL		; THEN ERROR
+@3:		bit	$D2
+		bpl	@2
+		iny
+		bne	@5
+@4:		lda	(INBUFF),Y
+		cmp	#$28
+		bne	@5
+		iny
+		lda	#$40
+		ora	$D2
+		sta	$D2
+@5:		lda	$AC
+		sta	CIX
+		sty	$AC
+		lda	VNTP+1
+		ldy	VNTP
+		ldx	#0
+		jsr	A454
+@6:		bcs	@7
+		cpx	$AC
+		beq	@11
+		jsr	A482
+		jmp	@6
 
-@TV1:		INC	CIX		; INC TO NEXT CHAR
-		JSR	_TSALPH		; TEST ALPHA
-		BCC	@TV1		; BR IF ALPHA
-		JSR	__DBAF		; TRY NUMBER
-		BCC	@TV1		; BR IF NUMBER
-
-		LDA	(INBUFF),Y	; GET OFFENDING CHAR
-		CMP	#'$'		; IS IT $
-		BEQ	@TVSTR		; BR IF $ [STRING]
-		BIT	TVTYPE		; THIS A NVAR SEARCH
-		BPL	@TVOK		; BR IF NVAR
-
-@TVFAIL:	SEC			; SET FAIL CODE
-		RTS			; DONE
-
-@TVSTR:		BIT	TVTYPE		; TEST SVAR SEARCH
-		BPL	@TVFAIL		; BR IF SVAR
-		INY			; INC OVER $
-		BNE	@TVOK2		; BR ALWAYS
-
-@TVOK:		LDA	(INBUFF),Y	; GET NEXT CHAR
-		CMP	#'('		; IS IT PAREN
-		BNE	@TVOK2		; BR NOT PAREN
-		INY			; INC OVER PARAN
-		LDA	#$40		; OR IN ARRAY
-		ORA	TVTYPE		; CODE TO TVTYPE
-		STA	TVTYPE
-
-@TVOK2:		LDA	TVSCIX		; GET SAVED CIX
-		STA	CIX		; PUT BACK
-		STY	TVSCIX		; SAVE NEW CIX
-
-		LDA	VNTP+1		; SEARCH VNT
-		LDY	VNTP		; FOR THIS GUY
-		LDX	#0
-		JSR	SEARCH
-@TVRS:		BCS	@TVS0		; BR NOT FOUND
-		CPX	TVSCIX		; FOUND RIGHT ONE
-		BEQ	@TVSUC		; BR IF YES
-		JSR	SRCNXT		; GO SEARCH MORE
-		JMP	@TVRS		; TEST THIS RESULT
-
-@TVS0:		SEC			; SIGH:
-		LDA	TVSCIX		; VAR LENGTH IS
-		SBC	CIX		; NEW CIX-OLD CIX
-		STA	CIX
-
-		TAY			; GO EXPAND VNT
-		LDX	#VNTD		; BY VAR LENGTH
-		JSR	EXPLOW
-		LDA	STENUM		; SET VARIABLE NUMBER
-		STA	TVNUM
-
-		LDY	CIX		; AND
-		DEY
-		LDX	TVSCIX		; GET DISPL TO EQU+1
-		DEX
-@TVS1:		LDA	LBUFF,X		; MOVE VAR TO
-		STA	(SVESA),Y
-		DEX
-		DEY
-		BPL	@TVS1
-
-		LDY	CIX		;TURN ON MSB
-		DEY			;OF LAST CHAR
-		LDA	(SVESA),Y	;IN VTVT ENTRY
-		ORA	#$80
-		STA	(SVESA),Y
-
-		LDY	#8		; THEN EXPAND
-		LDX	#STMTAB		; VVT BY 8
-		JSR	EXPLOW
-		INC	SVVVTE		; INC VVT EXP SIZE
-
-		LDY	#2		; CLEAR VALUE
-		LDA	#0		; PART OF
-@TVS1A:		STA	TVTYPE,Y	; ENTRY
-		INY
-		CPY	#8
-		BCC	@TVS1A
-		DEY			; AND THEN
-@TVS2:		LDA	TVTYPE,Y	; PUT IN VAR TABLE
-		STA	(SVESA),Y	; ENTRY
-		DEY
-		BPL	@TVS2
-
-@TVSUC:		BIT	TVTYPE		; WAS THERE A PAREN
-		BVC	@TVNP		; BR IF NOT
-		DEC	TVSCIX		; LET SYNTAX SEE PAREN
-
-@TVNP:		LDA	TVSCIX		; GET NEW CIX
-		STA	CIX		; TO CIX
-
-		LDA	STENUM		; GET TABLE ENTRY NO
-		BMI	@TVFULL		; BR IF > $7F
-		ORA	#$80		; MAKE IT > $7F
+@7:		sec
+		lda	$AC
+		sbc	CIX
+		sta	CIX
+		tay
+		ldx	#$84
+		jsr	A87A
+		lda	$AF
+		sta	$D3
+		ldy	CIX
+		dey
+		ldx	$AC
+		dex
+@8:		lda	$580,X
+		sta	($97),Y
+		dex
+		dey
+		bpl	@8
+		ldy	CIX
+		dey
+		lda	($97),Y
+		ora	#$80
+		sta	($97),Y
+		ldy	#8
+		ldx	#$88
+		jsr	A87A
+		inc	$B1
+		ldy	#2
+		lda	#0
+@9:		sta	$D2,Y
+		iny
+		cpy	#8
+		bcc	@9
+		dey
+@10:		lda	$D2,Y
+		sta	($97),Y
+		dey
+		bpl	@10
+@11:		bit	$D2
+		bvc	@12
+		dec	$AC
+@12:		lda	$AC
+		sta	CIX
+		lda	$AF
+		bmi	@13
+		ora	#$80
 		.if	BASIC_REVISION = 1
-		JSR	_SETCODE		; SET CODE TO OUTPUT BUFFER
-		CLC			; SET SUCCESS CODE
-		RTS			; RETURN
+		jsr	A2C4
+		clc
+		rts
 		.else
 		clc
-		jmp	_SETCODE
+		jmp	A2C4
 		.endif
 
-@TVFULL:	jmp	ERRVSF		; GO TO ERROR RTN
+@13:		jmp	B92C
 
-; TSTALPH	TEST CIX FOR ALPHA
+A3E8:		ldy	CIX
+		lda	(INBUFF),Y
+A3EC:		cmp	#$41
+		bcc	A3F3
+		cmp	#$5B
+		rts
+A3F3:		sec
+		rts
 
-_TSALPH:	LDY	CIX
-		LDA	(INBUFF),Y
-TSALPH:		CMP	#'A'
-		BCC	_TAFAIL
-		CMP	#'Z'+1
-		RTS
+A3F5:		jsr	SKIP_SPACES
+		lda	CIX
+		sta	$AC
+		jsr	AFP
+		bcc	@1
+		lda	$AC
+		sta	CIX
+		rts
 
-_TAFAIL:	SEC
-		RTS
-
-; _TNCON	EXTERNAL SUBROUTINE TO CHECK FOR NUMBER
-
-_TNCON:		JSR	SKBLANK
-		LDA	CIX
-		STA	TVSCIX
-		JSR	CVAFP		; GO TEST AND CONV
-		BCC	@TNC1		; BR IF NUMBER
-		LDA	TVSCIX
-		STA	CIX
-		RTS			; RETURN FAIL
-
-@TNC1:		LDA	#CBCD		; SET NUMERIC CONST
-		JSR	_SETCODE
+@1:		lda	#$E
+		jsr	A2C4
 
 		.if	BASIC_REVISION = 1
-		LDY	COX
+		ldy	$94
 		.else
 		iny
 		.endif
-		LDX	#0
-@TNC2:		LDA	FR0,X		; MOVE CONST TO STMT
-		STA	(LOMEM),Y
-		INY
-		INX
-		CPX	#6
-		BCC	@TNC2
-		STY	COX
-		CLC
-		RTS
 
-;	EXT SRT TO CHECK FOR STR CONST
+		ldx	#0
+@2:		lda	FR0,X
+		sta	(LOMEM),Y
+		iny
+		inx
+		cpx	#6
+		bcc	@2
+		sty	$94
+		clc
+		rts
 
-_TSCON:		JSR	SKBLANK
-		LDY	CIX		; GET INDEX
-		LDA	(INBUFF),Y	; GET CHAR
-		CMP	#'"'		; IS IT DQUOTE
+A41C:		jsr	SKIP_SPACES
+		ldy	CIX
+		lda	(INBUFF),Y
+		cmp	#$22
 
 		.if	BASIC_REVISION = 1
-		BEQ	@TSC1		; BR IF DQ
-		SEC			; SET FAIL
-		RTS			; RETURN
+		beq	@1
+		sec
+		rts
 		.else
-		bne	_TAFAIL
+		bne	A3F3
 		.endif
 
-@TSC1:		LDA	#CSTOK		; SET SCON CODE
-		JSR	_SETCODE
-		LDA	COX		; SET COX
-		STA	TSCOX		; SAVE FOR LENGTH
-		JSR	_SETCODE	; SET DUMMY FOR NOW
+@1:		lda	#15
+		jsr	A2C4
+		lda	$94
+		sta	$AB
+		jsr	A2C4
+@2:		inc	CIX
+		ldy	CIX
+		lda	(INBUFF),Y
+		cmp	#$9B
+		beq	@4
+		cmp	#$22
+		beq	@3
+		jsr	A2C4
+		jmp	@2
 
-@TSC2:		INC	CIX		; NEXT INPUT CHAR
-		LDY	CIX
-		LDA	(INBUFF),Y
-		CMP	#CR		; IS IT CR
-		BEQ	@TSC4		; BR IF CR
-		CMP	#'"'		; IS IT DQ
-		BEQ	@TSC3		; BR IF DQ
-		JSR	_SETCODE	; OUTPUT IT
-		JMP	@TSC2		; NEXT
+@3:		inc	CIX
+@4:		clc
+		lda	$94
+		sbc	$AB
+		ldy	$AB
+		sta	(LOMEM),Y
+A452:		clc
+		rts
 
-@TSC3:		INC	CIX		; INC CIX OVER DQ
-@TSC4:		CLC
-		LDA	COX		; LENGTH IS COX MINUS
-		SBC	TSCOX		; LENGTH BYTE COX
-		LDY	TSCOX
-		STA	(LOMEM),Y	; SET LENGTH
-
-_TSSUC:		CLC			; SET SUCCESS
-		RTS			; DONE
-
-; Search a Table
-;
-;		TABLE FORMAT:
-;		GARBAGE TO SKIP [N]
-;		ASCII CHAR      [N]
-;		  WITH LEAST SIGNIFICANT BYTE HAVING
-;		  MOST SIGNIFICANT BIT ON
-;		LAST TABLE ENTRY MUST HAVE FIRST ASCII
-;		  CHAR = 0
-;
-;		ENTRY PARMS:
-;		  X = SKIP LENGTH
-;		  A,Y = TABLE ADR [HIGH LOW]
-;		  ARGUMENT = INBUFF + CIX
-;		EXIT PARMS:
-;		  CARRY = CLEAR IF FOUND
-;		  X = FOUND ARGUMENT END CIX+1
-;		  SRCADR = TABLE ENTRY ADR
-;		  STENUM = TABLE ENTRY NUMBER
-;
-SEARCH:		STX	SRCSKP		; SAVE SKIP FACTOR
-		LDX	#$FF		; SET ENTRY NUMBER
-		STX	STENUM		; TO ZERO
-
-_SRC1:		STA	SRCADR+1	; SET SEARCH ADR
-		STY	SRCADR
-		INC	STENUM		; INC ENTRY NUMBER
-		LDX	CIX		; GET ARG DISPL
-		LDY	SRCSKP		; GET SKIP LENGTH
-		LDA	(SRCADR),Y	; GET FIRST CHAR
-		BEQ	_SRCNF		; BR IF EOT
-		LDA	#0		; SET STATUS = EQ
-		PHP			; AND PUSH IT
-
-_SRC2:		LDA	LBUFF,X		; GET INPUT CHAR
-		AND	#$7F		; TURN OFF MSB
-		CMP	#'.'		; IF WILD CARD
-		BEQ	_SRC5		; THEN BR
-_SRC2A:		EOR	(SRCADR),Y	; EX-OR WITH TABLE CHAR
-		ASL			; SHIFT MSB TO CARRY
-		BEQ	_SRC3		; BR IF [ARG=TAB] CHAR
-
-		PLA			; POP STATUS
-		PHP			; PUSH NEW STATUS
-
-_SRC3:		INY			;INC TABLE INDEX
-		INX			;INC ARG INDEX
-		BCC	_SRC2		; IF TABLE MSB OFF, CONTINUE
-					;ELSE END OF ENTRY
-		PLP			;GET STATUS
+A454:		stx	$AA
+		ldx	#$FF
+		stx	$AF
+A45A:		sta	POKADR+1
+		sty	POKADR
+		inc	$AF
+		ldx	CIX
+		ldy	$AA
+		lda	(POKADR),Y
+		beq	err
+		lda	#0
+		php
+A46B:		lda	$580,X
+		and	#$7F
+		cmp	#$2E
+		beq	A48F
+A474:		eor	(POKADR),Y
+		asl
+		beq	A47B
+		pla
+		php
+A47B:		iny
+		inx
+		bcc	A46B
+		plp
 		.if	BASIC_REVISION = 1
-		BEQ	_SRCFND		;BR IF NO MIS MATCH
+		beq	A48D
 		.else
-		beq	_TSSUC
+		beq	A452
 		.endif
-
-SRCNXT:		CLC
-		TYA			;ACV=ENTRY LENGTH
-		ADC	SRCADR		;PLUS START ADR [L]
-		TAY			;TO Y
-		LDA	SRCADR+1	;ETC
-		ADC	#0
-		BNE	_SRC1		;BR ALLWAYS
-
-_SRCFND:	.if	BASIC_REVISION = 1
-		CLC			; INDICATE FOUND
-		RTS
+A482:		clc
+		tya
+		adc	POKADR
+		tay
+		lda	POKADR+1
+		adc	#0
+		bne	A45A
+A48D:		.if	BASIC_REVISION = 1
+		clc
+		rts
 		.endif
+err:		sec
+		rts
 
-_SRCNF:		SEC			; INDICATE NOT FOUND
-		RTS
+A48F:		lda	#2
+		cmp	$AA
+		bne	A474
+A495:		lda	(POKADR),Y
+		bmi	A49C
+		iny
+		bne	A495
+A49C:		sec
+		bcs	A47B
 
-_SRC5:		LDA	#2		; IF NOT
-		CMP	SRCSKP		; STMT NAME TABLE
-		BNE	_SRC2A		; THEN IGNORE
-@SRC6:		LDA	(SRCADR),Y	;TEST MSB OF TABLE
-		BMI	@SRC7		; IF ON DONE
-		INY			; ELSE
-		BNE	@SRC6		; LOOK AT NEXT CHAR
-@SRC7:		SEC			; INDICATE MSB ON
-		BCS	_SRC3		; AND RE-ENTER CODE
+A49F:		WordBasicString A7C3-1,"REM"
+		WordBasicString A7C6-1,"DATA"
+		WordBasicString A6EF-1,"INPUT"
+		WordBasicString A6B8-1,"COLOR"
+		WordBasicString A72D-1,"LIST"
+		WordBasicString A71E-1,"ENTER"
+		WordBasicString A6BB-1,"LET"
+		WordBasicString A78F-1,"IF"
+		WordBasicString A6CD-1,"FOR"
+		WordBasicString A6E5-1,"NEXT"
+		WordBasicString A6B8-1,"GOTO"
+		WordBasicString A6B8-1,"GO TO"
+		WordBasicString A6B8-1,"GOSUB"
+		WordBasicString A6B8-1,"TRAP"
+		WordBasicString A6B9-1,"BYE"
+		WordBasicString A6B9-1,"CONT"
+		WordBasicString A75A-1,"COM"
+		WordBasicString A71B-1,"CLOSE"
+		WordBasicString A6B9-1,"CLR"
+		WordBasicString A6B9-1,"DEG"
+		WordBasicString A75A-1,"DIM"
+		WordBasicString A6B9-1,"END"
+		WordBasicString A6B9-1,"NEW"
+		WordBasicString A714-1,"OPEN"
+		WordBasicString A71E-1,"LOAD"
+		WordBasicString A71E-1,"SAVE"
+		WordBasicString A73B-1,"STATUS"
+		WordBasicString A744-1,"NOTE"
+		WordBasicString A744-1,"POINT"
+		WordBasicString A712-1,"XIO"
+		WordBasicString A75D-1,"ON"
+		WordBasicString A757-1,"POKE"
+		WordBasicString A6F7-1,"PRINT"
+		WordBasicString A6B9-1,"RAD"
+		WordBasicString A6F0-1,"READ"
+		WordBasicString A6EA-1,"RESTORE"
+		WordBasicString A6B9-1,"RETURN"
+		WordBasicString A721-1,"RUN"
+		WordBasicString A6B9-1,"STOP"
+		WordBasicString A6B9-1,"POP"
+		WordBasicString A6F7-1,"?"
+		WordBasicString A6E3-1,"GET"
+		WordBasicString A6B5-1,"PUT"
+		WordBasicString A6B8-1,"GRAPHICS"
+		WordBasicString A757-1,"PLOT"
+		WordBasicString A757-1,"POSITION"
+		WordBasicString A6B9-1,"DOS"
+		WordBasicString A757-1,"DRAWTO"
+		WordBasicString A755-1,"SETCOLOR"
+		WordBasicString A6DD-1,"LOCATE"
+		WordBasicString A753-1,"SOUND"
+		WordBasicString A6FB-1,"LPRINT"
+		WordBasicString A6B9-1,"CSAVE"
+		WordBasicString A6B9-1,"CLOAD"
 
-; Statement Name Table
-
-;
-; SNTAB- STATEMENT NAME TABLE
-;	EACH ENTRY HAS SYNTAX TBLE ADR PTR
-;	FOLLOWED BY STMT NAME
-;
-SNTAB:		WordBasicString _SREM-1,"REM"
-		WordBasicString _SDATA-1,"DATA"
-		WordBasicString _SINPUT-1,"INPUT"
-		WordBasicString _SCOLOR-1,"COLOR"
-		WordBasicString _SLIST-1,"LIST"
-		WordBasicString _SENTER-1,"ENTER"
-		WordBasicString _SLET-1,"LET"
-		WordBasicString _SIF-1,"IF"
-		WordBasicString _SFOR-1,"FOR"
-		WordBasicString _SNEXT-1,"NEXT"
-		WordBasicString _SGOTO-1,"GOTO"
-		WordBasicString _SGOTO-1,"GO TO"
-		WordBasicString _SGOSUB-1,"GOSUB"
-		WordBasicString _STRAP-1,"TRAP"
-		WordBasicString _SBYE-1,"BYE"
-		WordBasicString _SCONT-1,"CONT"
-		WordBasicString _SCOM-1,"COM"
-		WordBasicString _SCLOSE-1,"CLOSE"
-		WordBasicString _SCLR-1,"CLR"
-		WordBasicString _SDEG-1,"DEG"
-		WordBasicString _SDIM-1,"DIM"
-		WordBasicString _SEND-1,"END"
-		WordBasicString _SNEW-1,"NEW"
-		WordBasicString _SOPEN-1,"OPEN"
-		WordBasicString _SLOAD-1,"LOAD"
-		WordBasicString _SSAVE-1,"SAVE"
-		WordBasicString _SSTATUS-1,"STATUS"
-		WordBasicString _SNOTE-1,"NOTE"
-		WordBasicString _SPOINT-1,"POINT"
-		WordBasicString _SXIO-1,"XIO"
-		WordBasicString _SON-1,"ON"
-		WordBasicString _SPOKE-1,"POKE"
-		WordBasicString _SPRINT-1,"PRINT"
-		WordBasicString _SRAD-1,"RAD"
-		WordBasicString _SREAD-1,"READ"
-		WordBasicString _SREST-1,"RESTORE"
-		WordBasicString _SRET-1,"RETURN"
-		WordBasicString _SRUN-1,"RUN"
-		WordBasicString _SSTOP-1,"STOP"
-		WordBasicString _SPOP-1,"POP"
-		WordBasicString _SPRINT-1,"?"
-		WordBasicString _SGET-1,"GET"
-		WordBasicString _SPUT-1,"PUT"
-		WordBasicString _SGR-1,"GRAPHICS"
-		WordBasicString _SPLOT-1,"PLOT"
-		WordBasicString _SPOS-1,"POSITION"
-		WordBasicString _SDOS-1,"DOS"
-		WordBasicString _SDRAWTO-1,"DRAWTO"
-		WordBasicString _SSETCOLOR-1,"SETCOLOR"
-		WordBasicString _SLOCATE-1,"LOCATE"
-		WordBasicString _SOUND-1,"SOUND"
-		WordBasicString _SLPRINT-1,"LPRINT"
-		WordBasicString _SCSAVE-1,"CSAVE"
-		WordBasicString _SCLOAD-1,"CLOAD"
-
-		.word	_SILET-1
+		.word	A6BB-1
 		.byte	$00,$80		; silent "LET"
 
 		.byte	$00,$2A
@@ -1001,430 +852,317 @@ SNTAB:		WordBasicString _SREM-1,"REM"
 STOPPED_STR:	BasicString "STOPPED "
 		.endif
 
-;
-; SYNTAX TABLES
-;
-
-; Syntax Table OP Codes
-; $00 _ANTV	Absolute Non-Terminal Vector (ANTV) to sub-call another rule
-; $01 _ESRT	External Subroutine Call (ESRT) to call a handler for more complex rules
-; $02 _OR	ABML or
-; $03 _RTN	(aka #) Return, marks the end of an ABML rule. Return pass or fail.
-; $0D _UNKN	(aka <UNKN>) Not sure what this does in BASIC Rev. B.
-; $0E _VEXP	(aka <EXP>) Expression Non-Terminal Vector. Shorthand for ANTV AD(EXP)
-; $0F _CHNG	Change Last Token to X. e.g., to rectify '=' as assign or compare.
-
-; Helper to reverse-engineer JS offsets:
-; python -c "import sys; print(hex(int(sys.argv[1],0)+(int(sys.argv[2],0) ^ 0x40) - 0x80))" 0xA616 0xD8
-
-.define	JS(adr)	$80 + (((adr - *) & $7F) ^ $40)
-.define	AD(adr)	(adr - 1)
-.define	CHNG(val) _CHNG, val
-.define	UNJS(val) (* + (val ^ $40) - $80)
-.define	ANTV(adr) _ANTV, <AD(adr), >AD(adr)
-.define	ESRT(adr) _ESRT, <AD(adr), >AD(adr)
-
-; <EXP> = (<EXP>)<NOP> | <UNARY><EXP> | <NV><NOP>#
-
-_EXP:		.if	BASIC_REVISION = 1
-		.byte	CLPRN,JS(_EXP),CRPRN,JS(_NOP),_OR,JS(_UNARY),JS(_EXP),_OR
+A605:		.if	BASIC_REVISION = 1
+		.byte   $2B,$BF,$2C,$DE,$02,$C6,$BA,$02
 		.else
-		.byte	JS(_UNARY),JS(_EXP2),_OR,JS(_EXP2),_RTN
-_EXP2:		.byte	CLPRN,JS(_SFUN),CRPRN,JS(_NOP),_OR
+		.byte	$CD,$C4,$02,$C2,$03,$2B,$BA,$2C,$DB,$02
 		.endif
-		.byte	JS(_NV),JS(_NOP),_RTN
 
-; <UNARY> = + | - | NOT#
+		.byte	$CD,$D8,$03,$25,$0F,$35,$02,$26,$0F,$36,$02,$28,$03
 
-_UNARY:		.byte	CPLUS,CHNG(CUPLUS),_OR,CMINUS,CHNG(CUMINUS),_OR,CNOT,_RTN
-
-; <NV> = <NFUN> | <NVAR> | <NCON> | <STCOMP>#
-
-_NV:		.byte	JS(_NFUN),_OR,JS(_NVAR),_OR,ESRT(_TNCON),_OR,ANTV(_STCOMP),_RTN
-
-; <NOP> = <OP><EXP> | &#
-
-_NOP:		.byte	JS(_OP),JS(_EXP),_OR,_RTN
-
-; <OP> = ** | + | - | * | / | <= | >= | <> | > | < | = | AND | OR#
-
-_OP:		.byte	CEXP,_OR,CPLUS,_OR,CMINUS,_OR,CMUL,_OR,CDIV,_OR,CLE,_OR,CGE,_OR
-		.byte	CNE,_OR,CGT,_OR,CLT,_OR,CEQ,_OR,CAND,_OR,COR,_RTN
-
-; <NVAR> = <TNVAR><NMAT>#
-
-_NVAR:		.byte	ESRT(_TNVAR),JS(_NMAT),_RTN
-
-; <NMAT> = (<EXP><NMAT2>) | &#
-
-_NMAT:		.if	BASIC_REVISION > 1
-		.byte	_UNKN
+		.if	BASIC_REVISION = 1
+		.word	$2FD
+		.else
+		.word	$2FE
 		.endif
-		.byte	CLPRN,CHNG(CALPRN),_VEXP,JS(_NMAT2),CRPRN,_OR,_RTN
+		.byte	$E8,$02,$01
+		.word	A3F5-1
+		.byte	$02,$00
+		.word	A679-1
+		.byte	$03,$C4
+		.if	BASIC_REVISION = 1
+		.word	$29E
+		.else
+		.word	$29C
+		.endif
+		.byte	$03,$23,$02,$25,$02,$26,$02,$24,$02,$27,$02,$1D,$02,$1F,$02,$1E
+		.byte	$02,$20,$02,$21,$02,$22,$02,$2A,$02,$29,$03
 
-; <NMAT2> = ,<EXP> | &#
+A646:		.byte	$01
+		.word	A320-1
+		.byte	$C2,$03
+		.if	BASIC_REVISION > 1
+		.byte	$0D
+		.endif
+		.byte	$2B,$0F,$38,$0E,$C4,$2C,$02
+		.byte	$03
 
-_NMAT2:		.byte	CCOM,CHNG(CACOM),_VEXP,_OR,_RTN
+A654:		.byte	$12,$0F,$3C,$0E,$02,$03,$44,$D2,$02,$00
+		.word	A7CE-1
+		.byte	$D3,$02,$C2,$03,$3F,$2B,$0F,$3A,$00
+		.word	A7D5-1
+		.byte	$2C,$03,$2B,$0F,$3A,$0E,$2C,$03,$2B,$0F,$3A,$C7,$2C
+		.byte	$03
 
-; <NFUN> = <NFNP><NFP> | <NFSP><SFP> | <NFUSR>#
+A679:		.byte	$C4,$E3,$C2
+		.byte	$03
 
-_NFUN:		.byte	CNFNP,JS(_NFP),_OR,ANTV(_NFSP),JS(_SFP),_OR,JS(_NFUSR),_RTN
+A67D:		.byte	$C8,$02,$CB,$02,$01
 
-; <NFUSR> = USR(<PUSR>)#
+		.word	A41C-1
 
-_NFUSR:		.byte	CUSR,CLPRN,CHNG(CFLPRN),ANTV(_PUSR),CRPRN,_RTN
+		.byte	$03,$00
 
-; <NFP> = (<EXP>)#
+		.word	A7D1-1
 
-_NFP:		.byte	CLPRN,CHNG(CFLPRN),_VEXP,CRPRN,_RTN
-
-; <SFP> = <STR>)#
-
-_SFP:		.byte	CLPRN,CHNG(CFLPRN),JS(_STR),CRPRN,_RTN
-
-; <STCOMP> = <STR><SOP><STR>#
-
-_STCOMP:	.byte	JS(_STR),JS(_SOP),JS(_STR),_RTN
-
-; <STR> = <SFUN> | <SVAR> | <SCON>#
-
-_STR:		.byte	JS(_SFUN),_OR,JS(_SVAR),_OR,ESRT(_TSCON),_RTN
-
-; <SFUN> = SFNP<NFP>#
-
-_SFUN:		.byte	ANTV(_SFNP),JS(_NFP),_RTN
-
-; <SVAR> = <TSVAR><SMAT>#
-
-_SVAR:		.byte	ESRT(_TSVAR),JS(_SMAT),_RTN
-
-; <SMAT> = (<EXP><SMAT2>) | &#
-
-_SMAT:		.byte	CLPRN,CHNG(CSLPRN),_VEXP,JS(_SMAT2),CRPRN,_OR,_RTN
-
-; <SMAT2> = ,<EXP> | &#
-
-_SMAT2:		.byte	CCOM,CHNG(CACOM),_VEXP,_OR,_RTN
-
-; <SOP> = <><#
-
-_SOP:		.byte	CLE,CHNG(CSLE),_OR
-		.byte	CNE,CHNG(CSNE),_OR
-		.byte	CGE,CHNG(CSGE),_OR
-		.byte	CGT,CHNG(CSGT),_OR
-		.byte	CLT,CHNG(CSLT),_OR
-		.byte	CEQ,CHNG(CSEQ),_RTN
+		.byte	$A5,$03,$01
+		.word	A324-1
+		.byte	$C2,$03,$2B,$0F,$37,$0E,$C4,$2C,$02,$03,$12,$0F,$3C,$0E,$02,$03
+		.byte	$1D,$0F,$2F,$02,$1E,$0F,$30,$02,$1F,$0F,$31,$02,$20,$0F,$32,$02
+		.byte	$21,$0F,$33,$02,$22,$0F,$34
+		.byte	$03
 
 		; PUT statement
 
-; <PUT> = <D1>,<EXP><EOS>#
-
-_SPUT:		.byte	CPND,_VEXP,CCOM
+A6B5:		.byte	$1C
+		.byte	$0E,$12
 
 		; COLOR, GOTO, GO TO, GOSUB, TRAP, GRAPHICS statement
 
-_STRAP:
-_SGOTO:
-_SGOSUB:
-_SGR:
-_SCOLOR:
-_XEOS:		.byte	_VEXP
+A6B8:		.byte	$0E
 
 		; BYE, CONT, CLR, DEG, END, NEW, RAD, RETURN,
 		; STOP, POP, DOS, CSAVE, CLOAD statement
 
-_SCSAVE:
-_SCLOAD:
-_SDOS:
-_SCLR:
-_SRET:
-_SEND:
-_SSTOP:
-_SPOP:
-_SNEW:
-_SBYE:
-_SCONT:
-_SDEG:
-_SRAD:		.byte	JS(_EOS),_RTN
+A6B9:		.byte	$FA,$03
 
 		; LET, silent LET statement
 
-; <LET> = <NVAR> = <EXP><EOS> | <SVAR>=<STR><EOS>#
-
-_SLET:
-_SILET:		.byte	ANTV(_NVAR),CEQ,CHNG(CAASN),_VEXP,JS(_EOS),_OR
-		.byte	JS(_SVAR),CEQ,CHNG(CSASN),ANTV(_STR),JS(_EOS),_RTN
+A6BB:		.byte	$00
+		.word	A646-1
+		.byte	$22,$0F,$2D,$0E,$F1,$02,$86,$22,$0F,$2E,$00
+		.word	A67D-1
+		.byte	$E8,$03
 
 		; FOR statement
 
-; <FOR> = <TNVAR> = <EXP> TO <EXP><FSTEP><EOS>#
-
-_SFOR:		.byte	ESRT(_TNVAR),CEQ,CHNG(CAASN),_VEXP,CTO,_VEXP,JS(_FSTEP),JS(_EOS),_RTN
-
-; <FSTEP> = STEP<EXP> | &
-
-_FSTEP:		.byte	CSTEP,_VEXP,_OR,_RTN
+A6CD:		.byte	$01
+		.word	A320-1
+		.byte	$22,$0F,$2D,$0E,$19,$0E,$C3,$DC,$03,$1A,$0E,$02,$03
 
 		; LOCATE statement
 
-; <LOCATE> = <EXP>,<EXP>,<TNVAR><EOL>#
-
-_SLOCATE:	.byte	_VEXP,CCOM,_VEXP,CCOM,JS(_SNEXT),_RTN
+A6DD:		.byte	$0E,$12
+		.byte	$0E,$12
+		.byte	$C4,$03
 
 		; GET statement
 
-; <GET> = <D1>,<TNVAR>#
-
-_SGET:		.byte	JS(_D1),CCOM
+A6E3:		.byte	$DD,$12
 
 		; NEXT statement
 
-; <NEXT> = <TNVAR><EOS>#
-
-_SNEXT:		.byte	ESRT(_TNVAR),JS(_EOS),_RTN
+A6E5:		.byte	$01
+		.word	A320-1
+		.byte	$CB,$03
 
 		; RESTORE statement
 
-; <RESTORE> = <EXP><EOS> | <EOS>#
-
-_SREST:		.byte	_VEXP,JS(_EOS),_OR,JS(_EOS),_RTN
+A6EA:		.byte	$0E,$C8,$02,$C6,$03
 
 		; INPUT statement
 
-; <INPUT> = <OPD><READ>#
-
-_SINPUT:	.byte	JS(_OPD)
+A6EF:		.if	BASIC_REVISION = 1
+		.byte	$F8
+		.else
+		.byte	$F7
+		.endif
 
 		; READ statement
 
-; <READ> = <NSVARL><EOS>#
-
-_SREAD:		.byte	JS(_NSVRL),JS(_EOS),_RTN
-
-; <EOS> = : | CR #
-
-_EOS:		.byte	CEOS,_OR,CCR,_RTN
+A6F0:		.byte	$DB,$C2,$03,$14,$02,$16
+		.byte	$03
 
 		; PRINT, ? statement
 
-; <PRINT> = <D1><EOS> | <D1><PR1><EOS>
+A6F7:		.byte	$C9,$BB,$02
 
-_SPRINT:	.byte	JS(_D1),JS(_EOS),_OR,JS(_OPD)
+		.if	BASIC_REVISION = 1
+		.byte	$ED
+		.else
+		.byte	$EC
+		.endif
 
 		; LPRINT statement
 
-; <LPRINT> = <PR1> <EOS>
+A6FB:		.byte	$00
+		.word	A79B-1
 
-_SLPRINT:	.byte	ANTV(_PR1),JS(_EOS),_RTN
+		.byte	$B5,$03,$1C,$0E,$03,$01
+		.word	A320-1
+		.byte	$02,$01
 
-; <D1> = <CPND> <EXP> #
+		.word	A324-1
 
-_D1:		.byte	CPND,_VEXP,_RTN
-
-; <NSVAR> = <NVAR> | <SVAR> #
-
-_NSVAR:		.byte	ESRT(_TNVAR),_OR,ESRT(_TSVAR),_RTN
-
-; <NSVRL> = <NSVAR> | <NSV2> | <NADA> #   (Rev.1)
-; <NSVRL> = <NSVAR> | <NSV2> #            (Rev.2+)
-
-_NSVRL:		.byte	JS(_NSVAR),JS(_NSV2)
+		.byte	$03,$B8
 		.if	BASIC_REVISION = 1
-		.byte	_OR
+		.byte	$C3,$02,$03,$12,$BB,$02
+		.else
+		.byte	$C2,$03,$12,$BC,$02
 		.endif
-		.byte	_RTN
-
-; <NSV2> = ,<NSVRL> | &#
-
-_NSV2:		.byte	CCOM,JS(_NSVRL),_OR,_RTN
+		.byte	$03
 
 		; XIO statement
 
-; <XIO> = <EXP>,<D2S>,<FS>,<EXP><EOS>#
-
-_SXIO:		.byte	_VEXP,CCOM
+A712:		.byte	$0E,$12
 
 		; OPEN statement
 
-; <OPEN> = <D1>,<EXP>,<EXP>,<FS><EOS>#
-
-_SOPEN:		.byte	JS(_D1),CCOM,JS(_TEXP),CCOM,JS(_FS),JS(_EOS),_RTN
+A714:		.if	BASIC_REVISION = 1
+		.byte	$AB
+		.else
+		.byte	$AC
+		.endif
+		.byte	$12,$F9,$12
+		.if	BASIC_REVISION = 1
+		.byte	$F3,$99
+		.else
+		.byte	$F3,$9A
+		.endif
+		.byte	$03
 
 		; CLOSE statement
 
-; <CLOSE> = <D1><EOS>#
-
-_SCLOSE:	.byte	JS(_D1),JS(_EOS),_RTN
+A71B:		.if	BASIC_REVISION = 1
+		.byte	$A4,$96
+		.else
+		.byte	$A5,$97
+		.endif
+		.byte	$03
 
 		; ENTER, LOAD, SAVE statement
 
-; <ENTER> = <FS><EOS>#
-
-_SENTER:
-_SLOAD:
-_SSAVE:		.byte	JS(_FS),JS(_EOS),_RTN
+A71E:		.if	BASIC_REVISION = 1
+		.byte	$ED,$93,$03
+		.else
+		.byte	$ED,$94,$03
+		.endif
 
 		; RUN statement
 
-; <RUN> = <FS><EOS2> | <EOS2>#
-
-_SRUN:		.byte	JS(_FS),JS(_EOS),_OR,JS(_EOS),_RTN
-
-; <OPD> = <D1>, | #
-
-_OPD:		.byte	JS(_D1),CCOM,_OR,JS(_D1),CSC,_OR,_RTN
+A721:		.byte	$EA
+		.if	BASIC_REVISION = 1
+		.byte	$90,$02,$8E,$03,$99,$12,$02,$96
+		.else
+		.byte	$91,$02,$8F,$03,$9A,$12,$02,$97
+		.endif
+		.byte	$15,$02,$03
 
 		; LIST statement
 
-; <LIST> = <FS>;<L2> | <L2>#
-
-_SLIST:		.byte	JS(_FS),JS(_EOS),_OR,JS(_FS),CCOM,JS(_LIS),_OR,JS(_LIS),_RTN
-
-; <LIS> = <L1><EOS2>#
-
-_LIS:		.byte	ANTV(_L1),JS(_EOS2),_RTN
+A72D:		.byte	$DE
+		.if	BASIC_REVISION = 1
+		.byte	$84
+		.else
+		.byte	$85
+		.endif
+		.byte	$02,$DB,$12,$C4,$02,$C2,$03,$00
+		.word	A7BB-1
+		.byte	$F4,$03
 
 		; STATUS statement
 
-; <STATUS> = <STAT><EOS2>#
-
-_SSTATUS:	.byte	JS(_STAT),JS(_EOS2),_RTN
-
-; <STAT> = <D1>,<NVAR>#
-
-_STAT:		.byte	JS(_D1),CCOM,ANTV(_NVAR),_RTN
+A73B:		.if	BASIC_REVISION = 1
+		.byte	$C3,$F1,$03,$81,$12,$00
+		.else
+		.byte	$C3,$F1,$03,$82,$12,$00
+		.endif
+		.word	A646-1
+		.byte	$03
 
 		; NOTE, POINT statement
 
-; <SNOTE> = <STAT>,<NVAR><EOS2>#
+A744:		.byte	$BA,$12,$00
+		.word	A646-1
+		.byte	$E4,$03
 
-_SNOTE:
-_SPOINT:	.byte	JS(_STAT),CCOM,ANTV(_NVAR),JS(_EOS2),_RTN
+		.byte	$00
+		.word	A67D-1
+		.byte	$03
 
-; <FS> = <STR>
-
-_FS:		.byte	ANTV(_STR),_RTN
-
-; <TEXP> = <EXP>,<EXP>#
-
-_TEXP:		.byte	_VEXP,CCOM,_VEXP,_RTN
+		.byte	$0E,$12
+		.byte	$0E,$03
 
 		; SOUND statement
 
-; <SOUND> = <EXP>,<EXP>,<EXP>,<EXP><EOS>#
-
-_SOUND:		.byte	_VEXP,CCOM
+A753:		.byte	$0E,$12
 
 		; SETCOLOR statement
 
-; <SETCOLOR> = <EXP>,<EXP>,<EXP><EOS>#
-
-_SSETCOLOR:	.byte	_VEXP,CCOM
+A755:		.byte	$0E,$12
 
 		; POKE, PLOT, POSITION, DRAWTO statement
 
-; <...> = <EXP>,<EXP><EOS>#
-
-_SPOKE:
-_SPLOT:
-_SPOS:
-_SDRAWTO:	.byte	JS(_TEXP),JS(_EOS2),_RTN
+A757:		.byte	$B8,$D5,$03
 
 		; COM, DIM statement
 
-; <DIM> = <NSML><EOS>#
-
-_SCOM:
-_SDIM:		.byte	JS(_NSML),JS(_EOS2),_RTN
+A75A:		.if	BASIC_REVISION = 1
+		.byte	$EC,$D2
+		.else
+		.byte	$ED,$D2
+		.endif
+		.byte	$03
 
 		; ON statement
 
-; <ON> = <EXP><ON1><EXPL><EOS>#
-_SON:		.byte	_VEXP,JS(_ON1),JS(_EXPL),JS(_EOS2),_RTN
-; <ON1> = GOTO | GOSUB#
-_ON1:		.byte	CGTO,_OR,CGS,_RTN
-; <EXPL> = <EXP><EXPL1>#
-_EXPL:		.byte	_VEXP,JS(_EXPL1),_RTN
-; <EXPL1> = ,<EXPL> | &#
-_EXPL1:		.byte	CCOM,JS(_EXPL),_OR,_RTN
-; <EOS2> = CEOS | CCR#
-_EOS2:		.byte	CEOS,_OR,CCR,_RTN
-; <NSMAT> = <TNVAR>(<EXP><NMAT2>)
-_NSMAT:		.byte	ESRT(_TNVAR)
+A75D:		.byte	$0E,$C4,$C7,$CD,$03,$17,$02,$18
+		.byte	$03,$0E,$C2,$03,$12,$BC,$02,$03
+		.byte	$14,$02,$16,$03,$01
+		.word	A320-1
+
 		.if	BASIC_REVISION > 1
-		.byte	_UNKN
+		.byte	$0D
 		.endif
-		.byte	CLPRN,CHNG(CDLPRN),_VEXP,ANTV(_NMAT2),CRPRN,_OR
-		.byte	ESRT(_TSVAR),CLPRN,CHNG(CDSLPR),_VEXP,CRPRN,_RTN
 
-; <NSML> = <NSMAT><NSML2> | &#
+		.byte	$2B,$0F,$39,$0E,$00
+		.word	A654-1
+		.byte	$2C,$02,$01
 
-_NSML:		.byte	JS(_NSMAT),JS(_NSML2),_OR,_RTN
+		.word	A324-1
 
-; <NSML2> = ,<NSML> | &#
-
-_NSML2:		.byte	CCOM,JS(_NSML),_OR,_RTN
+		.byte	$2B,$0F,$3B,$0E,$2C,$03
+		.if	BASIC_REVISION = 1
+		.byte	$AB
+		.else
+		.byte	$AA
+		.endif
+		.byte	$C3,$02,$03,$12,$BB,$02,$03
 
 		; IF statement
 
-; <IF> = <EXP> THEN <IFA><EOS>#
+A78F:		.byte	$0E,$1B,$C3
+		.if	BASIC_REVISION = 1
+		.byte	$9C
+		.else
+		.byte	$9B
+		.endif
+		.byte	$03,$01
 
-_SIF:		.byte	_VEXP,CTHEN,JS(_IFA),JS(_EOS2),_RTN
-; <IFA> = <TNCON> | <EIF>
-_IFA:		.byte	ESRT(_TNCON),_OR,ESRT(_EIF)
+		.word	A3F5-1
+		.byte	$02,$01
+		.word	A2CF-1
 
-; <PR1> = <PEL> | <PSL><PR2> | &#
-_PR1:		.byte	JS(_PEL),_OR,JS(_PSL),JS(_PR2),_OR,_RTN
-; <PR2> = <PEL> | &#
-_PR2:		.byte	JS(_PEL),_OR,_RTN
-; <PEL> = <PES><PELA>#
-_PEL:		.byte	JS(_PES),JS(_PELA),_RTN
-; <PES> = <EXP> | <STR>
-_PES:		.byte	_VEXP,_OR,ANTV(_STR),_RTN
-; <PELA> = <PSL><PEL> | &#
-_PELA:		.byte	JS(_PSL),JS(_PR2),_OR,_RTN
-; <PSL> = <PS><PSLA>#
-_PSL:		.byte	JS(_PS),JS(_PSLA),_RTN
-; <PSLA> = <PSL> | &#
-_PSLA:		.byte	JS(_PSL),_OR,_RTN
-; <PS> = , | ,#
-_PS:		.byte	CCOM,_OR,CSC,_RTN
-; <L1> = <EXP><L2> | &#
-_L1:		.byte	_VEXP,JS(_L2),_OR,_RTN
-; <L2> = ,<EXP> | &#
-_L2:		.byte	CCOM,_VEXP,_OR,_RTN
+A79B:		.byte	$C9,$02,$D4,$C3,$02,$03,$C3,$02,$03,$C3,$C8,$03,$0E,$02,$00
+		.word	A67D-1
+		.byte	$03,$C4,$B3,$02,$03,$C6,$C2,$03,$BD,$02,$03,$12,$02,$15,$03
+
+A7BB:		.byte	$0E,$C3,$02,$03,$12,$0E,$02,$03
 
 		; REM statement
 
-; <REM> = <EREM>
-
-_SREM:		.byte	ESRT(_EREM)
+A7C3:		.byte	$01
+		.word	A2DB-1
 
 		; DATA statement
 
-; <DATA> = <EDATA>
+A7C6:		.byte	$01
+		.word	A2DB-1
+A7CE:		.byte	$40,$02,$41,$02,$43,$02,$42,$03
+A7D1:		.byte	$3D,$02,$3E,$03
+A7D5:		.byte	$0E,$C2,$03,$12,$0F,$3C,$BA,$02,$03
 
-_SDATA:		.byte	ESRT(_EDATA)
-
-; <NFSP> = ASC | VAL | ADR | LEN#
-
-_NFSP:		.byte	CASC,_OR,CVAL,_OR,CADR,_OR,CLEN,_RTN
-
-; <SFNP> = STR | CHR#
-
-_SFNP:		.byte	CSTR,_OR,CCHR,_RTN
-
-; <PUSR> = <EXP><PUSR1>#
-
-_PUSR:		.byte	_VEXP,JS(_PUSR1),_RTN
-; <PUSR1> = ,<PUSR> | &#
-_PUSR1:		.byte	CCOM,CHNG(CACOM),JS(_PUSR),_OR,_RTN
-
-;
-; OPNTAB - Operator Name Table
-;
-
-OPNTAB:		.byte	$02+$80
+A7DE:		.byte	$02+$80
 		.byte	$00+$80
 
 		BasicString ","
@@ -1496,7 +1234,7 @@ OPNTAB:		.byte	$02+$80
 
 		.byte	0
 
-EXPLOW:		lda	#0
+A87A:		lda	#0
 A87C:		sty	$A4
 		sta	$A5
 
@@ -1554,7 +1292,7 @@ A87C:		sty	$A4
 		sta	1,X
 		inx
 		inx
-		cpx	#MEOLFLG
+		cpx	#$92
 		bcc	@3
 		sta	APPMHI+1
 		lda	MEMTOP
@@ -1589,12 +1327,12 @@ A8F3:		dex
 		bne	A8E3
 		rts
 
-CONTLOW:	.if	BASIC_REVISION > 1
+A8F7:		.if	BASIC_REVISION > 1
 		tay
 		.endif
 
-CONTLOW1:	lda	#0
-CONTRACT:	sty	$A4
+A8F8:		lda	#0
+A8FA:		sty	$A4
 		sta	$A5
 		sec
 		lda	MEMTOP
@@ -1622,7 +1360,7 @@ A91D:		sec
 		sta	1,X
 		inx
 		inx
-		cpx	#MEOLFLG
+		cpx	#$92
 		bcc	A91D
 		sta	APPMHI+1
 		lda	MEMTOP
@@ -1649,8 +1387,8 @@ A944:		ldx	$A3
 @3:		dex
 		bne	@1
 		rts
-EXECNL:		jsr	B819
-A961:		jsr	TSTBRK
+A95E:		jsr	B819
+A961:		jsr	A9F2
 		.byte	$D0,$35
 A94F:
 A953:
@@ -1672,15 +1410,15 @@ A953:		lda	($99),Y
 		bne	A94F
 		rts
 
-EXECNL:		jsr	B819
-A961:		jsr	TSTBRK
+A95E:		jsr	B819
+A961:		jsr	A9F2
 		beq	A99C
 		.endif
-		ldy	STMLBD
-		cpy	MAXCIX
+		ldy	$A7
+		cpy	$9F
 		bcs	A989
 		lda	(STMCUR),Y
-		sta	STMLBD
+		sta	$A7
 		tya
 		iny
 		lda	(STMCUR),Y
@@ -1705,15 +1443,15 @@ JJTAB1:		asl
 A989:		ldy	#1
 		lda	(STMCUR),Y
 		bmi	A99F
-		lda	MAXCIX
-		jsr	GNXTL
+		lda	$9F
+		jsr	A9D0
 		jsr	A9E1
-		bpl	EXECNL
+		bpl	A95E
 		jmp	B78C
 A99C:		jmp	B792
-A99F:		jmp	SNX3
+A99F:		jmp	A05D
 
-GETSTMT:	lda	STMCUR
+A9A2:		lda	STMCUR
 		sta	$BE
 		lda	STMCUR+1
 		sta	$BF
@@ -1734,11 +1472,11 @@ A9B2:		ldy	#1
 		clc
 A9C6:		rts
 
-A9C7:		jsr	GETLL
-		jsr	GNXTL
+A9C7:		jsr	A9DC
+		jsr	A9D0
 		jmp	A9B2
 
-GNXTL:		clc			; STMCUR += accu
+A9D0:		clc			; STMCUR += accu
 		adc	STMCUR
 		sta	STMCUR
 
@@ -1751,7 +1489,7 @@ GNXTL:		clc			; STMCUR += accu
 		sta	STMCUR+1
 		rts
 
-GETLL:		ldy	#2
+A9DC:		ldy	#2
 		lda	(STMCUR),Y
 		rts
 
@@ -1764,13 +1502,13 @@ A9E1:		ldy	#1
 
 A9E5:		rts			; execute REM, DATA
 
-A9E6:		jsr	CLSALL		; execute BYE
+A9E6:		jsr	BD45		; execute BYE
 		jmp	SELFSV
 
-A9EC:		jsr	CLSALL		; execute DOS
+A9EC:		jsr	BD45		; execute DOS
 		jmp	(DOSVEC)
 
-TSTBRK:		.if	BASIC_REVISION = 1
+A9F2:		.if	BASIC_REVISION = 1
 		ldy	#0
 		lda	BRKKEY
 		bne	@1
@@ -1786,7 +1524,7 @@ TSTBRK:		.if	BASIC_REVISION = 1
 
 JTAB1:		.dbyt	A9E5-1,A9E5-1,B33E-1,BA1F-1,B4B5-1,BAC5-1,AADA-1,B778-1
 		.dbyt	B67D-1,B700-1,B6D5-1,B6D5-1,B6D2-1,B7D8-1,A9E6-1,B7B5-1
-		.dbyt	B206-1,BC22-1,B766-1,B28D-1,B206-1,B78C-1,XNEW-1,BBF2-1
+		.dbyt	B206-1,BC22-1,B766-1,B28D-1,B206-1,B78C-1,A00C-1,BBF2-1
 		.dbyt	BAFB-1,BB6D-1,BC2F-1,BC3D-1,BC54-1,BBEC-1,B7E4-1,B278-1
 		.dbyt	B3DA-1,B291-1,B2AE-1,B296-1,BDA8-1,B74C-1,B792-1,B83E-1
 		.dbyt	B3DA-1,BC85-1,BC78-1,BA46-1,BA6C-1,BA0C-1,A9EC-1,BA27-1
@@ -1975,7 +1713,7 @@ ABCD:		jsr	ABD7
 
 ABD7:		jsr	AADA
 ABDA:		jsr	ABE9
-		jmp	CVFPI
+		jmp	AD41
 ABE0:		jsr	ABCD
 		bne	@1
 		rts
@@ -2183,7 +1921,7 @@ AD38:		jsr	FDIV
 		rts
 
 AD3E:		jsr	B91E
-CVFPI:		jsr	FPI
+AD41:		jsr	FPI
 		bcs	AD47
 		rts
 
@@ -2215,7 +1953,7 @@ AD6D:		lda	#$40
 AD71:		bit	$B1
 		bpl	AD7B
 		lda	$AA
-		sta	STENUM
+		sta	$AF
 		dec	$AA
 AD7B:		lda	#0
 		tay
@@ -2270,7 +2008,7 @@ ADCD:		jsr	AF48
 		jsr	AF3D
 		bit	$B1
 		bpl	AE01
-		lda	STENUM
+		lda	$AF
 		sta	$AA
 		jsr	ABE9
 		ldy	#5
@@ -2543,7 +2281,7 @@ AFEB:		jsr	BD7D		; evaluate VAL()
 		lda	#0
 		sta	CIX
 		jsr	AFP
-		jsr	RSTSEOL
+		jsr	BD9D
 		bcc	AFC3
 		jsr	B910
 
@@ -2597,7 +2335,7 @@ B034:		jsr	ABE9		; evaluate STR$()
 		bne	B069
 
 B052:		jsr	ABE9		; evaluate CHR$()
-		jsr	CVFPI
+		jsr	AD41
 		lda	FR0
 		sta	$5C0
 		lda	#5
@@ -2679,13 +2417,8 @@ B0C8:		jsr	ABE9		; evaluate INT()
 		sta	$E0
 		lda	#1
 		sta	$E1
-		.if	BASIC_REVISION > 3
-		jmp	AD26
-		nop
-		.else
-		JSR	AD26		; ADD IT
-		RTS
-		.endif
+		jsr	AD26
+		rts
 @5:		jmp	__DC00
 
 B106:		jsr	ABE9		; evaluate SIN()
@@ -3037,7 +2770,7 @@ B2AE:		lda	$A8		; execute READ
 		sta	$A0
 		lda	DATALN+1
 		sta	$A1
-		jsr	GETSTMT
+		jsr	A9A2
 		lda	STMCUR
 		sta	INBUFF
 		lda	STMCUR+1
@@ -3099,7 +2832,7 @@ B31A:		jsr	B32D
 		inc	$F5
 		bne	B314
 B325:		lda	#$40
-		sta	DIRFLG
+		sta	$A6
 		inc	CIX
 
 		.if	BASIC_REVISION = 1
@@ -3111,10 +2844,10 @@ B325:		lda	#$40
 B32D:		inc	CIX
 B32F:		ldy	CIX
 		lda	(INBUFF),Y
-		cmp	#CRPRN
+		cmp	#$2C
 		clc
 		beq	B33A
-		cmp	#CR
+		cmp	#$9B
 B33A:		rts
 B33B:		jsr	B928
 
@@ -3125,19 +2858,19 @@ B33E:		lda	#$3F		; execute INPUT
 		bcc	B34E
 		jsr	BD07
 		sta	$B4
-B34E:		jsr	INTLBF
+B34E:		jsr	__DA51
 
 		.if	BASIC_REVISION = 1
 		jsr	BA89
 		jsr	B378
 		.else
 		jsr	BDE4
-		jsr	TSTBRK
+		jsr	A9F2
 		beq	B378
 		.endif
 
 		ldy	#0
-		sty	DIRFLG
+		sty	$A6
 		sty	CIX
 B35F:		jsr	AB36
 		inc	$A8
@@ -3151,7 +2884,7 @@ B35F:		jsr	AB36
 		jmp	B3AD
 
 B378:		.if	BASIC_REVISION = 1
-		jsr	TSTBRK
+		jsr	A9F2
 		bne	@1
 		rts
 		.endif
@@ -3170,7 +2903,7 @@ B390:		inx
 		jsr	B32D
 		bne	B390
 		bcs	B39C
-		bit	DIRFLG
+		bit	$A6
 		bvc	B390
 B39C:		ldy	$F5
 		lda	$A8
@@ -3181,7 +2914,7 @@ B39C:		ldy	$F5
 		pla
 		sta	$A8
 		jsr	AE91
-B3AD:		bit	DIRFLG
+B3AD:		bit	$A6
 		bvc	B3C0
 		inc	DATAD
 		jsr	B904
@@ -3191,7 +2924,7 @@ B3AD:		bit	DIRFLG
 		jmp	B2FB
 B3C0:		jsr	B904
 		bcc	B3CD
-B3C5:		jsr	INTLBF
+B3C5:		jsr	__DA51
 		lda	#0
 		sta	$B4
 		rts
@@ -3202,9 +2935,9 @@ B3D5:		inc	CIX
 		jmp	B35F
 
 B3DA:		lda	PTABW		; execute PRINT, ?
-		sta	STENUM
+		sta	$AF
 		lda	#0
-		sta	COX
+		sta	$94
 B3E2:		ldy	$A8
 		lda	(STMCUR),Y
 		cmp	#$12
@@ -3266,17 +2999,17 @@ B437:		dec	$D6
 		inc	FR0+1
 B443:		jsr	B491
 		jmp	B42F
-B449:		ldy	COX
+B449:		ldy	$94
 		iny
-		cpy	STENUM
+		cpy	$AF
 		bcc	B459
 		clc
 		lda	PTABW
-		adc	STENUM
-		sta	STENUM
+		adc	$AF
+		sta	$AF
 		bcc	B449
-B459:		ldy	COX
-		cpy	STENUM
+B459:		ldy	$94
+		cpy	$AF
 		bcs	B474
 		lda	#$20
 		jsr	B48F
@@ -3311,13 +3044,13 @@ B467:		jmp	B3E2
 		jmp	B3E2
 		.endif
 
-B485:		lda	#CR
+B485:		lda	#$9B
 		jsr	B491
 B48A:		lda	#0
 		sta	$B5
 		rts
 B48F:		and	#$7F
-B491:		inc	COX
+B491:		inc	$94
 		jmp	BA99
 
 B496:		lda	#<@printerdev	; execute LPRINT
@@ -3343,7 +3076,7 @@ B4B5:		ldy	#0		; execute LIST
 		lda	#$7F
 		sta	$AE
 		sta	$2FE
-		lda	#CR
+		lda	#$9B
 		jsr	BA99
 		jsr	B6F9
 @1:		ldy	$A8
@@ -3372,7 +3105,7 @@ B4B5:		ldy	#0		; execute LIST
 		sta	$AD
 		lda	FR0+1
 		sta	$AE
-@4:		jsr	GETSTMT
+@4:		jsr	A9A2
 @5:		jsr	A9E1
 		bmi	@7
 		ldy	#1
@@ -3385,8 +3118,8 @@ B4B5:		ldy	#0		; execute LIST
 		cmp	$AD
 		bcc	@6
 		bne	@7
-@6:		jsr	LLINE
-		jsr	TSTBRK
+@6:		jsr	B58E
+		jsr	A9F2
 
 		.if	BASIC_REVISION = 1
 		bne	@7
@@ -3394,8 +3127,8 @@ B4B5:		ldy	#0		; execute LIST
 		beq	@7
 		.endif
 
-		jsr	GETLL
-		jsr	GNXTL
+		jsr	A9DC
+		jsr	A9D0
 		jmp	@5
 @7:		lda	$B5
 		beq	@8
@@ -3409,7 +3142,7 @@ B4B5:		ldy	#0		; execute LIST
 B53E:		stx	$AA
 		jsr	@5
 @1:		ldy	$AA
-		dec	STENUM
+		dec	$AF
 		bmi	@4
 @2:		lda	(POKADR),Y
 		bmi	@3
@@ -3431,12 +3164,12 @@ B53E:		stx	$AA
 		rts
 
 outstr:		ldy	#$FF
-		sty	STENUM
-@1:		inc	STENUM
-		ldy	STENUM
+		sty	$AF
+@1:		inc	$AF
+		ldy	$AF
 		lda	(POKADR),Y
 		pha
-		cmp	#CR
+		cmp	#$9B
 		beq	@2
 		and	#$7F
 		beq	@3
@@ -3451,7 +3184,7 @@ B586:		jsr	outstr
 		lda	#$20
 		jmp	BA99
 
-LLINE:		ldy	#0
+B58E:		ldy	#0
 		lda	(STMCUR),Y
 		sta	FR0
 		iny
@@ -3464,9 +3197,9 @@ LLINE:		ldy	#0
 		lda	INBUFF+1
 		sta	POKADR+1
 		jsr	B586
-LDLINE:		ldy	#2
+B5AA:		ldy	#2
 		lda	(STMCUR),Y
-		sta	MAXCIX
+		sta	$9F
 		iny
 @loop_y:	lda	(STMCUR),Y
 		sta	$A7
@@ -3474,7 +3207,7 @@ LDLINE:		ldy	#2
 		sty	$A8
 		jsr	B5C2
 		ldy	$A7
-		cpy	MAXCIX
+		cpy	$9F
 		bcc	@loop_y
 		rts
 
@@ -3483,7 +3216,7 @@ B5C2:		jsr	B663
 		beq	B5E0
 		jsr	B66F
 		jsr	B663
-		cmp	#CERR
+		cmp	#$37
 		beq	@1
 		cmp	#2
 		bcs	B5E0
@@ -3494,7 +3227,7 @@ B5C2:		jsr	B663
 B5E0:		jsr	B661
 		bpl	@1
 		and	#$7F
-		sta	STENUM
+		sta	$AF
 		ldx	#0
 		lda	VNTP+1
 		ldy	VNTP
@@ -3517,24 +3250,24 @@ B5E0:		jsr	B661
 @2:		jsr	outstr
 		jmp	B5E0
 @3:		jsr	B661
-		sta	STENUM
+		sta	$AF
 		lda	#$22
 		jsr	BA99
-		lda	STENUM
+		lda	$AF
 		beq	@5
 @4:		jsr	B661
 		jsr	BA99
-		dec	STENUM
+		dec	$AF
 		bne	@4
 @5:		lda	#$22
 		jsr	BA99
 		jmp	B5E0
 @6:		sec
 		sbc	#$10
-		sta	STENUM
+		sta	$AF
 		ldx	#0
-		lda	#>OPNTAB
-		ldy	#<OPNTAB
+		lda	#>A7DE
+		ldy	#<A7DE
 		jsr	B53E
 		jsr	B663
 		cmp	#$3D
@@ -3542,7 +3275,7 @@ B5E0:		jsr	B661
 		ldy	#0
 		lda	(POKADR),Y
 		and	#$7F
-		jsr	TSALPH
+		jsr	A3EC
 		bcs	@2
 		jsr	B581
 		jmp	B5E0
@@ -3558,10 +3291,10 @@ B66C:		pla
 		pla
 		rts
 
-B66F:		sta	STENUM
+B66F:		sta	$AF
 		ldx	#2
-		lda	#>SNTAB
-		ldy	#<SNTAB
+		lda	#>A49F
+		ldy	#<A49F
 		jsr	B53E
 		jmp	B586
 
@@ -3601,7 +3334,7 @@ B6B5:		pha
 		lda	(STMCUR),Y
 		iny
 		sta	($C4),Y
-		ldx	SVONTX
+		ldx	$B3
 		dex
 		txa
 		iny
@@ -3615,11 +3348,11 @@ B6D8:		lda	FR0+1
 		sta	$A1
 		lda	FR0
 		sta	$A0
-B6E0:		jsr	GETSTMT
+B6E0:		jsr	A9A2
 		bcs	B6EA
 		pla
 		pla
-		jmp	EXECNL
+		jmp	A95E
 
 B6EA:		jsr	B6F0
 		jsr	B91C
@@ -3730,7 +3463,7 @@ B754:		nop
 		jsr	B816
 		jsr	A9E1
 		bmi	B775
-		jsr	RUNINIT
+		jsr	B8F1
 
 B766:		jsr	B8B9		; execute CLR
 		jsr	B8A8
@@ -3740,7 +3473,7 @@ B766:		jsr	B8B9		; execute CLR
 		sta	DATAD
 		rts
 
-B775:		jmp	SNX1
+B775:		jmp	A050
 
 B778:		jsr	AC06		; execute IF
 		lda	FR0+1
@@ -3756,12 +3489,12 @@ B778:		jsr	AC06		; execute IF
 		jmp	B6D5
 		.endif
 
-B787:		lda	MAXCIX
+B787:		lda	$9F
 		sta	$A7
 B78B:		rts
 
 B78C:		jsr	B7A6		; execute END
-		jmp	SNX1
+		jmp	A050
 
 B792:		jsr	B7A6		; execute STOP
 		jsr	BD79
@@ -3779,7 +3512,7 @@ B7A6:		jsr	A9E1
 		dey
 		lda	(STMCUR),Y
 		sta	STOPLN
-B7B2:		jmp	SETDZ
+B7B2:		jmp	BD5B
 
 		.if	BASIC_REVISION = 1
 STOPPED_STR:	BasicString "STOPPED "
@@ -3791,11 +3524,11 @@ B7B5:		jsr	A9E1		; execute CONT
 		sta	$A0
 		lda	STOPLN+1
 		sta	$A1
-		jsr	GETSTMT
+		jsr	A9A2
 		jsr	A9E1
 		bmi	B775
-		jsr	GETLL
-		jsr	GNXTL
+		jsr	A9DC
+		jsr	A9D0
 		jsr	A9E1
 		bmi	B775
 		jmp	B819
@@ -3825,9 +3558,9 @@ B7E4:		jsr	B883		; execute ON
 		beq	B7FB
 		jsr	B6FC
 B7FB:		lda	FR0
-		sta	SVONTX
+		sta	$B3
 B7FF:		jsr	ABCD
-		dec	SVONTX
+		dec	$B3
 		.if	BASIC_REVISION = 1
 		.byte	$f0,$06
 		.else
@@ -3850,10 +3583,10 @@ B812:		plp
 		jmp	B6D8
 		.endif
 
-B816:		jsr	GETSTMT
+B816:		jsr	A9A2
 B819:		ldy	#2
 		lda	(STMCUR),Y
-		sta	MAXCIX
+		sta	$9F
 		iny
 		sty	$A7
 		rts
@@ -3900,12 +3633,12 @@ B84A:		sec
 		bcs	B83D
 B84A:		lda	#4
 		ldx	#$90
-		jsr	CONTLOW
+		jsr	A8F7
 		.endif
 
 		ldy	#3
 		lda	(MEMTOP),Y
-		sta	SVONTL
+		sta	$B2
 		dey
 		lda	(MEMTOP),Y
 		sta	$A1
@@ -3925,7 +3658,7 @@ B84A:		lda	#4
 		.if	BASIC_REVISION = 1
 		jsr	B872
 		.else
-		jsr	CONTLOW
+		jsr	A8F7
 		.endif
 
 		pla
@@ -3935,20 +3668,20 @@ B86F:		clc
 B872:		.if	BASIC_REVISION = 1
 		tay
 		ldx	#$90
-		jmp	CONTLOW
+		jmp	A8F7
 		.endif
 
 B871:		jsr	B87A
 		tay
 		ldx	#$90
-		jmp	EXPLOW
+		jmp	A87A
 B87A:		ldx	MEMTOP
 		stx	$C4
 		ldx	MEMTOP+1
 		stx	$C5
 		rts
 B883:		ldy	$A8
-		sty	SVONTX
+		sty	$B3
 		rts
 
 B888:		lda	#6
@@ -4016,7 +3749,7 @@ B8DC:		sta	($F5),Y
 
 		; fill B6..BB -> 0
 
-RUNINIT:	.if	BASIC_REVISION = 1
+B8F1:		.if	BASIC_REVISION = 1
 
 		ldy	#0
 		sty	$BA
@@ -4042,7 +3775,7 @@ B8F5:		sty	$B6,X
 		sty	BRKKEY
 		.endif
 
-		jmp	CLSALL
+		jmp	BD45
 
 B904:		ldx	$A8
 		inx
@@ -4056,7 +3789,7 @@ B910:		inc	$B9
 B912:		inc	$B9		; execute "ERROR-"
 B914:		inc	$B9
 B916:		inc	$B9
-ERLTL:		inc	$B9
+B918:		inc	$B9
 B91A:		inc	$B9
 B91C:		inc	$B9
 B91E:		inc	$B9
@@ -4066,7 +3799,7 @@ B924:		inc	$B9
 B926:		inc	$B9
 B928:		inc	$B9
 B92A:		inc	$B9
-ERRVSF:		inc	$B9
+B92C:		inc	$B9
 B92E:		inc	$B9
 B930:		inc	$B9
 		inc	$B9
@@ -4086,7 +3819,7 @@ B934:		lda	#0
 		sta	$B9
 		jmp	B6E0
 @1:		jsr	BD79
-		lda	#CERR
+		lda	#$37
 		jsr	B66F
 		lda	$B9
 		sta	FR0
@@ -4111,9 +3844,9 @@ B968:		jsr	A9E1
 		lda	#0
 		sta	$B9
 		.if	BASIC_REVISION > 1
-		jsr	SETDZ
+		jsr	BD5B
 		.endif
-		jmp	SYNTAX
+		jmp	A060
 
 B993:		jsr	IFP
 		jsr	FASC
@@ -4244,14 +3977,14 @@ BA6C:		jsr	BA0C		; execute PLOT
 BA76:		.if	BASIC_REVISION = 1
 
 		ldx	$B4
-		bne	GLGO
-		lda	#CR
+		bne	BA92
+		lda	#$9B
 		jsr	BA99
 BA89:		ldx	$B4
-		bne	GLGO
+		bne	BA92
 		lda	$C2
 		jsr	BA99
-GLGO:		ldx	$B4
+BA92:		ldx	$B4
 		lda	#5
 		jsr	BABE
 		jsr	BD0F
@@ -4302,7 +4035,7 @@ BAB2:		lda	$347,X
 		lda	$346,X
 		pha
 		tya
-		ldy	#MEOLFLG
+		ldy	#$92
 		rts
 
 BABE:		sta	$C0
@@ -4312,7 +4045,7 @@ BAC0:		stx	$C1
 BAC5:		lda	#4		; execute ENTER
 		jsr	BAD7
 		sta	$B4
-		jmp	SYNTAX
+		jmp	A060
 
 BACF:		lda	#8
 		jsr	BAD7
@@ -4348,13 +4081,13 @@ W1:		pha
 W2:		pha
 		lda	#7
 		sta	$C0
-		sta	LOADFLG
+		sta	$CA
 		jsr	BCAF
 		ldy	#14
 		jsr	BD15
 		jsr	BCBB
-		lda	LBUFF
-		ora	LBUFF+1
+		lda	$580
+		ora	$581
 		bne	@7
 		ldx	#$8C
 @3:		clc
@@ -4386,19 +4119,19 @@ W2:		pha
 		sty	0,X
 		dex
 		dex
-		cpx	#VNTP
+		cpx	#$82
 		bcs	@3
 		jsr	W9
 		jsr	B766
 		lda	#0
-		sta	LOADFLG
+		sta	$CA
 		pla
 		beq	@6
 		rts
-@6:		jmp	SNX1
+@6:		jmp	A050
 
 @7:		lda	#0
-		sta	LOADFLG
+		sta	$CA
 		jsr	B90A
 
 		.if	BASIC_REVISION > 1
@@ -4487,7 +4220,7 @@ BBD8:		pha
 		tya
 		sta	$34A,X
 		jsr	BD1E
-		jmp	INTLBF
+		jmp	__DA51
 
 BBEC:		jsr	BD09	; execute XIO
 		jmp	BBF4
@@ -4511,8 +4244,8 @@ BC02:		pha
 		pla
 		sta	$34A,X
 		jsr	BD0F
-		jsr	RSTSEOL
-		jsr	INTLBF
+		jsr	BD9D
+		jsr	__DA51
 		jmp	BCBB
 
 BC22:		lda	#12		; execute CLOSE
@@ -4562,7 +4295,7 @@ BC78:		jsr	BCA8		; execute PUT
 		jmp	BA9B
 
 BC85:		.if	BASIC_REVISION > 1	; execute GET
-		jsr	INTLBF
+		jsr	__DA51
 		.endif
 		jsr	BCA8
 BC8B:		lda	#7
@@ -4608,13 +4341,13 @@ BCBE:		.if	BASIC_REVISION = 1
 		cmp	#$80
 		bne	BCD2
 		sty	BRKKEY
-		lda	LOADFLG
+		lda	$CA
 		.if	BASIC_REVISION = 1
 		.byte	$f0,$03
 		.else
 		beq	BD06
 		.endif
-		jmp	COLDSTART
+		jmp	A000
 
 		.if	BASIC_REVISION = 1
 		rts
@@ -4627,7 +4360,7 @@ BCD8:		sta	$B9
 		cpy	#7
 		bne	BCE1
 		jsr	BCF7
-BCE1:		jsr	SETDZ
+BCE1:		jsr	BD5B
 		jmp	B934
 BCE7:		cpy	#7
 		bne	BCD8
@@ -4635,7 +4368,7 @@ BCE7:		cpy	#7
 		cpx	$C2
 		bne	BCD8
 		jsr	BCF7
-		jmp	SNX2
+		jmp	A053
 BCF7:		jsr	BCAF
 		beq	BD06
 		lda	#12
@@ -4684,7 +4417,7 @@ BD33:		pha
 		jsr	IFP
 		jmp	AC0C
 
-CLSALL:		lda	#0
+BD45:		lda	#0
 		ldx	#7
 BD49:		sta	$D200,X
 		dex
@@ -4697,13 +4430,13 @@ BD53:		jsr	BCF7
 		rts
 
 		.if	BASIC_REVISION > 1
-SETDZ:		lda	#0
+BD5B:		lda	#0
 		sta	$B4
 		sta	$B5
 		rts
 		.endif
 
-PREADY:		ldx	#6
+BD62:		ldx	#6
 BD64:		stx	CIX
 		lda	BD72,X
 		jsr	BA99
@@ -4718,7 +4451,7 @@ BD79:		ldx	#0
 		beq	BD64
 
 		.if	BASIC_REVISION = 1
-SETDZ:		lda	#0
+BD5B:		lda	#0
 		sta	$B4
 		sta	$B5
 		rts
@@ -4736,15 +4469,15 @@ BD7D:		jsr	AB90
 BD90:		lda	(INBUFF),Y
 		sta	$97
 		sty	$98
-		lda	#CR
+		lda	#$9B
 		sta	(INBUFF),Y
-		sta	MEOLFLG
+		sta	$92
 		rts
-RSTSEOL:	ldy	$98
+BD9D:		ldy	$98
 		lda	$97
 		sta	(INBUFF),Y
 		lda	#0
-		sta	MEOLFLG
+		sta	$92
 		rts
 
 		.if	BASIC_REVISION = 1
@@ -4770,7 +4503,7 @@ BDC2:		jsr	B6F0
 BDC8:		jsr	B914
 BDCB:		jsr	B816
 		bcs	BDC2
-		ldy	SVONTL
+		ldy	$B2
 		dey
 		lda	(STMCUR),Y
 		sta	$A7
@@ -4779,14 +4512,14 @@ BDCB:		jsr	B816
 BDDA:		rts
 
 		ldx	$B4
-		bne	GLGO2
-		lda	#CR
+		bne	BDED
+		lda	#$9B
 		jsr	BA99
 BDE4:		ldx	$B4
-		bne	GLGO2
+		bne	BDED
 		lda	$C2
 		jsr	BA99
-GLGO2:		ldx	$B4
+BDED:		ldx	$B4
 		lda	#5
 		jsr	BABE
 		jsr	BD0F
@@ -5004,7 +4737,11 @@ BF43:		lda	#0
 		ldy	#5
 		jsr	FLD0R
 		lda	$F1
-		BEQ	@SQROUT
+		.if	BASIC_REVISION = 1
+		.byte	$f0,$23
+		.else
+		beq	BFF0
+		.endif
 		sec
 		sbc	#$40
 		clc
@@ -5029,22 +4766,22 @@ BF43:		lda	#0
 		.if	BASIC_REVISION > 1
 		EntryPoint(BFF0)
 		.endif
-@SQROUT:	rts
+		rts
 
 		.if	BASIC_REVISION = 1
 FP_two:		.byte	$40,$02,$00,$00,$00,$00
 		.byte	$30,$30,$20,$20,$60,$70,$70
-		.byte	$00,$00,$00,$00,$30,$30,$3C,$7C,$7C,$7C,$64,$64,$67,$E7,$C0,$C0
-		.byte	$80,$80,$E0,$E0,$00,$00,$00,$00,$30,$30,$38,$38,$38,$38,$FC,$EC
-		.byte	$EC,$0C,$04,$06,$06,$02,$03,$03,$00,$00,$00,$00,$30,$30,$30,$B0
-		.byte	$B0,$D8,$F8,$78,$38,$18,$18,$18,$10,$10,$1C,$1C,$00,$00,$00,$00
-		.byte	$30,$30,$30,$30,$30,$30,$30,$30,$20,$E0,$E0,$80,$80,$00,$00,$00
+		.byte	$00,$00,$00,$00,$30,$30,$3c,$7c,$7c,$7c,$64,$64,$67,$e7,$c0,$c0
+		.byte	$80,$80,$e0,$e0,$00,$00,$00,$00,$30,$30,$38,$38,$38,$38,$fc,$ec
+		.byte	$ec,$0c,$04,$06,$06,$02,$03,$03,$00,$00,$00,$00,$30,$30,$30,$b0
+		.byte	$b0,$d8,$f8,$78,$38,$18,$18,$18,$10,$10,$1c,$1c,$00,$00,$00,$00
+		.byte	$30,$30,$30,$30,$30,$30,$30,$30,$20,$e0,$e0,$80,$80,$00,$00,$00
 		.endif
 
 		.if	BASIC_REVISION = 1
 		EntryPoint(BFF0)
-		.byte	$00,$00,$00,$00,$CC,$B8,$A4,$90,$A0
-ENTRY1:		rts
+		.byte	$00,$00,$00,$00,$cc,$b8,$a4,$90,$a0
+BFF9:		rts
 		.endif
 
 		.if	BASIC_REVISION = 2
@@ -5054,12 +4791,12 @@ ENTRY1:		rts
 		.res	BFFA-*
 
 		EntryPoint(BFFA)
-		.word	COLDSTART
+		.word	A000
 		EntryPoint(BFFC)
-		.word	$0500
+		.word	$500
 		EntryPoint(BFFE)
 		.if	BASIC_REVISION = 1
-		.word	ENTRY1
+		.word	BFF9
 		.else
 		.word	BFF0
 		.endif

@@ -1,0 +1,336 @@
+;
+; Aliases to support older defines used
+; in the "Atari BASIC Source Book."
+;
+.define EQU	=
+
+ARGOPS		=	$80	; ARGUMENT/OPERATOR STACK
+ARGSTK		=	$80
+OUTBUFF		=	$80	; SYNTAX OUTPUT BUFFER
+ENDVVT		=	$88	; END VARIABLE VALUE TABLE
+ENDSTAR		=	$8E	; END STRING/ARRAY SPACE
+TOPRSTK		=	$90	; TOP OF RUN STACK
+MEOLFLG		=	$92	; MODIFIED EOL FLAG
+COX		=	$94	; CURRENT OUTPUT INDEX
+SRCADR		=	$95	; SEARCH ADDRESS
+INDEX2		=	$97	; ARRAY INDEX 2
+SVESA		=	$97	; SAVE EXPAND START ADR
+MVFA		=	$99	; MOVE FROM ADR
+MVTA		=	$9B	; MOVE TO ADR
+CPC		=	$9D	; CUR SYNTAX PGM COUNTER
+WVVTPT		=	$9D	; WORKING VAR TABLE PTR VALUE
+MAXCIX		=	$9F	; MAX SYNTAX CIX
+LLNGTH		=	$9F	; LINE LENGTH
+TSLNUM		=	$A0	; TEST LINE NO
+MVLNG		=	$A2	; MOVE LENGTH
+ECSIZE		=	$A4	; MOVE SIZE
+DIRFLG		=	$A6	; DIRECT EXECUTE FLAG
+STMLBD		=	$A7	; STMT LENGTH BYTE DISPL
+NXTSTD		=	$A7	; NEXT STMT DISPL
+STMSTRT		=	$A8	; STMT START CIX
+STINDEX		=	$A8	; CURR STMT INDEX
+STKLVL		=	$A9	; SYNTAX STACK LEVEL
+IBUFFX		=	$A9	; INPUT BUFFER INDEX
+OPSTKX		=	$A9	; OPERATOR STACK INDEX
+ARSLVL		=	$AA	; ARG STACK LEVEL
+SRCSKP		=	$AA	; SEARCH SKIP FACTOR
+ARSTKX		=	$AA	; ARG STACK INDEX
+TSCOX		=	$AB	; TSCOW LENGTH BYTE PTR
+EXSVOP		=	$AB	; SAVED OPERATOR
+TVSCIX		=	$AC	; SAVE CIX FOR TVAT
+EXSVPR		=	$AC	; SAVED OPERATOR PRECEDENCE
+SVVNTP		=	$AD	; SAVE VAR NAME TBL PTR
+LELNUM		=	$AD	; LIST END LINE #
+ATEMP		=	$AF	; TEMP FOR ARRAYS
+STENUM		=	$AF	; SEARCH TABLE ENTRY NUMBER
+SCANT		=	$AF	; LIST SCAN COUNTER
+SVONTC		=	$B0	; SAVE ONT SRC CODE
+COMCNT		=	$B0	; COMMA COUNT FOR EXEXOR
+SVVVTE		=	$B1	; SAVE VAR VALUE EXP SIZE
+ADFLAG		=	$B1	; ASSIGN/DIM FLAG
+SVONTL		=	$B2	; SAVE ONT SRC ARG LEN
+SVDISP		=	$B2	; DISPL INTO LINE OF FOR/GOSUB TOKEN
+ONLOOP		=	$B3	; LOOP CONTROL FOR OP
+SVONTX		=	$B3	; SAVE ONT SRC INDEX
+SAVDEX		=	$B3	; SAVE INDEX INTO STMT
+ENTDTD		=	$B4	; ENTER DEVICE TBL
+LISTDTD		=	$B5	; LIST DEVICE TBL
+ERRNUM		=	$B9	; ERROR #
+TRAPLN		=	$BC	; TRAP LINE # [FOR ERROR]
+SAVCUR		=	$BE	; SAVE CURRENT LINE ADDR
+IOCMD		=	$C0	; I/O COMMAND
+IODVC		=	$C1	; I/O DEVICE
+PROMPT		=	$C2	; PROMPT CHAR
+ERRSAV		=	$C3	; ERROR # FOR USER
+TEMPA		=	$C4	; TEMP ADDR CELL
+ZTEMP2		=	$C6	; TEMP
+COLOR		=	$C8	; SET COLOR FOR BASE
+LOADFLG		=	$CA	; load in progress flag
+ZTEMP1		=	$F5	; TEMP
+ZTEMP4		=	$F7	; TEMP
+ZTEMP3		=	$F9	; TEMP
+RADFLG		=	$FB	; RADIANS UNITS
+DEGFLG		=	$FB
+RADON		=	0
+DEGON		=	6
+FLPTR		=	$FC
+FPTR2		=	$FE
+
+TVTYPE		=	$D2	; VARIABLE TYPE
+VTYPE		=	$D2	; VARIABLE TYPE
+TVNUM		=	$D3	; VARIABLE NUMBER
+VNUM		=	$D3	; VARIABLE NUMBER
+
+;CIX		=	$F2	; CURRENT INPUT INDEX
+;INBUFF		=	$F3	; LINE INPUT BUFFER
+
+EPCHAR		=	$5D	; ]
+CR		EQU	$9B	; Atari CR 155
+
+SIX		=	$480
+SOX		=	$481
+SPC		=	$482
+
+; Floating Point OS Equates
+INTLBF		EQU	$DA51
+TSTNUM		EQU	$DBAF
+NORM		EQU	$DC00
+XFORM		EQU	$DE95
+FHALF		EQU	$DF6C
+ATCOEF		EQU	$DFAE	; 0.001605444900
+FP9S		EQU	$DFEA	; 0.999999999999
+PIOV4		EQU	$DFF0	; PI/4 = ARCTAN[1.0]
+NATCF		EQU	(PIOV4-ATCOEF)/FPREC
+
+; Clear the rest of FP0
+ZXLY		EQU	ZFR0 + 4
+
+; Aliases for Old Symbols from Original BASIC Source Book
+MV0TO1		EQU	FMOVE
+SKBLANK		EQU	SKIP_SPACES
+SKPBLANK	EQU	SKBLANK
+SKBLANKS	EQU	SKBLANK
+BININT		EQU	FR0
+FR0M		EQU	FR0+1
+FR1M		EQU	FR1+1
+CVIFP		EQU	IFP
+CVAFP		EQU	AFP
+CVFASC		EQU	FASC
+GRFBAS		EQU	PADDL0
+RNDLOC		EQU	RANDOM
+CREGS		EQU	COLOR0
+SREG1		EQU	AUDCTL
+SREG2		EQU	AUDF1
+SREG3		EQU	AUDF2
+SVCOLOR		EQU	ATACHR
+ICAUX1		EQU	ICAX1
+ICAUX2		EQU	ICAX2
+ICAUX3		EQU	ICAX3
+ICAUX4		EQU	ICAX4
+ICAUX5		EQU	ICAX5
+ICPUT		EQU	ICPTL
+MISCRAM		EQU	$0500
+ICSBRK		EQU	$80
+CIO		EQU	CIOV		; <Source Book>
+LMADR		EQU	MEMLO
+
+; Equates for Variables
+EVTYPE		=	0	; VALUE TYPE CODE
+EVSTR		=	$80	; - STRING
+EVARRAY		=	$40	; - ARRAY
+EVSDTA		=	$02	; - ON IF EVSADR IS ABS ADR
+EVDIM		=	$01	; ON IF HAS BEEN DIM
+EVSCALER	=	$00	; - SCALER
+
+EVNUM		=	1	; VARIABLE NUMBER [83 - FF]
+EVVALUE		=	2	; SCALAR VALUE [6 BYTES]
+
+EVSADR		=	2	; STRING DISPL [2]
+EVSLEN		=	4	; STRING LENGTH [2]
+EVSDIM		=	6	; STRING DIM [2]
+
+EVAADR		=	2	; ARRAY DISPL [2]
+EVAD1		=	4	; ARRAY DIM 1 [2]
+EVAD2		=	6	; ARRAY DIM 2 [2]
+
+; Equates for Run Stack
+GFHEAD		=	4	; LENGTH OF HEADER FOR FOR/GOSUB
+FBODY		=	12	; LENGTH OF BODY OF FOR ELEMENT
+GFDISP		=	3	; DISP TO SAVED LINE DISP
+GFLNO		=	1	; DISPL TO LINE # IN HEADER
+GFTYPE		=	0	; DISPL TO TYPE IN HEADER
+FSTEP		=	6	; DISPL TO STEP IN FOR ELEMENT
+FLIM		=	0	; DISPL TO LIMIT IN FOR ELEMENT
+
+; I/O Commands
+
+ICOIN		=	$01
+ICOOUT		=	$02
+ICOIO		=	$03
+ICGBR		=	$04
+ICGTR		=	$05
+ICGBC		=	$06
+ICGTC		=	$07
+ICPBR		=	$08
+ICPTR		=	$09
+ICPBC		=	$0A
+ICPTC		=	$0B
+ICCLOSE		=	$0C
+ICSTAT		=	$0D
+ICDDC		=	$0E
+ICMAX		=	$0E
+ICFREE		=	$FF
+ICGR		=	$1C
+ICDRAW		=	$11
+
+; BASIC COMMANDS
+
+kREM		=	0
+kDATA		=	1
+kINPUT		=	2
+kCOLOR		=	3
+kLIST		=	4
+kENTER		=	5
+kLET		=	6
+kIF		=	7
+kFOR		=	8
+kNEXT		=	9
+kGOTO		=	10
+kGO_TO		=	11
+kGOSUB		=	12
+kTRAP		=	13
+kBYE		=	14
+kCONT		=	15
+kCOM		=	16
+kCLOSE		=	17
+kCLR		=	18
+kDEG		=	19
+kDIM		=	20
+kEND		=	21
+kNEW		=	22
+kOPEN		=	23
+kLOAD		=	24
+kSAVE		=	25
+kSTATUS		=	26
+kNOTE		=	27
+kPOINT		=	28
+kXIO		=	29
+kON		=	30
+kPOKE		=	31
+kPRINT		=	32
+kRAD		=	33
+kREAD		=	34
+kRESTORE	=	35
+kRETURN		=	36
+kRUN		=	37
+kSTOP		=	38
+kPOP		=	39
+kQUESTION	=	40
+kGET		=	41
+kPUT		=	42
+kGRAPHIC	=	43
+kPLOT		=	44
+kPOSITION	=	45
+kDOS		=	46
+kDRAWTO		=	47
+kSETCOLOR	=	48
+kLOCATE		=	49
+kSOUND		=	50
+kLPRINT		=	51
+kCSAVE		=	52
+kCLOAD		=	53
+kILET		=	54
+kERROR		=	55
+CERR		EQU	kERROR	; ERROR Token (55)
+
+; Syntax Rules values
+
+_ANTV		=	$00	; Absolute Non-Terminal Vector (ANTV) to sub-call another rule
+_ESRT		=	$01	; External Subroutine Call (ESRT) to call a handler for more complex rules
+_OR		=	$02	; ABML or
+_RTN		=	$03	; (aka <END>) Return, marks the end of an ABML rule. Return pass or fail.
+_UNKN		=	$0D	; (aka <UNKN>) Not sure what this does in BASIC Rev. B.
+_VEXP		=	$0E	; (aka <EXP>) Expression Non-Terminal Vector. Shorthand for ANTV AD(EXP)
+_CHNG		=	$0F	; Change Last Token to X. e.g., to rectify '=' as assign or compare.
+
+; Operator Tokens
+
+CBCD		=	$0E	;        BCD Number (followed by 6 bytes)
+CSTOK		=	$0F	;        String (followed by Length)
+
+CDQ		=	$10	; "      Double-Quote (UNUSED?)
+CSOE		=	$11	;        Expression Stack Marker
+CCOM		=	$12	; ,      in PRINT statement
+CDOL		=	$13	; $      Dollar Sign
+CEOS		=	$14	; :      End of expr / statement
+CSC		=	$15	; ;      in PRINT statement
+CCR		=	$16	;        End of expr / line
+CGTO		=	$17	; GOTO   ON...GOTO
+CGS		=	$18	; GOSUB  ON...GOSUB
+CTO		=	$19	; TO     FOR ... TO
+CSTEP		=	$1A	; STEP   FOR ... TO ... STEP
+CTHEN		=	$1B	; THEN   IF...THEN
+CPND		=	$1C	; #      OPEN #
+
+CSROP		=	$1D	; First "real" operator
+
+CLE		=	$1D	; <=     IF A<=B
+CNE		=	$1E	; <>     IF A<>B
+CGE		=	$1F	; >=     IF A<=B
+CGT		=	$20	; <      IF A<B
+CLT		=	$21	; >      IF A>B
+CEQ		=	$22	; =      IF A=B
+CEXP		=	$23	; ^      A=B^C   (Up Arrow $5E+$80)
+CMUL		=	$24	; *      A=B*C
+CPLUS		=	$25	; +      A=B+C
+CMINUS		=	$26	; -      A=B-C
+CDIV		=	$27	; /      A=B/C
+CNOT		=	$28	; NOT    Boolean logic
+COR		=	$29	; OR
+CAND		=	$2A	; AND
+CLPRN		=	$2B	; (      ( math
+CRPRN		=	$2C	; )      close for all parens
+CAASN		=	$2D	; =      S1=S2
+CSASN		=	$2E	; =      N$=A$
+CSLE		=	$2F	; <=     cmp A$<=B$
+CSNE		=	$30	; <>     cmp A$<>B$
+CSGE		=	$31	; >=     cmp A$>=B$
+CSGT		=	$32	; >      cmp A$>B$
+CSLT		=	$33	; <      cmp A$<B$
+CSEQ		=	$34	; =      cmp A$=B$
+CUPLUS		=	$35	; +      POSITIVE
+CUMINUS		=	$36	; -      NEGATIVE
+CSLPRN		=	$37	; (      A$(
+CALPRN		=	$38	; (      SC(
+CDLPRN		=	$39	; (      DIM SC(
+CFLPRN		=	$3A	; (      CHR$(, PEEK(
+CDSLPR		=	$3B	; (      DIM S$(
+CACOM		=	$3C	; ,      Array Subscript Separator
+
+; Function Tokens
+
+CFFUN		=	$3D	; FIRST FUNCTION CODE
+CSTR		=	$3D	; STR$()
+CCHR		=	$3E	; CHR$()
+CUSR		=	$3F	; USR()
+CASC		=	$40	; ASC()
+CVAL		=	$41	; VAL()
+CLEN		=	$42	; LEN()
+CADR		=	$43	; ADR()
+CNFNP		=	$44	; Numeric Functions
+;CATN		=	$44	; ATN()
+;CCOS		=	$45	; COS()
+;CPEEK		=	$46	; PEEK()
+;CSIN		=	$47	; SIN()
+;CRND		=	$48	; RND()
+;CFRE		=	$49	; FRE()
+;CEXP		=	$4A	; EXP()
+;CLOG		=	$4B	; LOG()
+;CCLOG		=	$4C	; CLOG()
+;CSQR		=	$4D	; SQR()
+;CSGN		=	$4E	; SGN()
+
+; Floating Point Miscellaneous Equates
+
+FPREC   = 6             ;precision
+FMPREC  = FPREC-1       ;##rev2## length of mantissa
