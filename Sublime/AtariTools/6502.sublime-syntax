@@ -1,7 +1,6 @@
 %YAML 1.2
 ---
-#
-# 6502 Assembly
+name: 6502 Assembly
 #
 # 6502 is fairly straightforward, but there are many
 # variants, not all of which are easy to take together.
@@ -15,6 +14,17 @@
 #   - All fields are optional.
 #   - Comments start with ';' and take the rest of the line.
 #   - Old-style comments have '*' in the first column.
+#
+# 6502 addressing modes:
+#   - Accumulator         PLA ; ROL ; ROR A
+#   - Immediate           LDX #3
+#   - Implied             CLC, SED
+#   - Relative            BRA _there
+#   - Absolute/Zero-Page  STA $CE44   ; LDA $12
+#   - Absolute/ZP Indexed LDA $0600,X ; STX $44,Y
+#   - Indirect            JMP ($0600)
+#   - Indirect Indexed    LDA ($86),Y
+#   - Indexed Indirect    STA ($20,X)
 #
 # This syntax is based on a couple of samples of code.
 #   - Atari 8-bit Assembly. Not yet supporting macro-assembler.
@@ -38,28 +48,28 @@
 #   - A successful match moves the scan-point after the match.
 #   - Only the active context applies, plus any includes.
 #
-# This is a first attempt, and far from elegant. Please help improve.
+# Rebuilt October 2025
+#  - Combined ksherlock/65816 (ca65) and dougmasten/sublime-assembly-6809 (Assembly-6809)
+#  - Initially provides highlighting for ca65 code and nested expressions.
+#  - Added a hook for "Apple ][" dump hinted by $ starting the line. Like DASM, labels have no colon.
 #
-# 6502 addressing modes:
-#   - Accumulator         PLA ; ROL ; ROR A
-#   - Immediate           LDX #3
-#   - Implied             CLC, SED
-#   - Relative            BRA _there
-#   - Absolute/Zero-Page  STA $CE44   ; LDA $12
-#   - Absolute/ZP Indexed LDA $0600,X ; STX $44,Y
-#   - Indirect            JMP ($0600)
-#   - Indirect Indexed    LDA ($86),Y
-#   - Indexed Indirect    STA ($20,X)
+# Planned improvements:
+#  - Better handling of labels without colons and comments without delimiters, like DASM.
+#  - The EDasm syntax by @ksherlock seems to work very well for DASM. Use that as guidance.
 #
-name: 6502 Assembly
+
 file_extensions:
   - [ dasm, asm, s, m65, a65, inc, '6502' ]
+
 scope: source.asm
+
 variables:
-  define:     '[a-zA-Z_][a-zA-Z0-9_]*\b'  # define name (no dot allowed)
-  dotdefine:  '\.[a-zA-Z0-9_]+\b'  # define name (no dot allowed)
+  define:     '(?i)[a-z_][a-z0-9_]*\b'    # define name (no dot allowed)
+  dotdefine:  '(?i)\.[a-z0-9_]+\b'        # define name with dot
   ext_define: '{{define}}(::{{define}})?'
-  label:      '{{define}}|{{dotdefine}}|\@\d+'      # an unbroken name or label string
+  locall:     '@{{define}}\b'             # named local label
+  locall2:    '@\d+\b'                    # numbered local label
+  label:      '{{define}}|{{dotdefine}}|{{locall}}|{{locall2}}'      # an unbroken name or label string
   std_s:      as[lr]\s*a|brk|cl[cdiv]|dec\s*a|(de|in)[xy]|eor\s*a|inc\s*a|ls[lr]\s*a|nop|p[hl][ap]|ro[lr]\s*a|rt[is]|se[cdi]|t(a[xy]|(sx|xs)|[yx]a)
   std_d:      a(dc|nd|s[lr])|bit|c(mp|p[xy])|dec|eor|inc|j(mp|sr)|ld[axy]|ls[lr]|ora|ro[lr]|sbc|st[axy]
   std_b:      b(c[cs]|eq|mi|ne|pl|v[cs])
@@ -81,597 +91,501 @@ variables:
   hex: \$\h+
   bin: '%[01]+'
 
+  ident: '(?i)[a-z_][a-z0-9_]*'
+  cident: '[A-Z]+[a-z]+[a-zA-Z0-9]*|[a-z]+([A-Z0-9]+[a-z]*)+'
+
+  num_bin: (?:[01][01]*)
+  num_oct: (?:[0-7][0-7]*)
+  num_dec: (?:\d\d*)
+  num_hex: (?:\h\h*)
+  symbol_id: (?i)(?:[a-z\.\@\_!\?][a-z0-9\.\@\$\_\?]*)|([0-9](?!\S))
+  filename_id: (?:\S+(?!\S))
+  all_registers: (?i)cc|dp|pc|[0abdefsuvwxy]
+
 contexts:
+  prototype:
+    - include: comment
+    - match: $
+      pop: true
+
+  pop-on-eol:
+    - match: $
+      pop: true
+
+  skip-whitespace:
+    - match: \s*
+
   main:
-    - meta_content_scope: ctx.main
-    - match: ()
-      push: asm_column_1
+    - meta_include_prototype: false
 
-  asm_column_1:
-    - meta_content_scope: ctx.asm_column_1
-
-    # Comment in the first position?
-    - include: mixin_comment
-
-    # String in the first position?
-    # - include: mixin_string
-
-    # Match a define line, which may end with a comment
-    - match: ^(?i)({{define}})\b\s*(=|EQU|SET)\b
-      captures:
-        1: entity.name.constant.asm        # symbol
-        2: keyword.operator.assignment.asm # operator
-      set: asm_expression
-
-    # Alias directive first?
-    - match: (?i)^\s*(\.alias)\s+({{define}})\s+
-      captures:
-        1: keyword.directive.assignment.asm
-        2: entity.name.constant.asm
-      set: asm_expression
-
-    # .include?
-    - match: (?i)^\s*\.include\b
-      scope: keyword.directive.include.asm
-      set: asm_string_arg
-
-    # .org?
-    - match: (?i)^\s*\.org\b
-      scope: keyword.directive.org.asm
-      set: asm_expression
-
-    # .segment/SEGMENT ...
-    - match: (?i)^\s*\.segment\b
-      scope: keyword.directive.segment.asm
-      set: asm_string_arg
-
-    # .proc/PROC name
-    - match: (?i)(\.proc)\s*({{define}})
-      captures:
-        1: keyword.directive.proc.asm
-        2: entity.name.label.asm
-      set: auto_comment
-
-    # .endproc
-    - match: (?i)\.endproc
-      scope: keyword.directive.endproc.asm
-      set: auto_comment
-
-    # .macro/MACRO name [arg[, arg]]
-    - match: (?i)(\.macro)\s*({{define}})
-      captures:
-        1: keyword.directive.macro.asm
-        2: entity.name.label.asm
-      set: auto_comment
-
-    # .endmacro/.ENDMACRO
-    - match: (?i)\.endmacro
-      scope: keyword.directive.endmacro.asm
-      set: auto_comment
-
-    # Match: ... IF <expr> ; comment
-    - match: ^\s+(IF)\s*
-      captures:
-        1: keyword.directive.conditional.asm        # IF
-      set: pre_condition
-
-    # Match: ... ELSE or ENDIF
-    - match: ^\s+(ELSE|ENDIF)\b
-      scope: keyword.directive.conditional.asm      # ELSE/ENDIF
-      set: asm_comment
-
-    # Match a line starting with a label
-    - match: ^({{label}})(:?)
-      captures:
-        1: entity.name.label.asm                    # label
-        2: punctuation.definition.label.colon.asm
-      set: asm_column_2
-
-    # Disassembled code with hex prefix? (And label.)
-    # This fails because it's hard to distinguish
-    # a label from a mnemonic.
-    - match: (?i)^(\$?\h{4}(\s*\h{2})+)\s*([.a-z_]\w{3,})
-      captures:
-        1: constant.disassembly.asm
-        3: entity.name.label.asm   # label
-      set: asm_column_2
-
-    # Disassembled code with hex prefix? (And label.)
-    # This fails because it's hard to distinguish
-    # a label from a mnemonic.
-    - match: (?i)^\$?\h{4}(\s*\h{2})+
+    # Dollar Sign, shift into DUMP parsing
+    - match: (\$\h+)
       scope: constant.disassembly.asm
-      set: asm_column_2
+      push: appleii
 
-    # Match a line starting with indentation
-    - match: ^\s
-      set: asm_column_2
-
-  # The line following the first indent.
-  # May be preceded by a label (i.e., when a symbol is not a define)
-  asm_column_2:
-    - meta_content_scope: ctx.asm_column_2
-
-    - include: mixin_comment
-
-    # *=$hhhh or * EQU ...
-    - match: (\*)\s*(=|EQU)\s*
+    # Assignment
+    - match: \b({{ident}})\s*(?i)(:?=|EQU\b)
+      push: operand
       captures:
-        1: support.builtin.origin.asm # *
-        2: keyword.operator.assignment.asm # =
-      set: asm_expression
+        1: entity.name.constant.asm
+        2: keyword.operator.assignment.asm
 
-    # processor X
-    - match: (processor)\s*(\w+)
+    # Var assignment
+    - match: \b({{ident}})\s*(?i)(:?\.?SET\b)
+      push: operand
       captures:
-        1: keyword.directive.processor.asm
-        2: constant.processor-option.asm
-      set: auto_comment
+        1: entity.name.variable.asm
+        2: keyword.operator.assignment.asm
 
-    # .list/LIST X
-    - match: (?i)(\.?list)\s*({{label}})
-      captures:
-        1: keyword.directive.list.asm
-        2: constant.list-option.asm
-      set: auto_comment
-
-    # .page/PAGE
-    - match: (?i)\.?page\b
-      scope: keyword.directive.page.asm
-      set: auto_comment
-
-    # .title/TITLE
-    - match: (?i)\.?title\b
-      scope: keyword.directive.title.asm
-      set: asm_string_arg
-
-    # .proc/PROC name
-    - match: (?i)(\.?proc)\s*({{define}})
-      captures:
-        1: keyword.directive.proc.asm
-        2: entity.name.label.asm
-      set: auto_comment
-
-    # .org/ORG $hhhh (also .rorg/RORG)
-    - match: (?i)\.?r?org\b
-      scope: keyword.directive.org.asm
-      set: asm_data
-
-    # .res/RES $hhhh
-    - match: (?i)\.?res\b
-      scope: keyword.directive.res.asm
-      set: asm_data
-
-    # .obj/OBJ $hhhh
-    - match: (?i)obj\b
-      scope: keyword.directive.obj.asm
-      set: asm_data
-
-    # .segment/SEGMENT ...
-    - match: (?i)\.?segment\b
-      scope: keyword.directive.segment.asm
-      set: asm_string_arg
-
-    # .seg/SEG ...
-    - match: (?i)\.?r?seg\b
-      scope: keyword.directive.seg.asm
-      set: asm_data
-
-    # .proc/PROC name
-    - match: (?i)(\.?proc)\s*({{define}})
-      captures:
-        1: keyword.directive.proc.asm
-        2: entity.name.label.asm
-      set: auto_comment
-
-    # .endproc
-    - match: (?i)\.?endproc
-      scope: keyword.directive.endproc.asm
-      set: auto_comment
-
-    # BOUNDARY ...
-    - match: BOUNDARY\b
-      scope: keyword.directive.boundary.asm
-      set: asm_expression
-
-    # include path
-    - match: (include)\s+([^ ]*)
-      captures:
-        1: keyword.directive.include.asm # include
-        2: string.unquoted.path.asm   # file path
-
-    # .opcode followed by data
-    - match: (\.[a-zA-Z]+|D[BW])\b
-      scope: keyword.data.asm           # data opcode
-      set: asm_data
-
-    #
-    # Known assembler mnemonics
-    #
-
-    # 6502 single opcodes. All that follows is comment.
-    - match: '{{b_std_s}}'
-      scope: support.opcode.single.asm
-      set: auto_comment
-    - match: '{{b_added_s}}'
-      scope: support.opcode.single.added.asm
-      set: auto_comment
-    - match: '{{b_mos65C02_s}}'
-      scope: support.opcode.single.65C02.asm
-      set: auto_comment
-
-    # 6502 opcodes taking a relative operand
-    - match: '{{b_std_b}}'
-      scope: support.opcode.branch.asm
-      set: op_relative
-    - match: '{{b_added_b}}'
-      scope: support.opcode.branch.added.asm
-      set: op_relative
-    - match: '{{b_mos65C02_b}}'
-      scope: support.opcode.branch.65C02.asm
-      set: op_relative
-
-    # 6502 opcodes taking some other operand
-    - match: '{{b_std_d}}'
-      scope: support.opcode.double.asm
-      set: op_start
-    - match: '{{b_added_d}}'
-      scope: support.opcode.added.asm
-      set: op_start
-
-    # HEX abcd ...
-    - match: (HEX)\s+(\h+)
-      captures:
-        1: keyword.data.hex.asm # directive
-        2: constant.numeric.hex.asm # directive
-      set: asm_data
-
-    # abcd ...
-    - match: (END|[a-zA-Z]{4,}\b)
-      scope: keyword.directive.misc.asm # directive
-      set: asm_data
-
-    # Any other 3-letter mnemonic
-    - match: ({{mnemonic}}\b)
-      scope: invalid.illegal.opcode.asm # 6502 opcode
-      set: op_start
-
-    # Always exit line scope
-    - match: $
-      pop: true
-
-  auto_comment:
-    - meta_content_scope: ctx.auto_comment
-
-    - match: ;
-      scope: punctuation.definition.comment.eol.start
-      set: asm_comment
-    - match: (\S)
-      scope: character.auto-comment.asm
-      set: asm_comment
-    - match: $
-      pop: true
-
-  # Mark a comment. It ends with the line.
-  asm_comment:
-    - meta_scope: comment.asm
-    - match: $
-      pop: true
-
-  asm_string_arg:
-    - match: \s+
-
-    - match: (['"])
-      scope: punctuation.definition.string.open.asm
-      push: quoted_string
-
-    - match: ''
-      set: auto_comment
-
-  # Atoms of expressions: Strings, numbers, and names
-  mixin_value:
-    - include: mixin_string
-    - match: ({{hex}})|({{bin}})|({{dec}})|({{ext_define}})\b
-      captures:
-        1: constant.numeric.hex.asm
-        2: constant.numeric.bin.asm
-        3: constant.numeric.dec.asm
-        4: entity.name.asm
-
-  mixin_operators:
-    - match: \*\*|[-+*/!^]
-      scope: keyword.operator.math.asm
-
-    - match: <>|<<|>>|[<=>|&~]
-      scope: keyword.operator.binary.asm
-
-  # Comments begin with a ';' and finish at the end of the line.
-  # Old Apple ][ code uses asterisks, which doesn't conflict
-  # with anything else, so capture that too.
-  mixin_comment:
-    - match: ^(\*)|^\s*(;|//|\*\*\*)
-      captures:
-        1: comment.asm punctuation.definition.comment.line.start
-        2: comment.asm punctuation.definition.comment.line.start
-      set: asm_comment
-    - match: \s*(;|//|\*\*\*)
-      captures:
-        1: comment.asm punctuation.definition.comment.eol.start
-      set: asm_comment
-
-  # Strings begin and end with quotes and use backslash for escape.
-  # Cut off strings at the end of the line
-  mixin_string:
-    - match: \"
-      scope: punctuation.definition.string.open.asm
-      push: quoted_string
-    - match: (\'.)\s
-      captures:
-        1: constant.char.asm
-      set: auto_comment
-    - match: \'.
-      scope: constant.char.asm
-  quoted_string:
-    - meta_scope: string.quoted.asm
-    - match: $
-      pop: true
-    - match: \\.
-      scope: constant.character.escape.asm
-    - match: $1
-      scope: punctuation.definition.string.close.asm
-      pop: true
-
-  # Assembler directive condition. <> are logical, not low/hi operators
-  pre_condition:
-    - include: mixin_value
-    - match: =|<[>=]?|>=?
-      scope: keyword.operator.compare.asm
-    - match: \s*((;|//|\*\*\*).*)\s*
-      captures:
-        1: comment.asm
-        2: punctuation.definition.comment.eol.start
-      set: asm_line_done
-    - match: \s{3,}|$
-      pop: true
-
-  # Operand for an assembler command
-  op_start:
-    - match: \s+
-
-    # Immediate expression
-    - match: \#
-      scope: keyword.operator.immediate.asm
-      set: op_immediate
-
-    - match: \(
-      scope: punctuation.definition.indirect.start
-      set: op_indirect
-
-    # Other address expression
-    - match: ()
-      set: op_address
-
-  #
-  # Assembler Modes
-  #
-
-  # Immediate value operand
-  op_immediate:
-    - match: $
-      pop: true
-
-    - include: mixin_expression
-
-  # Relative, for branches only
-  op_relative:
-    - match: '{{label}}\b'
+    - match: '\b{{ident}}:'
       scope: entity.name.label.asm
+      #push: opcode
 
-    - match: $
+    - match: '@{{ident}}:'
+      scope: entity.name.label.local.asm
+      #push: opcode
+
+    # OP Code expected after colon
+    - match: ':'
+      scope: entity.name.label.anonymous.asm
+      #push: opcode
+
+    # Special comment
+    - match: ;;
+      scope: punctuation.definition.comment.asm
+      push: annotation
+
+    # Comment follows semicolon in this scope
+    - match: ;
+      scope: punctuation.definition.comment.asm
+      push:
+        - meta_include_prototype: false
+        - meta_scope: comment.line.asm
+        - match: \n
+          pop: true
+
+    - match: (\.(?i:proc))\s+({{ident}})\b
+      captures:
+        1: keyword.asm
+        2: entity.name.function.asm
+
+    - match: (\.(?i:scope))\s+({{ident}})\b
+      captures:
+        1: keyword.asm
+        2: entity.name.scope.asm
+
+
+    - match: (\.(?i:mac|macro))\s+({{ident}})\b
+      captures:
+        1: keyword.asm
+        2: entity.name.macro.asm
+      push: macro-parms
+
+    - include: unknown-fallback
+
+  annotation:
+    - meta_include_prototype: false
+    - meta_scope: entity.name.type.annotation.asm
+    - match: '#'
+      scope: comment.line.asm punctuation.definition.comment.asm
+      set: comments-eol
+    - match: \n
       pop: true
 
-    - include: mixin_expression
+  macro-parms:
+    - match: '\b{{ident}}\b'
+      scope: variable.parameter.macro.asm
 
-  # Indirect, Indirect Indexed, Indexed Indirect
-  op_indirect:
-    - meta_scope: ctx.op_indirect
-
-    - match: \)\s*(,[yY])
-      captures:
-        1: support.opcode.indirect-indexed.asm
-      set: auto_comment
-
-    - match: (\,[xX])\s*\)
-      captures:
-        1: support.opcode.indexed-indirect.asm
-      set: auto_comment
-
+  define-parms:
+    - match: \n
+      scope: invalid.illegal
+      pop: true
     - match: \)
-      scope: punctuation.definition.indirect.end
-      set: auto_comment
-
-    - match: $
-      pop: true
-
-    - include: mixin_expression
-
-  # Non-immediate operand must be an address
-  op_address:
-    - match: ',[xX]'
-      scope: support.opcode.indexed-x.asm
-      set: auto_comment
-    - match: ',[yY]'
-      scope: support.opcode.indexed-y.asm
-      set: auto_comment
-
-    - match: $
-      pop: true
-
-    - include: mixin_expression
-
-  # Definitely an expression of some kind
-  asm_data:
-    - meta_content_scope: ctx.asm_data.asm
-
+      set: operand
+    - match: \b{{ident}}\b
+      scope: variable.parameter.define.asm
     - match: \,
-      scope: punctuation.separator.data.asm
+    - match: \S
+      scope: invalid.illegal
+
+
+  # All opcodes get main scope meta.opcode
+  opcode:
+    - meta_content_scope: meta.opcode
+    - include: directives
+    - include: mnemonics-6502
+    - include: mnemonics-65c02
+    - include: mnemonics-65816
+    - include: mnemonics-65816-alt
+    - include: mnemonics-macpack-generic
+    - include: mnemonics-macpack-longbranch
+
+  # Assume a macro with arguments if nothing else matches
+  unknown-fallback:
+    - match: ({{ident}}:?)\s+({{cident}})\b
+      captures:
+        1: entity.name.label.asm
+        2: entity.name.function.macro-call.asm
+      set: opcode
+
+    - match: \s({{cident}})\b
+      captures:
+        1: entity.name.function.macro-call.asm
+      set: operand
+
+    # OP Code expected after white-space
+    - match: '(?=\S)'
+      push: opcode
+
+  # Most directives transition to the general 'operand' scope (which can be empty)
+  directives:
+
+    # define(...
+    - match: '(\.(?i:define))\s+({{ident}})\s*\('
+      captures:
+        1: meta.directive keyword.asm
+        2: entity.name.define.asm
+      set: define-parms
+
+    # define IDENT
+    - match: '(\.(?i:define))\s+({{ident}})\b'
+      captures:
+        1: meta.directive keyword.asm
+        2: entity.name.define.asm
+      set: operand
+
+    # enum IDENT
+    - match: '(\.(?i:enum))\s+({{ident}})\b'
+      captures:
+        1: meta.directive keyword.asm
+        2: entity.name.enum.asm
+      set: operand
+
+    # struct|union IDENT
+    - match: '(\.(?i:struct|union))\s+({{ident}})\b'
+      captures:
+        1: meta.directive keyword.asm
+        2: entity.name.struct.asm
+      set: operand
+
+
+    # if|end|else
+    - match: \.(?i:if|endif|else|elseif)\b
+      scope: meta.directive keyword.control.asm
+      set: operand
+
+    # include|incbin
+    - match: \.(?i:include|incbin)\b
+      scope: meta.directive keyword.control.import.asm
+      set: operand
+
+    # byte|word
+    - match: \.(?i:byte|word)\b
+      scope: meta.directive keyword.data.asm
+      set: operand
+
+    # More directive / keyword
+    - match: '\.(?i:A16|A8|ADDR|ALIGN|ASCIIZ|ASSERT|AUTOIMPORT|BANKBYTES|BSS|BYT|BYTE|CASE|CHARMAP|CODE|CONDES|CONSTRUCTOR)\b'
+      scope: meta.directive keyword.asm
+      set: operand
+    - match: '\.(?i:DATA|DBYT|DEBUGINFO|DEF|DEFINE|DEFINED|DESTRUCTOR|DWORD|ELSE|ELSE|END|ENDENUM|ENDIF|ENDMAC|ENDMACRO|ENDPROC|ENDREP|ENDREPEAT|ENDSCOPE|ENDSTRUCT|ENUM|ERROR|EXITMAC|EXITMACRO|EXPORT|EXPORTZP)\b'
+      scope: meta.directive keyword.asm
+      set: operand
+    - match: '\.(?i:FARADDR|FEATURE|FILEOPT|FOPT|FORCEIMPORT|GLOBAL|GLOBALZP|HIBYTES|I16|I8|IF|IFCONST|IFDEF|IFNBLANK|IFNDEF|IFP02|IFP816|IFPC02|IFPSC02|IFREF|IMPORT|IMPORTZP|INCBIN|INCLUDE|INTERRUPTOR)\b'
+      scope: meta.directive keyword.asm
+      set: operand
+    - match: '\.(?i:LINECONT|LIST|LISTBYTES|LOBYTES|LOCAL|LOCALCHAR|MACPACK|MAC|MACRO|R?ORG|OUT|PO2|P816|PAGELEN|PAGELENGTH|PC02|POPSEG|PROC|PSC02|PUSHSEG)\b'
+      scope: meta.directive keyword.asm
+      set: operand
+    - match: '\.(?i:RELOC|REPEAT|RES|RODATA|SCOPE|SEGMENT|SETCPU|SMART|STRUCT|SUNPLUS|TAG|WARNING|WORD|ZEROPAGE)\b'
+      scope: meta.directive keyword.asm
+      set: operand
+
+    - match: \.{{ident}}
+      scope: meta.directive
+
+  # Skip an address
+  appleii:
+    - match: \s*((\h{2})+)
+      captures:
+        1: constant.numeric.byte.asm
+
+    - match: '\b{{ident}}:?'
+      scope: entity.name.label.asm
+      push: opcode
+
+    - match: \s+
+      push: opcode
 
     - match: $
-      pop: true
+      set: main
 
-    - include: mixin_expression
-
-  mixin_expression:
-    # Delimited comment always ends the line
-    - include: mixin_comment
-
-    # Enter parentheses with this context nested
-    - match: \(
-      scope: punctuation.definition.parentheses.open
-      push: expr_paren
-    - match: \)
-      scope: invalid.illegal.stray-paren-end
-
-    # Enter brace with this context nested
-    - match: \[
-      scope: punctuation.definition.brace.open
-      push: expr_brace
-    - match: \]
-      scope: invalid.illegal.stray-brace-end
-
-    # String in a value position
-    - include: mixin_string
-
-    # Scope the next value in the expression
-    #
-    - match: (\*)|({{hex}})|({{bin}})|({{dec}})|({{ext_define}})\b
-      captures:
-        1: entity.address.here.asm
-        2: constant.numeric.hex.asm
-        3: constant.numeric.bin.asm
-        4: constant.numeric.dec.asm
-        5: entity.name.asm
-      push: expr_needs_operator
-
-    # Mark the next operator
-    - include: mixin_operators
-
-  #
-  # asm_expression - A single datum (or list)
-  #
-  # - A comment marker ends the line
-  # - Push paren or brace, if one
-  # - Consume a string.
-  # - Consume a value and push a rule to match
-  #   a value pattern. It won't return if it passes.
-  # - Consume an operator.
-  #
-  asm_expression:
-    - meta_content_scope: ctx.asm_expression.asm
-
-    # Expression context ends with line
+  operand:
+    - include: numbers
+    - include: strings
+    - include: match-char
+    - include: match-expr
     - match: $
-      pop: true
+      set: main
 
-    - match: ''
-      push: expr_needs_value
-
-  #
-  # expr_needs_value <- asm_data(match(value))
-  #
-  # - Consume spaces
-  # - End on a comment marker
-  # - Set to 'comment' if a non-operator follows
-  # - Pop for anything else (an unconsumed non-operator)
-  #
-  expr_needs_value:
-    - meta_content_scope: ctx.expr_needs_value.asm
-
-    # Consume whitespace
-    - match: \s+
-
-    - include: mixin_comment
-
-    # Enter parentheses with this context nested
-    - match: \(
-      scope: punctuation.definition.parentheses.open
-      push: expr_paren
-
-    # Enter brace with this context nested
-    - match: \[
-      scope: punctuation.definition.brace.open
-      push: expr_brace
-
-    - match: '[\])]'
-      pop: true
-
-    - match: (\*)|({{hex}})|({{bin}})|({{dec}})|({{ext_define}})\b
-      captures:
-        1: entity.address.here.asm
-        2: constant.numeric.hex.asm
-        3: constant.numeric.bin.asm
-        4: constant.numeric.dec.asm
-        5: entity.name.asm
-      set: expr_needs_operator
-
-    - match: ''
-      set: asm_comment
-
-  #
-  # expr_needs_operator <- asm_data(match(value))
-  #
-  # - Consume spaces
-  # - End on a comment marker
-  # - Set to 'comment' if a non-operator follows
-  # - Pop for anything else (an unconsumed non-operator)
-  #
-  expr_needs_operator:
-    - meta_content_scope: ctx.expr_needs_operator.asm
-
-    # Consume whitespace
-    - match: \s+
-
-    - include: mixin_comment
-
-    # If a non-operator is found, the expression is done.
-    # Note: comments beginning with an operator may be missed
-    - match: ([^-+*/,!<>|&^~)\]])
-      scope: character.auto-comment.asm
-      set: asm_comment
-
-    - match: '[-+*/^]'
-      scope: keyword.operator.math.asm
-      set: expr_needs_value
-
-    - match: '[&|~]|<<|>>'
-      scope: keyword.operator.binary.asm
-      set: expr_needs_value
-
-    - match: '[!<>=]'
-      scope: keyword.operator.logical.asm
-      set: expr_needs_value
-
-    - match: ''
-      set: asm_comment
-
-  # Start a parenthesized expression.
-  # After the closing parenthesis, an operator should be required
-  expr_paren:
-    # Override the close-paren from asm_data
+    # Stray closing parenthesis marks the rest of the line as error
     - match: \)
-      scope: punctuation.definition.parentheses.close
-      pop: true
+      push:
+        - meta_include_prototype: false
+        - meta_scope: invalid.error.syntax.asm
+        - match: \n
+          pop: true
 
-    # Continue with asm_data
-    - include: asm_data
+    - match: \.(?i:CPU|PARAMCOUNT|TIME|VERSION)\b
+      scope: support.constant.asm
+    - match: \.(?i:BANKBYTE|BLANK|CONCAT|CONST|HIBYTE|HIWORD|IDENT|LEFT|LOBYTE|LOWORD|MATCH|MID|REF|REFERENCED|RIGHT|SIZEOF|STRAT|SPRINTF|STRING|STRLEN|TCOUNT|XMATCH)\b
+      scope: support.function.asm
+    - match: \.(?i:BITNOT|MOD|BITAND|BITXOR|SHL|SHR|BITOR|AND|XOR|OR|NOT)\b
+      scope: keyword.operator.asm
+    - match: '<<|>>|<>|<=|>=|\|\||&&'
+      scope: keyword.operator.asm
+    - match: '[-+~<>^*/&|=!]'
+      scope: keyword.operator.asm
 
-  expr_brace:
-    - match: \]
-      scope: punctuation.definition.brace.close
-      pop: true
-    - include: asm_data
+  numbers:
+    - match: \b\d+\b
+      scope: constant.numeric.asm
+    - match: \$[A-Fa-f0-9]+\b
+      scope: constant.numeric.hex.asm
+    - match: \b[A-Fa-f0-9]+h\b
+      scope: constant.numeric.hex.asm
+    - match: \%[01]+\b
+      scope: constant.numeric.binary.asm
 
-  # Done interpreting to the end of the line
-  asm_line_done:
-    - match: \s*$
+  # Comment after semicolon takes the rest of the line
+  comment:
+    - match: ;
+      scope: punctuation.definition.comment.asm
+      push:
+        - meta_include_prototype: false
+        - meta_scope: comment.line.asm
+        - match: \n
+          pop: true
+
+  # Double-quoted strings "..." with escaping
+  strings:
+    - match: '"'
+      scope: punctuation.definition.string.begin.asm
+      push:
+        - meta_include_prototype: false
+        - meta_scope: string.quoted.double.asm
+        - match: '\\\"|[^"\n]'
+        - match: '"'
+          scope: punctuation.definition.string.end.asm
+          pop: true
+        - match: \n
+          scope: invalid.illegal.newline.asm
+          pop: true
+
+
+  mnemonics-6502:
+    - match: \b(?i:ADC|AND|ASL|BCC|BCS|BEQ|BIT|BMI|BNE|BPL|BRK|BVC|BVS|CLC|CLD|CLI|CLV|CMP|CPX|CPY|DEC|DEX|DEY|EOR|INC|INX|INY|JMP|JSR|LDA|LDX|LDY|LSR|NOP|ORA|PHA|PHP|PLA|PLP|ROL|ROR|RTI|RTS|SBC|SEC|SED|SEI|STA|STX|STY|TAX|TAY|TSX|TXA|TXS|TYA)\b
+      scope: keyword.mnemonic.6502.asm
+      set: operand
+
+  mnemonics-65c02:
+    - match: \b(?i:BRA|PHX|PHY|PLX|PLY|STP|STZ|TRB|TSB|WAI)\b
+      scope: keyword.mnemonic.65c02.asm
+      set: operand
+
+  mnemonics-65c02s:
+    - match: \b(?i:BBR|BBS|RMB|SMB)[0-7]\b
+      scope: keyword.mnemonic.65c02s.asm
+      set: operand
+
+  mnemonics-65816:
+    - match: \b(?i:BRL|COP|JML|JSL|MVN|MVP|PEA|PEI|PER|PHB|PHD|PHK|PLB|PLD|REP|RTL|SEP|TCD|TCS|TDC|TSC|TXY|TYX|WDM|XBA|XCE)\b
+      scope: keyword.mnemonic.65816.asm
+      set: operand
+
+  mnemonics-65816-long:
+    - match: \b(?i:ADCL|ANDL|CMPL|EORL|LDAL|ORAL|SBCL|STAL)\b
+      scope: keyword.mnemonic.65816.long.asm
+      set: operand
+
+  mnemonics-65816-alt:
+    - match: \b(?i:BLT|BGE|CPA|DEA|INA|SWA|TAS|TSA)\b
+      scope: keyword.mnemonic.65816.alt.asm
+      set: operand
+
+  mnemonics-65c02-m740:
+    - match: \b(?i:CLT|COM|LDM|RRF|SET|TST)\b
+      scope: keyword.mnemonic.m740.asm
+      set: operand
+
+  mnemonics-sweet16:
+    - match: \b(?i:RTN|SET|LD|LDD|ST|STD|POP|POPD|STP|ADD|SUB|CPR|INR|DCR|BR|BNC|BC|BP|BM|BZ|BNZ|BM1|BNM1|BK|RS|BS)\b
+      scope: keyword.mnemonic.sweet16.asm
+      set: operand
+
+  mnemonics-macpack-generic:
+    - match: \b(?i:ADD|SUB|BGE|BLT|BGT|BLE|BNZ|BZE)\b
+      scope: keyword.mnemonic.macpack.generic.asm
+      set: operand
+
+  mnemonics-macpack-longbranch:
+    - match: \b(?i:JEQ|JNE|JMI|JPL|JCS|JCC|JVS|JVC)\b
+      scope: keyword.mnemonic.macpack.longbranch.asm
+      set: operand
+
+  #
+  # Expression matching originally from @dougmasten / sublime-assembly-6809
+  # - No "unquoted string" matching
+  #
+
+  match-expr:
+    - include: match-integers
+    - include: match-operators
+    - include: match-parens
+    - include: match-sizeof
+    - include: match-labels
+    - include: match-characters
+
+  match-integers:
+    - include: match-binary-integer
+    - include: match-octal-integer
+    - include: match-hex-integer
+    - include: match-decimal-integer
+
+  match-binary-integer:
+    - match: '(\%){{num_bin}}\b'
+      scope: constant.numeric.binary.asm
+      captures:
+        1: punctuation.definition.numeric.binary.asm
+    - match: '{{num_bin}}([bB])\b'
+      scope: constant.numeric.binary.asm
+      captures:
+        1: punctuation.definition.numeric.binary.asm
+
+  match-octal-integer:
+    - match: '(\@){{num_oct}}\b'
+      scope: constant.numeric.octal.asm
+      captures:
+        1: punctuation.definition.numeric.octal.asm
+    - match: '{{num_oct}}([oqOQ])\b'
+      scope: constant.numeric.octal.asm
+      captures:
+        1: punctuation.definition.numeric.octal.asm
+
+  match-hex-integer:
+    - match: '(\$|0[Xx]){{num_hex}}\b'
+      scope: constant.numeric.hexadecimal.asm
+      captures:
+        1: punctuation.definition.numeric.hexadecimal.asm
+    - match: '{{num_hex}}([hH])\b'
+      scope: constant.numeric.hexadecimal.asm
+      captures:
+        1: punctuation.definition.numeric.hexadecimal.asm
+
+  match-decimal-integer:
+    - match: '(\&)?{{num_dec}}\b'
+      scope: constant.numeric.decimal.asm
+      captures:
+        1: punctuation.definition.numeric.decimal.asm
+
+  match-operators:
+    - match: <<|>>|&&|\|\|
+      scope: keyword.operator.arithmetic.asm
+    - match: \*
+      scope: keyword.operator.arithmetic.asm
+    - match: \+|\-|/|%|\||\^|\~|!|\&
+      scope: keyword.operator.arithmetic.asm
+
+  match-parens:
+    - match: \(
+      scope: punctuation.section.parens.begin.asm
+      push:
+        - match: \)
+          scope: punctuation.section.parens.end.asm
+          pop: true
+        - include: pop-on-eol
+        - include: match-expr
+
+  match-comma:
+    - match: \,
+      scope: operator.separator.asm
+
+  # Match single-quoted character
+  match-char:
+    - match: \'
+      scope: punctuation.definition.char.begin.asm
+      push:
+        - meta_scope: string.quoted.single.asm
+        - match: \S(\'?)
+          captures:
+            1: punctuation.definition.char.end.asm
+          pop: true
+        - include: pop-on-eol
+
+  # Match single- or double-quoted character
+  match-characters:
+    - match: \'
+      scope: punctuation.definition.char.begin.asm
+      push:
+        - meta_scope: string.quoted.single.asm
+        - match: \S(\'?)
+          captures:
+            1: punctuation.definition.char.end.asm
+          pop: true
+        - include: pop-on-eol
+    - match: \"
+      scope: punctuation.definition.char.begin.asm
+      push:
+        - meta_scope: string.quoted.double.asm
+        - match: \S\S(\"?)
+          captures:
+            1: punctuation.definition.char.end.asm
+          pop: true
+        - include: pop-on-eol
+
+  match-labels:
+    - match: '{{symbol_id}}'
+      scope: constant.other.label.asm
+
+  match-sizeof:
+    - match: (?i)sizeof(\b)
+      scope: support.function.directive.structure.asm
+      push:
+        - match: \{
+          scope: punctuation.section.parens.begin.asm
+          set:
+            - match: \}
+              scope: punctuation.section.parens.end.asm
+              pop: true
+            - include: match-expr
+            - include: pop-on-eol
+        - include: pop-on-eol
+
+  match-strings:
+    - match: \"
+      scope: punctuation.definition.string.begin.asm
+      set:
+        - meta_scope: string.quoted.double.asm
+        - match: \"
+          scope: punctuation.definition.string.end.asm
+          set: comments-eol
+        - include: pop-on-eol
+    - match: \'
+      scope: punctuation.definition.string.begin.asm
+      set:
+        - meta_scope: string.quoted.single.asm
+        - match: \'
+          scope: punctuation.definition.string.end.asm
+          set: comments-eol
+        - include: pop-on-eol
+    #- match: .*$
+    #  scope: string.unquoted.asm
+    #  pop: true
+    - include: pop-on-eol
+
+  comments-eol:
+    - match: (\s*)(([*;]?).*)$
+      captures:
+        2: comment.line.asm
+        3: punctuation.definition.comment.asm
       pop: true

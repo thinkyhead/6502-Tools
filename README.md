@@ -25,8 +25,12 @@ For bAtariBASIC, the `$bB` environment variable should already exist, but it can
 Settings suitable for 6502 code. Applies to `.asm` and `.s` files.
 
 #### `6502.sublime-syntax`
-This syntax parser for *Atari* and *Apple* 6502 code needs more work to support modern formats.
-- For best results with `ca65` code use the **ca65 Syntax** included with ["65816" Package](//github.com/ksherlock/65816.tmbundle).
+The updated 6502 syntax is based on the **ca65 Syntax** included with ["65816" Package](//github.com/ksherlock/65816.tmbundle) and parts of [sublime-assembly-6809](//github.com/dougmasten/sublime-assembly-6809) for nested expressions.
+- Specifically this combines ksherlock/65816 ("ca65") and dougmasten/sublime-assembly-6809 ("Assembly-6809").
+- It initially provides decent highlighting for `ca65` but:
+  - It doesn't fall back to treating unrecognized non-dot directives as macros.
+- Added a hook for "Apple ][" dump (where `$` starts the line).
+- Will soon sort out simpler (`dasm`) syntax (by matching known mnemonics, e.g., `^LABEL\s+(LDA)\b`...)
 - Includes `syntax_test_6502.asm` to test the markup with Sublime [PackageDev](https://packagecontrol.io/packages/PackageDev) (Cmd-B).
 
 #### `LD65Config.sublime-syntax`
