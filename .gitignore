@@ -13,3 +13,5 @@ DoAtari.app
 *.sublime-workspace
 __pycache__/
 work/
+*-rev*.lst
+*.rom
