@@ -47,6 +47,23 @@ TIA_BASE_READ_ADDRESS = $30  ; comment
 ;     ^support.opcode.single.asm
 ;                                     ^comment.asm
    ENDIF                            ; comment
+;  ^keyword.directive.conditional.asm
+
+; The ca65 Assembler assumes the following basic format
+; - Label name can start with @ or a letter, then the rest is alphanumeric or underscore
+
+.if TEST_VARIABLE = 1
+; ^keyword.directive.conditional.asm
+   .byte $00,$00,$00,$00,$CC,$B8,$A4,$90,$A0
+;  ^^^^^ keyword.directive.byte.asm
+;       ^ -keyword.directive.byte.asm
+.endif
+;^^^^^ keyword.directive.conditional.asm
+
+LDA #12
+;^^ keyword.mnemonic.6502.asm
+;   ^keyword.operator.immediate.asm
+;    ^^ constant.numeric.asm
 
 MAX_HOLD_CANDY          = 9 << 4    ; comment
 ; ^entity.name.constant.asm
