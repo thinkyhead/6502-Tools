@@ -33,6 +33,12 @@ endef
 
 roms : $(ROMS)
 
+revA : $(SRCBASE)-revA.rom
+revB : $(SRCBASE)-revB.rom
+revC : $(SRCBASE)-revC.rom
+revD : $(SRCBASE)-revD.rom
+revX : $(SRCBASE)-revX.rom
+
 check: $(SHAS)
 	@echo "Validation..."
 	@i=1; \
@@ -68,6 +74,10 @@ md5check : $(ROMS)
 %-revD.o : %.asm
 	$(call RUN_AND_FAIL, ca65 -DBASIC_REVISION=4 $(CA65FLAGS) $^ -o $@)
 	@test -e $(SRCBASE).lst && mv $(SRCBASE).lst $(SRCBASE)-revC.lst
+
+%-revX.o : %.asm
+	$(call RUN_AND_FAIL, ca65 -DBASIC_REVISION=10 $(CA65FLAGS) $^ -o $@)
+	@test -e $(SRCBASE).lst && mv $(SRCBASE).lst $(SRCBASE)-revX.lst
 
 %.rom : %.o
 	$(call RUN_AND_FAIL, ld65 -C $(SRCBASE).lnk $< -o $@)
