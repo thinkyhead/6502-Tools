@@ -8,58 +8,100 @@
 
 SCRY		=	$54	; SCREEN Y BYTE
 SCRX		=	$55	; SCREEN X WORD
+
+LOMEM		=	$80	; pointer to BASIC's low memory
 ARGOPS		=	$80	; ARGUMENT/OPERATOR STACK
 ARGSTK		=	$80
 OUTBUFF		=	$80	; SYNTAX OUTPUT BUFFER
-ENDVVT		=	$88	; END VARIABLE VALUE TABLE
+
+VNTP		=	$82	; start of variable name table
+
+				; EXPANDED BUFFERS > > > >
+
+VNTD		=	$84	; end of variable name table
+VVTP		=	$86	; start of variable value table
+STMTAB		=	$88	; start of the statement table
+STMCUR		=	$8A	; current statement pointer
+STARP		=	$8C	; strings/arrays pointer
 ENDSTAR		=	$8E	; END STRING/ARRAY SPACE
 TOPRSTK		=	$90	; TOP OF RUN STACK
+
+				; < < < < EXPANDED BUFFERS
+
+ENDVVT		=	$88	; END VARIABLE VALUE TABLE
+RUNSTK		=	$8E	; runtime stack
+MEMTOP		=	$90	; memtop
+
 MEOLFLG		=	$92	; MODIFIED EOL FLAG
 COX		=	$94	; CURRENT OUTPUT INDEX
+
+POKADR		=	$95	; address of last POKE location
 SRCADR		=	$95	; SEARCH ADDRESS
+
 INDEX2		=	$97	; ARRAY INDEX 2
 SVESA		=	$97	; SAVE EXPAND START ADR
+
 MVFA		=	$99	; MOVE FROM ADR
 MVTA		=	$9B	; MOVE TO ADR
+
 CPC		=	$9D	; CUR SYNTAX PGM COUNTER
 WVVTPT		=	$9D	; WORKING VAR TABLE PTR VALUE
+
 MAXCIX		=	$9F	; MAX SYNTAX CIX
 LLNGTH		=	$9F	; LINE LENGTH
+
 TSLNUM		=	$A0	; TEST LINE NO
 MVLNG		=	$A2	; MOVE LENGTH
 ECSIZE		=	$A4	; MOVE SIZE
+
 DIRFLG		=	$A6	; DIRECT EXECUTE FLAG
+
 STMLBD		=	$A7	; STMT LENGTH BYTE DISPL
 NXTSTD		=	$A7	; NEXT STMT DISPL
+
 STMSTRT		=	$A8	; STMT START CIX
 STINDEX		=	$A8	; CURR STMT INDEX
+
 STKLVL		=	$A9	; SYNTAX STACK LEVEL
 IBUFFX		=	$A9	; INPUT BUFFER INDEX
 OPSTKX		=	$A9	; OPERATOR STACK INDEX
+
 ARSLVL		=	$AA	; ARG STACK LEVEL
 SRCSKP		=	$AA	; SEARCH SKIP FACTOR
 ARSTKX		=	$AA	; ARG STACK INDEX
+
 TSCOX		=	$AB	; TSCOW LENGTH BYTE PTR
 EXSVOP		=	$AB	; SAVED OPERATOR
+
 TVSCIX		=	$AC	; SAVE CIX FOR TVAT
 EXSVPR		=	$AC	; SAVED OPERATOR PRECEDENCE
+
 SVVNTP		=	$AD	; SAVE VAR NAME TBL PTR
 LELNUM		=	$AD	; LIST END LINE #
+
 ATEMP		=	$AF	; TEMP FOR ARRAYS
 STENUM		=	$AF	; SEARCH TABLE ENTRY NUMBER
 SCANT		=	$AF	; LIST SCAN COUNTER
+
 SVONTC		=	$B0	; SAVE ONT SRC CODE
 COMCNT		=	$B0	; COMMA COUNT FOR EXEXOR
+
 SVVVTE		=	$B1	; SAVE VAR VALUE EXP SIZE
 ADFLAG		=	$B1	; ASSIGN/DIM FLAG
+
 SVONTL		=	$B2	; SAVE ONT SRC ARG LEN
 SVDISP		=	$B2	; DISPL INTO LINE OF FOR/GOSUB TOKEN
+
 ONLOOP		=	$B3	; LOOP CONTROL FOR OP
 SVONTX		=	$B3	; SAVE ONT SRC INDEX
 SAVDEX		=	$B3	; SAVE INDEX INTO STMT
+
 ENTDTD		=	$B4	; ENTER DEVICE TBL
 LISTDTD		=	$B5	; LIST DEVICE TBL
+DATAD		=	$B6	; data element being read
+DATALN		=	$B7	; data statement line number
 ERRNUM		=	$B9	; ERROR #
+STOPLN		=	$BA	; line where the program was stopped
 TRAPLN		=	$BC	; TRAP LINE # [FOR ERROR]
 SAVCUR		=	$BE	; SAVE CURRENT LINE ADDR
 IOCMD		=	$C0	; I/O COMMAND
@@ -69,6 +111,7 @@ ERRSAV		=	$C3	; ERROR # FOR USER
 TEMPA		=	$C4	; TEMP ADDR CELL
 ZTEMP2		=	$C6	; TEMP
 COLOR		=	$C8	; SET COLOR FOR BASE
+PTABW		=	$C9	; number of columns between tab stops
 LOADFLG		=	$CA	; load in progress flag
 SQRCNT		=	$EF	; ##rev2## 1-byte polynomial degree PLYCNT (aka ESIGN)
 SGNFLG		=	$F0	; ##rev2## 1-byte sign flag
@@ -83,11 +126,15 @@ DEGFLG		=	$FB
 RADON		=	0	;INDICATES RADIANS
 DEGON		=	6	;INDICATES DEGREES
 
+; Variable description
+; Used with offsets EVSADR, EVSLEN, EVSDIM that overwrite FR0.
+
 TVTYPE		=	$D2	; VARIABLE TYPE
 VTYPE		=	$D2	; VARIABLE TYPE
 TVNUM		=	$D3	; VARIABLE NUMBER
 VNUM		=	$D3	; VARIABLE NUMBER
 				; FR0 = $D4
+VTYPE1		=	$DE
 
 FLPTR		=	$FC	;2-byte floating point number pointer
 FPTR2		=	$FE	;2-byte floating point number pointer
@@ -214,3 +261,12 @@ ICMAX		=	$0E
 ICFREE		=	$FF
 ICGR		=	$1C
 ICDRAW		=	$11
+
+; I/O Errors
+
+EOFERR		=	$88	;END OF FILE
+
+; DOS IOCB command codes
+
+POINT		=	$25	;point sector
+NOTE		=	$26	;note sector
