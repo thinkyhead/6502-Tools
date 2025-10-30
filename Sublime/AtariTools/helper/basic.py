@@ -104,14 +104,14 @@ program_stack = []
 # --------------------------------------------------------------------------- #
 
 # Commands indexed by their Token ID
-basic_commands = [
+statement_name_table = (
     "R.EM", "D.ATA", "I.NPUT", "C.OLOR", "L.IST", "E.NTER", "LE.T", "IF", "F.OR", "N.EXT",
     "G.OTO", "GO TO", "GOS.UB", "T.RAP", "B.YE", "CONT", "COM", "CL.OSE", "CLR", "DEG",
     "DIM", "END", "NEW", "O.PEN", "LO.AD", "S.AVE", "ST.ATUS", "NO.TE", "P.OINT", "XIO",
     "ON", "POK.E", "PR.INT", "RAD", "REA.D", "RES.TORE", "RET.URN", "RU.N", "STO.P", "POP",
     "?", "GET", "PUT", "GR.APHICS", "PL.OT", "POS.ITION", "DOS", "DR.AWTO", "SE.TCOLOR", "LOC.ATE",
-    "SO.UND", "LP.RINT", "CS.AVE", "CL.OAD", "(let)" if DEBUG_CODE else "", "ERROR"
-]
+    "SO.UND", "LP.RINT", "CS.AVE", "CL.OAD", "(let)" if DEBUG_CODE else "", "ERROR  -"
+)
 
 _REM    = 0 ; _GOTO   = 10 ; _DIM    = 20 ; _ON     = 30 ; _QUESTION=40 ; _SOUND  = 50
 _DATA   = 1 ; _GO_TO  = 11 ; _END    = 21 ; _POKE   = 31 ; _GET    = 41 ; _LPRINT = 51
@@ -127,7 +127,7 @@ _NEXT   = 9 ; _DEG    = 19 ; _XIO    = 29 ; _POP    = 39 ; _LOCATE = 49
 commands_info = []
 c = {}
 
-ops_and_funcs = [
+ops_and_funcs = (
     "", "", "", "", "", "", "",
     "", "", "", "", "", "", "",
     # 14-60: Operators
@@ -161,7 +161,7 @@ ops_and_funcs = [
     " OR",    # 41
     " AND",   # 42
     "(",      # 43 ... ( math
-    ")",      # 44 ... close for all parens
+    ")",      # 44 ... close for all parens. Solve before moving on.
     "=",      # 45 ... S1=S2
     "=",      # 46 ... N$=A$
     "<=",     # 47 ... cmp A$<=B$
@@ -183,12 +183,12 @@ ops_and_funcs = [
     "STR$", "CHR$", "USR", "ASC", "VAL", "LEN", "ADR", "ATN", "COS", "PEEK",
     "SIN", "RND", "FRE", "EXP", "LOG", "CLOG", "SQR", "SGN", "ABS", "INT",
     "PADDLE", "STICK", "PTRIG", "STRIG"
-]
+)
 
 _ops_and_funcs = [ f"<{x:02X}={ops_and_funcs[x]}>" for x in range(60) ]
 
 # --------------------------------------------------------------------------- #
-# Handlers
+# Operator and Function Execution
 # --------------------------------------------------------------------------- #
 
 def handle_REM() -> None:
@@ -280,8 +280,8 @@ def decode_bcd(bcd_bytes: bytearray) -> float:
 
 def init_lookups():
     """Init more convenient lookup data based on the predefined arrays."""
-    for i in range(len(basic_commands)):
-        cmd = basic_commands[i]
+    for i in range(len(statement_name_table)):
+        cmd = statement_name_table[i]
         pcs = cmd.split('.')
         name = ''.join(pcs)
         v = {
@@ -326,8 +326,11 @@ def op_func_string(atok):
     return f"<{atok:02X}>"
 
 def print_variable_tables():
-    print("Variables:")
     """Print all the variables with their types and sizes"""
+    if len(variable_value_table):
+        print("Variables:")
+    else:
+        print("No Variables")
     for i,v in enumerate(variable_value_table):
         vname = variable_name(i)
         disp = v.get('disp', -1)
@@ -581,9 +584,15 @@ def interactive_mode():
 
         try:
             raw = input()
-        except (KeyboardInterrupt, EOFError):
-            print("\n\nBye!\n")
-            break
+        except (KeyboardInterrupt, EOFError) as exc:
+            if isinstance(exc, KeyboardInterrupt):
+                # Ctrl‑C logic
+                print(" BREAK")
+                continue
+            else:
+                # Ctrl‑D logic
+                print()
+                break
 
         cmd = raw.strip().upper()
         if cmd in ("QUIT", "EXIT", "Q"):
