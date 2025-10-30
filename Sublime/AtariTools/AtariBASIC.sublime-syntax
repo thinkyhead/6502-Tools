@@ -31,7 +31,7 @@
  # even binary operators. For any serious retro-programming on
  # the Atari I recommend using 6502 Assembly Language!
  #
- #  =============== AtariBASIC quirks ===============
+#  =============== AtariBASIC quirks ===============
  #
  # The tokenizer is not very deep, so some things that seem
  # natural in modern languages may seem "broken" in BASIC.
@@ -55,7 +55,7 @@
  # So when the Sublime parser hits a dead end due to some ambiguity,
  # we know AtariBASIC will hit the same dead end and throw an error.
  #
- #  ============== AtariBASIC keywords ==============
+#  ============== AtariBASIC keywords ==============
  #
  # Operators:
  # AND       Logical conjunction
@@ -174,7 +174,7 @@
  # Code:
  # R.EM or . Marks a comment in a program
  #
- #  ============== AtariBASIC entities ==============
+#  ============== AtariBASIC entities ==============
  #
  # Values:
  #   - Literal (float)          1.23
@@ -204,12 +204,12 @@
  #     cannot be followed by anything other than an
  #     operator, or an error is thrown.
  #
- #
+#
 name: AtariBASIC
 file_extensions:
   - [lst]
 first_line_match: '\d+ (\?|BYE|C(OLOR|L(OSE|OAD|R)|OM|ONT|SAVE)|D(ATA|IM|OS|RAWTO)|EN(TER|D)|FOR|G(ET|O(SUB|TO)|RAPHICS)|IF|INPUT|L(ET|IST|OAD|OCATE|PRINT)|NE(W|XT)|NOTE|ON|OPEN|P(LOT|O(INT|KE|P|SITION)|RINT|UT)|RE(AD|M|STORE|TURN)|RUN|S(AVE|ETCOLOR|OUND|TATUS|TOP)|TRAP)([ :]|$)'
-scope: src.ataribasic
+scope: source.ataribasic
 variables:
   var: '[A-Z][A-Z0-9]*'
   num: '\d+\.\d*(E\d+)?|\.?\d+(E\d+)?'
@@ -250,7 +250,7 @@ contexts:
       scope: constant.numeric.line-number.ataribasic
       push: code_line
 
-    # Start of a comment line
+    # Start of the line otherwise
     - match: ;|//|\#
       push: comment
       scope: comment.host.ataribasic
@@ -264,24 +264,24 @@ contexts:
     - meta_content_scope: ctx.code_line.ataribasic
 
     # REM will pop back to the immediate context
-    - match: (REM|(RE?)?\.)
+    - match: (RE[M.]|R?\.)
       scope: keyword.rem.ataribasic
       set: cmd_rem
 
     # DATA makes the rest of the line a delimited list of strings
-    - match: (D(ATA|(AT?)?\.))\s*
+    - match: (D(AT[A.]|A?\.))\s*
       captures:
         1: keyword.data.ataribasic
       push: cmd_data
 
     # RESTORE [<nexpr>]
-    - match: RES(TORE|(T(O(RE?)?)?)?\.)
+    - match: RES(TOR[E.]|(TO?)?\.)
       scope: keyword.restore.ataribasic
       push: expr_start
 
     # Commands taking no parameters
     # Some of these should always end the line
-    - match: (CLR)|(CON[T.])|(DEG)|(POP)|(RAD)|(CLOAD)|(CS(AVE|(AV?)?\.))
+    - match: (CLR)|(CON[T.])|(DEG)|(POP)|(RAD)|(CLOAD)|(CS(AV[E.]|A?\.))
       captures:
         1: keyword.clr.ataribasic
         2: keyword.cont.ataribasic
@@ -292,7 +292,7 @@ contexts:
         7: keyword.csave.ataribasic
       push: cmd_done
 
-    - match: (B(YE|Y?\.))|(DOS)|(END)|(NEW)|(STO[P.])|(RET(URN|(UR?)?\.))
+    - match: (B(YE|Y?\.))|(DOS)|(END)|(NEW)|(STO[P.])|(RET(UR[N.]|U?\.))
       captures:
         1: keyword.bye.ataribasic
         3: keyword.dos.ataribasic
@@ -308,10 +308,10 @@ contexts:
       push: expr_start_last
 
     # PRINT #<nexpr>[,;<expr-list>]
-    - match: (\?|PR(INT|(IN?)?.))\s*(#)
+    - match: (\?|PR(IN[T.]|N?.))\s*(#)
       captures:
         1: keyword.print.ataribasic
-        4: support.token.iocb.ataribasic
+        3: support.token.iocb.ataribasic
       push: cmd_print_dev
 
     # PRINT <expr-list>
@@ -320,66 +320,65 @@ contexts:
       push: cmd_print
 
     # LPRINT <expr-list>
-    - match: LP(RINT|(R(IN?)?)?\.)
+    - match: (LP(RINT|(R(IN?)?)?\.))
       scope: keyword.lprint.ataribasic
       push: cmd_print
 
     # INPUT #<nexpr>[,;]<var-list> - Semicolon only on the first
-    - match: (I(NPUT|(N(PU?)?)?\.))\s*(#)
+    - match: (I(NPU[T.]|(NP?)?\.))\s*(#)
       captures:
         1: keyword.input.ataribasic
-        5: support.token.iocb.ataribasic
+        4: support.token.iocb.ataribasic
       push: expr_device
 
     # INPUT <var-list>
-    - match: I(NPUT|(N(PU?)?)?\.)
+    - match: I(NPU[T.]|(NP?)?\.)
       scope: keyword.input.ataribasic
       push: expr_start
 
     # CLOSE #<nexpr>
-    - match: (CL(OSE|(OS?)?\.))\s*(#)
+    - match: (CL(OS[E.]|O?\.))\s*(#)
       captures:
         1: keyword.close.ataribasic
-        4: support.token.iocb.ataribasic
+        3: support.token.iocb.ataribasic
       push: expr_device
 
     # OPEN #<nexpr>,<nexpr>,<nexpr>,<string>
-    - match: (O(PEN|(PE?)?\.))\s*(#)
+    - match: (O(PE[.N]|P?\.))\s*(#)
       captures:
         1: keyword.open.ataribasic
-        4: support.token.iocb.ataribasic
+        3: support.token.iocb.ataribasic
       push: expr_device
 
-    # GET|STATUS #<nexpr>, VAR
-    - match: ((GET)|(NO(TE|T?\.))|(ST(ATUS|(A(TU?)?)?\.)))\s*(#)
+    # GET|PUT|STATUS #<nexpr>, VAR
+    - match: ((GET)|(PUT)|(ST(ATU[S.]|(AT?)?\.)))\s*(#)
       captures:
         2: keyword.get.ataribasic
-        3: keyword.note.ataribasic
-        5: keyword.status.ataribasic
-        9: support.token.iocb.ataribasic
+        3: keyword.put.ataribasic
+        4: keyword.status.ataribasic
+        7: support.token.iocb.ataribasic
       push: expr_device
 
     # XIO <nexpr>,#<nexpr>,<nexpr>,<nexpr>,<string>
-    - match: XIO\b
+    - match: XIO
       scope: keyword.xio.ataribasic
       push: cmd_xio
 
-    # PUT #<nexpr>,<nexpr>
-    - match: (PUT)\s*(#)
+    # NOTE|POINT #<nexpr>,<nexpr>,<nexpr>
+    - match: ((NO(T[E.]|\.))|(P(OIN[T.]|(OI?)?\.)))\s*(#)
       captures:
-        1: keyword.get.ataribasic
-        2: support.token.iocb.ataribasic
+        2: keyword.note.ataribasic
+        4: keyword.point.ataribasic
+        7: support.token.iocb.ataribasic
       push: expr_device
 
-    # PUT #<nexpr>,<nexpr>
-    - match: (P(OINT|(O(IN?)?)?\.))\s*(#)
-      captures:
-        1: keyword.get.ataribasic
-        5: support.token.iocb.ataribasic
-      push: expr_device
+    # COM - A list of variables. Float up to 2 dimensions.
+    - match: COM
+      scope: keyword.com.ataribasic
+      push: cmd_dim_list
 
     # DIM - A list of variables. Float up to 2 dimensions.
-    - match: DIM|COM
+    - match: DIM
       scope: keyword.dim.ataribasic
       push: cmd_dim_list
 
@@ -389,12 +388,12 @@ contexts:
       push: cmd_for
 
     # NEXT VAR
-    - match: N(EXT|(EX?)?\.)
+    - match: N(EX[T.]|E?\.)
       scope: keyword.next.ataribasic
       push: cmd_next
 
     # TRAP <nexpr>
-    - match: T(RAP|(RA?)?\.)
+    - match: T(RA[P.]|R?\.)
       scope: keyword.trap.ataribasic
       push: one_expr
 
@@ -408,27 +407,27 @@ contexts:
     #
 
     # COLOR <nexpr>
-    - match: C(OLOR|(O(LO?)?)?\.)
+    - match: C(OLO[R.]|(OL?)?\.)
       scope: keyword.color.ataribasic
       push: one_expr
 
     # DRAWTO <nexpr>,<nexpr>
-    - match: DR(AWTO|(A(WT?)?)?\.)
+    - match: DR(AWT[O.]|(AW?)?\.)
       scope: keyword.drawto.ataribasic
       push: two_exprs
 
     # GRAPHICS <nexpr> (0-15 |16 |32)
-    - match: GR(APHICS|(A(P(H(IC?)?)?)?)?\.)
+    - match: GR(APHIC[S.]|(A(P(HI?)?)?)?\.)
       scope: keyword.graphics.ataribasic
       push: one_expr
 
     # LOCATE <nexpr>,<nexpr>,<nexpr>
-    - match: LOC(ATE|(AT?)?\.)
+    - match: LOC(AT[E.]|A?\.)
       scope: keyword.locate.ataribasic
       push: three_exprs
 
     # POSITION <nexpr>,<nexpr>
-    - match: POS(ITION|(I(T(IO?)?)?)?\.)
+    - match: POS(ITIO[N.]|(I(TI?)?)?\.)
       scope: keyword.position.ataribasic
       push: two_exprs
 
@@ -438,12 +437,12 @@ contexts:
       push: two_exprs
 
     # SETCOLOR <nexpr>,<nexpr>,<nexpr>
-    - match: SE(TCOLOR|(T(C(O(LO?)?)?)?)?\.)
+    - match: SE(TCOLO[R.]|(T(C(OL?)?)?)?\.)
       scope: keyword.setcolor.ataribasic
       push: three_exprs
 
     # SOUND <nexpr>,<nexpr>,<nexpr>,<nexpr>
-    - match: SO(UND|(UN?)?\.)
+    - match: SO(UN[D.]|U?\.)
       scope: keyword.sound.ataribasic
       push: four_exprs
 
@@ -453,14 +452,14 @@ contexts:
       push: expr_start
 
     # THREE <expr>,<expr>,<expr>
-    - match: THREE
-      scope: keyword.three.ataribasic
-      push: three_exprs
+    #- match: THREE
+    #  scope: keyword.three.ataribasic
+    #  push: three_exprs
 
     # LIST [<string>][,<nexpr>[,<nexpr>]]
     # LIST <nexpr>[,<nexpr>]
     # LIST
-    - match: L(IST|(IS?)?\.)
+    - match: L(IS[T.]|I?\.)
       scope: keyword.list.ataribasic
       push: expr_start
 
@@ -468,7 +467,7 @@ contexts:
     # SAVE <string>
     # ENTER <string>
     # TODO: A string expression only
-    - match: (LO(AD|A?\.))|(S(AVE|(AV?)?\.))|(E(NTER|(N(TE?)?)?\.))
+    - match: (LO(AD|A?\.))|(S(AV[E.]|A?\.))|(E(NTE[R.]|(NT?)?\.))
       captures:
         1: keyword.load.ataribasic
         3: keyword.save.ataribasic
@@ -482,8 +481,12 @@ contexts:
     # GOTO <nexpr>
     # A GOTO should be the last thing on the line
     # so mark an error if any statement follows it
-    - match: G(OTO|(OT?)?\.)
+    - match: G(OT[O.]|O?\.)
       scope: keyword.goto.ataribasic
+      push: expr_start_last
+
+    - match: GO TO
+      scope: keyword.go_to.ataribasic
       push: expr_start_last
 
     # GOSUB <nexpr>
@@ -515,7 +518,7 @@ contexts:
 
     # VAR$( ... <nexpr>[,<nexpr>])
     # VAR$ =
-    - match: (LET)?\s*({{var}}\$)
+    - match: (LE[T.])?\s*({{var}}\$)
       captures:
         1: keyword.let.ataribasic
         2: variable.string.ataribasic
@@ -523,7 +526,7 @@ contexts:
 
     # VAR( ... <nexpr>[,<nexpr>])
     # VAR =
-    - match: (LET)?\s*({{var}})
+    - match: (LE[T.])?\s*({{var}})
       captures:
         1: keyword.let.ataribasic
         2: variable.float.ataribasic
@@ -575,6 +578,7 @@ contexts:
 
     - include: mixin_some_exprs
 
+  # TODO: Line numbers can be expressions
   on_line_list:
     - include: mixin_statement_end
 
@@ -979,7 +983,7 @@ contexts:
     - match: $
       pop: true
 
-    - match: \s*(:)\s*(REM|(RE?)?\.)
+    - match: \s*(:)\s*(RE[M.]|\.)
       captures:
         1: support.token.delimiter.statement.ataribasic
         2: keyword.rem.ataribasic
@@ -1010,7 +1014,7 @@ contexts:
     - match: ':'
       scope: support.token.delimiter.statement.ataribasic
 
-    - match: REM|(RE?)?\.
+    - match: RE[M.]|\.
       scope: keyword.rem.ataribasic marked.dead
       set: cmd_rem
 
@@ -1171,7 +1175,7 @@ contexts:
     # For the ON keyword, experimenting with
     # pushing and popping. The goto/gosub pattern
     # is very simple. In fact, in sum:
-    # ((GOTO)|(SUB))\s*({{flt}})(\s*(,)\s*({{flt}}))*\s*(:|$)
+    # ((GOTO)|(GOSUB))\s*({{flt}})(\s*(,)\s*({{flt}}))*\s*(:|$)
     - match: (GOTO)|(GOSUB)
       captures:
         1: keyword.goto.ataribasic
