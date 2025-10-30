@@ -1,0 +1,1407 @@
+%YAML 1.2
+---
+#  =================>------------<==================
+ # =================( AtariBASIC )==================
+ # =================(     by     )==================
+ # =================( thinkyhead )==================
+ # =================>------------<==================
+ #
+ # A complete AtariBASIC syntax that catches most syntax errors.
+ # Best with "Atari800.tmTheme" + "AtariClassic-Regular" font.
+ #
+ # AtariBASIC is a flat language with no blocks.
+ #
+ # Since there's no standard for displaying Atari's special
+ # ATASCII characters, they should be entered into strings as
+ # decimal escape codes like \125. EXPORT.BAS and IMPORT.BAS
+ # (included with 6502-Tools) will escape/unescape the code.
+ #
+ # I'm working on a Unicode-based solution that will make it
+ # possible to view and enter ATASCII special characters, and
+ # have them converted as part of the build script.
+ #
+ # Note that line-length in AtariBASIC is not constrained to the
+ # editor's 114-character limit. AtariBASIC can parse a line up
+ # to 254 characters in length via the `ENTER "<file>"` command.
+ # Internally, AtariBASIC can store a line up to 255 bytes long
+ # in tokenized form - impossible to make from the BASIC console.
+ #
+ # AtariBASIC has most commands abbreviated, so it's not too
+ # painful to type out. But BASIC is a verbose language without
+ # even binary operators. For any serious retro-programming on
+ # the Atari I recommend using 6502 Assembly Language!
+ #
+#  =============== AtariBASIC quirks ===============
+ #
+ # The tokenizer is not very deep, so some things that seem
+ # natural in modern languages may seem "broken" in BASIC.
+ #
+ #   For example, modifiers can be on values, but not on modifiers:
+ #     Good: - 4, --4, - -4, -(-4)
+ #      Bad: -- 4, --(4)
+ #     Good: -(NOT 1)
+ #      Bad: - NOT 1
+ #
+ # Quirks like these come from AtariBASIC's tokenizer which has
+ # a single current context. When it sees a minus sign after an
+ # operator, where it expects a value or function, it "must" be
+ # negation. Then the next token "must" be a value. If it then sees
+ # an operator, it throws an error. It's not an error, per se, but a
+ # limitation of the parser.
+ #
+ # The limitations of the AtariBASIC parser make the language a
+ # perfect fit for the Sublime/TextMate syntax system. This system
+ # also has no lookahead, a single context, and can only go forward.
+ # So when the Sublime parser hits a dead end due to some ambiguity,
+ # we know AtariBASIC will hit the same dead end and throw an error.
+ #
+#  ============== AtariBASIC keywords ==============
+ #
+ # Operators:
+ # AND       Logical conjunction
+ # NOT       Logical negation
+ # OR        Logical disjunction
+ #
+ # Math Functions:
+ # ABS       Returns the absolute value of a number
+ # ATN       Returns the arctangent of a number
+ # CLOG      Returns the common logarithm of a number
+ # COS       Returns the cosine of a number
+ # EXP       Exponential function
+ # INT       Returns the floor of a number
+ # LEN       Returns the length of a string
+ # LOG       Returns the natural logarithm of a number
+ # RND       Returns a pseudorandom number
+ # SGN       Returns the signum of a number
+ # SIN       Returns the sine of a number
+ # SQR       Returns the square root of a number
+ # VAL       Returns the numeric value of a string
+ #
+ # Memory functions:
+ # ADR       Returns the address in memory of a variable (mostly used for machine code routines stored in variables)
+ # FRE       Returns the amount of free memory in bytes
+ # PEEK      Returns the value at an address in memory
+ # USR       Calls a machine code routine, optionally with parameters
+ #
+ # String functions:
+ # ASC       Returns the ATASCII value of a character
+ # CHR$      Returns a character given an ATASCII value
+ # STR$      Converts a number to string form
+ #
+ # Controller functions:
+ # PADDLE    Returns the position of a paddle controller
+ # PTRIG     Indicates whether a paddle trigger is pressed or not
+ # STICK     Returns a joystick position
+ # STRIG     Indicates whether a joystick trigger is pressed or not
+ #
+ # Trig modes:
+ # DEG       Switches trigonometric functions to compute in degrees (radians is the default mode) (see RAD)
+ # RAD       Switches trigonometric functions to compute in radians (see DEG)
+ #
+ # I/O Commands:
+ # CL.OSE #  Terminates pending transfers (flush) and closes an I/O channel
+ # GET #     Reads one byte from an I/O channel (see PUT)
+ # O.PEN #   Initialises an I/O channel
+ # P.OINT #  Sets the current position on an I/O channel
+ # PUT #     Writes one byte to an I/O channel (see GET)
+ # I.NPUT(#) Retrieves a stream of text from an I/O channel; usually data from keyboard (default), cassette tape or disk
+ # LP.RINT   Prints text to a printer device (same result can be achieved with OPEN, PRINT and CLOSE statements)
+ # NO.TE #   Returns the current position on an I/O channel
+ # PR.INT(#) and ? Writes text to an I/O channel; usually to screen (default), printer, cassette tape or disk (see LPRINT and INPUT)
+ # ST.ATUS # Returns the status of an I/O channel
+ #
+ # Program load and save:
+ # CLOAD     Loads from cassette tape a tokenized program that was saved with CSAVE
+ # CS.AVE    Saves to cassette tape a program in tokenized form with fast method (short inter-record gap on tape) (see CLOAD)
+ # E.NTER    Loads and merges into memory a plain text program from an external device, usually from cassette tape or disk (see LIST)
+ # L.IST     Lists (all or part of) the program to screen (default), printer, disk, cassette tape, or any other external device (see ENTER)
+ # LO.AD     Loads a tokenized program from an external device; usually a cassette tape or disk (see SAVE)
+ # S.AVE     Writes a tokenized program to an external device; usually a cassette tape or disk (see LOAD)
+ #
+ # Looping:
+ # F.OR      Starts a for loop
+ # N.EXT     Continues the next iteration of a FOR loop
+ # STEP      Indicates the increment used in a FOR loop
+ # TO        Indicates the limiting condition in a FOR statement
+ #
+ # Flow Control:
+ # GOS.UB    Jumps to a subroutine at a given line in the program, placing the return address on the stack (see POP and RETURN)
+ # G.OTO     and GO TO  Jumps to a given line in the program. GOTO can be omitted in "IF ... THEN GOTO ..."
+ # ON..GOTO  A computed goto - performs a jump based on the value of an expression
+ # ON..GOSUB A computed gosub - performs a subroutine based on the value of an expression
+ # POP       Removes a subroutine return address from the stack (see GOSUB and RETURN)
+ # RET.URN   Ends a subroutine, effectively branching to the line immediately following the "calling" GOSUB (see GOSUB and POP)
+ # RU.N      Starts execution of a program, optionally loading it from an external device (see LOAD)
+ # T.RAP     Sets to jump to a given program line if an error occurs (TRAP 40000 cancels this order)
+ #
+ # IF .      Executes code depending on whether a condition is true or not
+ #     THEN  Indicates the statements to execute if the condition is true in an IF statement
+ #
+ # Meta control
+ # B.YE      Transfers control to the internal "Self Test" program ("Memo Pad" on early models)
+ # DOS       Transfers control to the Disk Operating System (DOS); if DOS was not loaded, same as BYE
+ # CON.T     Resumes execution of a program after a STOP at the next line number (see STOP)
+ # END       Finishes execution of the program, closes open I/O channels and stops any sound
+ # STO.P     Stops the program, allowing later resumption (see CONT)
+ #
+ # Variable allocation
+ # CLR       Clears variables' memory and program stack
+ # COM       Implementation of MS Basic's COMMON was cancelled. Recognized but the code for DIM is executed instead
+ # DIM       Defines the size of a string or array (see COM)
+ # LE.T      Assigns a value to a variable. LET can be omitted
+ # NEW       Erases the program and all the variables from memory; automatically executed before a LOAD or CLOAD
+ #
+ # Data statements
+ # D.ATA     Stores data in lists of numeric or string values
+ # REA.D     Reads data from a DATA statement
+ # RES.TORE  Sets the position of where to read data from a DATA statement
+ #
+ # Graphics:
+ # C.OLOR    Chooses which logical color to draw in
+ # DR.AWTO   Draws a line to given coordinates
+ # GR.APHICS Sets the graphics mode
+ # LOC.ATE   Stores the logical color or ATASCII character at given coordinates
+ # PL.OT     Draws a point at given coordinates
+ # POS.ITION Sets the position of the graphics cursor
+ # SE.TCOLOR Maps a logical color to a physical color
+ #
+ # Setter:
+ # POK.E     Sets a value at an address in memory
+ #
+ # Sound:
+ # SO.UND    Starts or stops playing a tone on a sound channel (see END)
+ #
+ # Code:
+ # R.EM or . Marks a comment in a program
+ #
+#  ============== AtariBASIC entities ==============
+ #
+ # Values:
+ #   - Literal (float)          1.23
+ #   - Literal String           " hey "
+ #   - Variable (float)         MYVAL
+ #   - Variable (string)        MYSTR$
+ #   - Array Item (float)       MYARR(10,2)
+ #   - Substring (string)       MYSTR$(A,B)
+ #   - Operator (math)          +-*/
+ #   - Operator (logical)       AND
+ #   - Operator (modifier)      -,NOT
+ #   - Function (float/string)  SIN(X)
+ #   - Delimiters               ,;:
+ #
+ # Language constructs:
+ #   - Line number              10
+ #   - Command                  PRINT
+ #   - Expression               1+A+("A"="B")-ASC("0")
+ #   - Arg List                 POKE 33,33
+ #   - Data Literal             THIS , is, ALL,data, 12
+ #   - Printable Expressions    1;2;3+5,"A"="B"
+ #
+ # Composite Entities:
+ #   - Expression. A set of operators and operands.
+ #     Every operator must be followed by an operand
+ #     or else an error is thrown. Likewise, an operand
+ #     cannot be followed by anything other than an
+ #     operator, or an error is thrown.
+ #
+#
+name: AtariBASIC (loose)
+file_extensions:
+  - [lst,ataribas,ataribasic]
+first_line_match: '\d+ (?i:\?|BYE|C(OLOR|L(OSE|OAD|R)|OM|ONT|SAVE)|D(ATA|IM|OS|RAWTO)|EN(TER|D)|FOR|G(ET|O(SUB|TO)|RAPHICS)|IF|INPUT|L(ET|IST|OAD|OCATE|PRINT)|NE(W|XT)|NOTE|ON|OPEN|P(LOT|O(INT|KE|P|SITION)|RINT|UT)|RE(AD|M|STORE|TURN)|RUN|S(AVE|ETCOLOR|OUND|TATUS|TOP)|TRAP)([ :]|$)'
+scope: source.ataribasic
+variables:
+  var: '(?i)[A-Z][A-Z0-9]*'
+  num: '\d+\.\d*(E\d+)?|\.?\d+(E\d+)?'
+  flt: '[-+]?({{num}})'
+
+contexts:
+
+  prototype:
+    - match: \s+
+
+    - match: $
+      pop: true
+
+  # Immediate context to start with
+  main:
+    - meta_include_prototype: false
+    - meta_content_scope: ctx.main.ataribasic
+
+    - match: $
+      pop: true
+
+    # Mark lines that are too long to import
+    - match: ^(.{254})(\S.+?)\s*$
+      captures:
+        1: invalid.warning.line-too-long.ataribasic
+        2: invalid.error.line-too-long.ataribasic
+
+    - match: \s+
+
+    # Existing whole line syntax error
+    - match: ({{flt}})\s*ERROR\s*-.*
+      scope: invalid.error.line.ataribasic
+      push: syntax_error
+
+    # Line number can legally be a floating
+    # number but only the integer will be used
+    - match: '{{flt}}'
+      scope: constant.numeric.line-number.ataribasic
+      push: code_line
+
+    # Start of the line otherwise
+    - match: ;|//|\#
+      push: comment
+      scope: comment.host.ataribasic
+
+    # Start of the line otherwise
+    - match: ''
+      push: code_line
+
+  # Look for a top-level command or variable
+  code_line:
+    - meta_content_scope: ctx.code_line.ataribasic
+
+    # REM will pop back to the immediate context
+    - match: (?i)(RE[M.]|R?\.)
+      scope: keyword.rem.ataribasic
+      set: cmd_rem
+
+    # DATA makes the rest of the line a delimited list of strings
+    - match: (?i)(D(AT[A.]|A?\.))\s*
+      captures:
+        1: keyword.data.ataribasic
+      push: cmd_data
+
+    # RESTORE [<nexpr>]
+    - match: (?i)RES(TOR[E.]|(TO?)?\.)
+      scope: keyword.restore.ataribasic
+      push: expr_start
+
+    # Commands taking no parameters
+    # Some of these should always end the line
+    - match: (CLR)|(CON[T.])|(DEG)|(POP)|(RAD)|(CLOAD)|(CS(AV[E.]|A?\.))
+      captures:
+        1: keyword.clr.ataribasic
+        2: keyword.cont.ataribasic
+        3: keyword.deg.ataribasic
+        4: keyword.pop.ataribasic
+        5: keyword.rad.ataribasic
+        6: keyword.cload.ataribasic
+        7: keyword.csave.ataribasic
+      push: cmd_done
+
+    - match: (B(YE|Y?\.))|(DOS)|(END)|(NEW)|(STO[P.])|(RET(UR[N.]|U?\.))
+      captures:
+        1: keyword.bye.ataribasic
+        3: keyword.dos.ataribasic
+        4: keyword.end.ataribasic
+        5: keyword.new.ataribasic
+        6: keyword.stop.ataribasic
+        7: keyword.return.ataribasic
+      push: line_and_statement_should_end
+
+    # RUN [<string>]
+    - match: RU[N.]
+      scope: keyword.run.ataribasic
+      push: expr_start_last
+
+    # PRINT #<nexpr>[,;<expr-list>]
+    - match: (?i)(\?|PR(IN[T.]|N?.))\s*(#)
+      captures:
+        1: keyword.print.ataribasic
+        3: support.token.iocb.ataribasic
+      push: cmd_print_dev
+
+    # PRINT <expr-list>
+    - match: (?i)\?|PR(INT|(IN?)?\.)
+      scope: keyword.print.ataribasic
+      push: cmd_print
+
+    # LPRINT <expr-list>
+    - match: (?i)(LP(RINT|(R(IN?)?)?\.))
+      scope: keyword.lprint.ataribasic
+      push: cmd_print
+
+    # INPUT #<nexpr>[,;]<var-list> - Semicolon only on the first
+    - match: (?i)(I(NPU[T.]|(NP?)?\.))\s*(#)
+      captures:
+        1: keyword.input.ataribasic
+        4: support.token.iocb.ataribasic
+      push: expr_device
+
+    # INPUT <var-list>
+    - match: (?i)I(NPU[T.]|(NP?)?\.)
+      scope: keyword.input.ataribasic
+      push: expr_start
+
+    # CLOSE #<nexpr>
+    - match: (?i)(CL(OS[E.]|O?\.))\s*(#)
+      captures:
+        1: keyword.close.ataribasic
+        3: support.token.iocb.ataribasic
+      push: expr_device
+
+    # OPEN #<nexpr>,<nexpr>,<nexpr>,<string>
+    - match: (?i)(O(PE[.N]|P?\.))\s*(#)
+      captures:
+        1: keyword.open.ataribasic
+        3: support.token.iocb.ataribasic
+      push: expr_device
+
+    # GET|PUT|STATUS #<nexpr>, VAR
+    - match: (?i)((GET)|(PUT)|(ST(ATU[S.]|(AT?)?\.)))\s*(#)
+      captures:
+        2: keyword.get.ataribasic
+        3: keyword.put.ataribasic
+        4: keyword.status.ataribasic
+        7: support.token.iocb.ataribasic
+      push: expr_device
+
+    # XIO <nexpr>,#<nexpr>,<nexpr>,<nexpr>,<string>
+    - match: (?i)XIO
+      scope: keyword.xio.ataribasic
+      push: cmd_xio
+
+    # NOTE|POINT #<nexpr>,<nexpr>,<nexpr>
+    - match: (?i)((NO(T[E.]|\.))|(P(OIN[T.]|(OI?)?\.)))\s*(#)
+      captures:
+        2: keyword.note.ataribasic
+        4: keyword.point.ataribasic
+        7: support.token.iocb.ataribasic
+      push: expr_device
+
+    # COM - A list of variables. Float up to 2 dimensions.
+    - match: (?i)COM
+      scope: keyword.com.ataribasic
+      push: cmd_dim_list
+
+    # DIM - A list of variables. Float up to 2 dimensions.
+    - match: (?i)DIM
+      scope: keyword.dim.ataribasic
+      push: cmd_dim_list
+
+    # FOR VAR = <nexpr> TO <nexpr>
+    - match: (?i)F(OR|O?\.)
+      scope: keyword.for.ataribasic
+      push: cmd_for
+
+    # NEXT VAR
+    - match: (?i)N(EX[T.]|E?\.)
+      scope: keyword.next.ataribasic
+      push: cmd_next
+
+    # TRAP <nexpr>
+    - match: (?i)T(RA[P.]|R?\.)
+      scope: keyword.trap.ataribasic
+      push: one_expr
+
+    # POKE <nexpr>,<nexpr>
+    - match: (?i)POK[E.]
+      scope: keyword.poke.ataribasic
+      push: two_exprs
+
+    #
+    # Graphics Commands
+    #
+
+    # COLOR <nexpr>
+    - match: (?i)C(OLO[R.]|(OL?)?\.)
+      scope: keyword.color.ataribasic
+      push: one_expr
+
+    # DRAWTO <nexpr>,<nexpr>
+    - match: (?i)DR(AWT[O.]|(AW?)?\.)
+      scope: keyword.drawto.ataribasic
+      push: two_exprs
+
+    # GRAPHICS <nexpr> (0-15 |16 |32)
+    - match: (?i)GR(APHIC[S.]|(A(P(HI?)?)?)?\.)
+      scope: keyword.graphics.ataribasic
+      push: one_expr
+
+    # LOCATE <nexpr>,<nexpr>,<nexpr>
+    - match: (?i)LOC(AT[E.]|A?\.)
+      scope: keyword.locate.ataribasic
+      push: three_exprs
+
+    # POSITION <nexpr>,<nexpr>
+    - match: (?i)POS(ITIO[N.]|(I(TI?)?)?\.)
+      scope: keyword.position.ataribasic
+      push: two_exprs
+
+    # PLOT <nexpr>,<nexpr>
+    - match: (?i)PL(OT|O?\.)
+      scope: keyword.plot.ataribasic
+      push: two_exprs
+
+    # SETCOLOR <nexpr>,<nexpr>,<nexpr>
+    - match: (?i)SE(TCOLO[R.]|(T(C(OL?)?)?)?\.)
+      scope: keyword.setcolor.ataribasic
+      push: three_exprs
+
+    # SOUND <nexpr>,<nexpr>,<nexpr>,<nexpr>
+    - match: (?i)SO(UN[D.]|U?\.)
+      scope: keyword.sound.ataribasic
+      push: four_exprs
+
+    # READ <var-list>
+    - match: (?i)REA[D.]
+      scope: keyword.read.ataribasic
+      push: expr_start
+
+    # THREE <expr>,<expr>,<expr>
+    #- match: THREE
+    #  scope: keyword.three.ataribasic
+    #  push: three_exprs
+
+    # LIST [<string>][,<nexpr>[,<nexpr>]]
+    # LIST <nexpr>[,<nexpr>]
+    # LIST
+    - match: (?i)L(IS[T.]|I?\.)
+      scope: keyword.list.ataribasic
+      push: expr_start
+
+    # LOAD <string>
+    # SAVE <string>
+    # ENTER <string>
+    # TODO: A string expression only
+    - match: (?i)(LO(AD|A?\.))|(S(AV[E.]|A?\.))|(E(NTE[R.]|(NT?)?\.))
+      captures:
+        1: keyword.load.ataribasic
+        3: keyword.save.ataribasic
+        6: keyword.enter.ataribasic
+      push: one_expr
+
+
+    # Control Statements
+
+
+    # GOTO <nexpr>
+    # A GOTO should be the last thing on the line
+    # so mark an error if any statement follows it
+    - match: (?i)G(OT[O.]|O?\.)
+      scope: keyword.goto.ataribasic
+      push: expr_start_last
+
+    - match: (?i)GO TO
+      scope: keyword.go_to.ataribasic
+      push: expr_start_last
+
+    # GOSUB <nexpr>
+    - match: (?i)GOS(UB|U?\.)
+      scope: keyword.gosub.ataribasic
+      push: one_expr
+
+    # ON <nexpr> GOTO <nexpr>,...
+    - match: (?i)ON
+      scope: keyword.on.ataribasic
+      push: cmd_on
+
+    # IF <nexpr> THEN <stmt>
+    - match: (?i)IF
+      scope: keyword.if.ataribasic
+      push: cmd_if
+
+    #
+    # Variable Assignment
+    #
+    # In AtariBASIC any statement starting with a var
+    # must be an assignment (followed by '=').
+    #
+    # In LET scope '=' means 'assign.'
+    # In all others it means 'compare.'
+    #
+
+    # LET is optional. Variable name items follow.
+
+    # VAR$( ... <nexpr>[,<nexpr>])
+    # VAR$ =
+    - match: (?i)(LE[T.])?\s*({{var}}\$)
+      captures:
+        1: keyword.let.ataribasic
+        2: variable.string.ataribasic
+      push: cmd_let
+
+    # VAR( ... <nexpr>[,<nexpr>])
+    # VAR =
+    - match: (?i)(LE[T.])?\s*({{var}})
+      captures:
+        1: keyword.let.ataribasic
+        2: variable.float.ataribasic
+      push: cmd_let
+
+    # Mark anything else as unknown
+    - match: ''
+      set: syntax_error
+
+  cmd_xio:
+    - match: \,
+      scope: support.token.delimiter.list.1.ataribasic
+      set: cmd_xio_part2
+
+    - include: real_expr
+
+    - match: ''
+      set: syntax_error
+
+  cmd_xio_part2:
+    - match: \s*(\#)
+      captures:
+        1: support.token.iocb.ataribasic
+      set: expr_device
+
+    - match: ''
+      set: syntax_error
+
+  # ON...GO first makes sure there's something — anything before the end
+  cmd_on:
+    - meta_scope: ctx.cmd_on.ataribasic
+
+    - match: \s*(:|$|(?i:GOTO|GOSUB)\b)
+      set: syntax_error
+
+    - match: ''
+      set: cmd_on_expr
+
+  cmd_on_expr:
+    # ON...GOTO <float>[,<float>...]
+    - match: (?i)GOTO
+      scope: keyword.on-goto.ataribasic
+      set: on_line_list
+
+    # ON...GOSUB <float>[,<float>...]
+    - match: (?i)GOSUB
+      scope: keyword.on-gosub.ataribasic
+      set: on_line_list
+
+    - include: mixin_some_exprs
+
+  # TODO: Line numbers can be expressions
+  on_line_list:
+    - include: mixin_statement_end
+
+    - match: ({{num}}|{{var}})\s*(\,)?
+      captures:
+        1: constant.numeric.line-number.ataribasic
+        2: support.token.delimiter.list.ataribasic
+
+    - match: '[^\d]'
+      set: syntax_error
+
+  # REM comment uses the whole line
+  cmd_rem:
+    - meta_content_scope: comment.ataribasic
+    - match: $
+      pop: true
+
+  # Host-based comment uses the whole line
+  comment:
+    - meta_content_scope: comment.host.ataribasic
+    - match: $
+      pop: true
+
+  # Data marks the rest of the line as data items:
+  # Simple literal strings delimited by commas
+  cmd_data:
+    - match: $
+      pop: true
+    - match: '([^,]+?)(\s*$)?'
+      scope: entity.literal.string.data.ataribasic
+    - match: \,
+      scope: support.token.delimiter.data.ataribasic
+
+  # A statement known to be completed is marked broken
+  # if any tokens follow before a new statement.
+  cmd_done:
+    - include: mixin_statement_end
+    - match: ''
+      set: syntax_error
+
+  #
+  # LET VAR       = <expr>
+  # LET VAR(X)    = <expr>
+  # LET VAR(X,X)  = <expr>
+  # LET VAR$      = <expr>
+  # LET VAR$(X)   = <expr>
+  # LET VAR$(X,X) = <expr>
+  #
+  cmd_let:
+    - meta_scope: ctx.cmd_let.ataribasic
+
+    - match: \(
+      scope: support.paren.open.subscript.ataribasic
+      push: expr_paren_open
+
+    - match: ''
+      set: cmd_let_equals
+
+  cmd_let_equals:
+    - meta_content_scope: ctx.cmd_let_equals.ataribasic
+
+    - match: =
+      scope: keyword.operator.assignment.ataribasic
+      set: one_expr
+
+    - match: ''
+      set: syntax_error
+
+  # IF <nexpr> THEN <stmt>
+  # Only look for THEN as a keyword within IF
+  # TODO: Smarter expression parsing will allow
+  #       testing for the end of <nexpr> so 'THEN'
+  #       can be required at that point.
+  #       Currently, this filters 'THEN' so it won't
+  #       be seen as part of the expression. But
+  #       'IF THEN=5 THEN THEN=4' is legal code,
+  #       so smart expressions will be better.
+
+  cmd_if:
+    - meta_content_scope: ctx.cmd_if.ataribasic
+
+    # End before expression?
+    - match: \s*:|$
+      set: syntax_error
+
+    # - match: \s*(THEN)\s*({{flt}})
+    #   captures:
+    #     1: keyword.then.ataribasic
+    #     2: constant.numeric.line-number.ataribasic
+    #   set: line_and_statement_should_end
+
+    # - match: \s*(THEN)
+    #   captures:
+    #     1: keyword.then.ataribasic
+    #   pop: true
+
+    # Pops on THEN/GOTO/GOSUB
+    - include: real_expr
+
+    # THEN followed by a line number, line over
+    - match: \s*({{flt}})
+      captures:
+        1: constant.numeric.line-number.ataribasic
+      set: line_and_statement_should_end
+
+    # THEN followed by a statement
+    - match: '.'
+      scope: support.test.ataribasic
+      pop: true
+
+  # Within FOR, look for TO as a keyword
+  cmd_for:
+    - include: mixin_statement_end
+
+    # TO is followed by an expression, so stay
+    - match: (?i)TO
+      scope: keyword.to.ataribasic
+
+    # STEP is followed by an expression
+    - match: STEP
+      scope: keyword.step.ataribasic
+
+    - include: expr_start
+
+  # Within NEXT only a float var is valid
+  cmd_next:
+    - match: '{{var}}'
+      scope: variable.float.ataribasic
+      set: cmd_done
+
+    # Return
+    - match: ''
+      pop: true
+
+  # DIM VAR(EXPR),...
+  cmd_dim_list:
+    - meta_content_scope: ctx.cmd_dim_list.ataribasic
+
+    - include: mixin_statement_end
+
+    - match: \,
+      scope: punctuation.definition.delimiter.list.ataribasic
+
+    # One subscript allowed
+    - match: '{{var}}\$'
+      scope: variable.string.ataribasic
+      push: cmd_dim_subscript
+
+    # Up to 3 subscripts
+    - match: '{{var}}'
+      scope: variable.float.ataribasic
+      push: cmd_dim_subscript
+
+  cmd_dim_subscript:
+    - match: \(
+      scope: support.paren.open.dim.ataribasic
+      push: expr_paren_open
+
+    - match: ''
+      pop: true
+
+  # Rules to match a variable name
+  mixin_variable_name:
+    - match: '{{var}}\$'
+      scope: variable.string.ataribasic
+      push: var_eat_subscript
+
+    - match: '{{var}}'
+      scope: variable.float.ataribasic
+      push: var_eat_subscript
+
+  var_eat_subscript:
+    - meta_scope: ctx.var_eat_subscript.ataribasic
+
+    - match: \(
+      scope: support.paren.open.subscript.ataribasic
+      push: expr_paren_open
+
+    - match: ''
+      pop: true
+
+  # Rules to match all known value types
+  # Always use last so the last reject rule here works
+  mixin_values:
+
+    # Lower-case is forbidden
+    #- match: '[a-z\$\%]'
+    #  set: syntax_error
+
+      # TODO: Enter functions with \s*(\() push expr_paren_open
+    - match: '(?i)CHR\$'
+      scope: meta.function-call.chrS.ataribasic
+      push: required_args
+    - match: '(?i)STR\$'
+      scope: meta.function-call.str.ataribasic
+      push: required_args
+
+    # FRE takes a numerical expression
+    # Meanwhile a var named "FRE" is ok
+    - match: (?i)(FRE)|(USR)|(ABS)|(ADR)|(ASC)|(ATN)|(CLOG)|(COS)|(EXP)|(INT)|(LEN)|(LOG)|(PEEK)|(RND)|(SGN)|(SIN)|(SQR)|(VAL)|(PADDLE)|(PTRIG)|(STICK)|(STRIG)
+      captures:
+        1: meta.function-call.fre.ataribasic
+        2: meta.function-call.usr.ataribasic
+        3: meta.function-call.abs.ataribasic
+        4: meta.function-call.adr.ataribasic
+        5: meta.function-call.asc.ataribasic
+        6: meta.function-call.atn.ataribasic
+        7: meta.function-call.clog.ataribasic
+        8: meta.function-call.cos.ataribasic
+        9: meta.function-call.exp.ataribasic
+        10: meta.function-call.int.ataribasic
+        11: meta.function-call.len.ataribasic
+        12: meta.function-call.log.ataribasic
+        13: meta.function-call.peek.ataribasic
+        14: meta.function-call.rnd.ataribasic
+        15: meta.function-call.sgn.ataribasic
+        16: meta.function-call.sin.ataribasic
+        17: meta.function-call.sqr.ataribasic
+        18: meta.function-call.val.ataribasic
+        19: meta.function-call.paddle.ataribasic
+        20: meta.function-call.ptrig.ataribasic
+        21: meta.function-call.stick.ataribasic
+        22: meta.function-call.strig.ataribasic
+      push: required_args
+
+    - match: '{{flt}}'
+      scope: constant.numeric.float.ataribasic
+
+    - include: mixin_variable_name
+
+  # TODO: Function requires parentheses or the line breaks
+  required_args:
+    # Consume whitespace
+    - match: '\('
+      scope: support.paren.open.func.ataribasic
+      set: expr_paren_open
+
+    - match: ''
+      set: syntax_error
+
+  # Grab bag of operators for the dumb expression
+  # parser
+  mixin_operators:
+    - match: \,
+      scope: support.token.delimiter.list.ataribasic
+
+    - match: ([-+*/^])
+      scope: keyword.operator.math.ataribasic
+
+    - match: (<>|[<>]=?|=|AND|NOT|OR)
+      scope: keyword.operator.logic.ataribasic
+
+  # For the general case, mark the device id,
+  # then parse a series of expression items
+  expr_device:
+    - match: ({{flt}})?
+      scope: constant.numeric.device-id.ataribasic
+      set: expr_start
+
+  # For top-level expressions a closing
+  # parenthesis breaks the rest of the line.
+  mixin_top_expr:
+    - include: mixin_string
+
+    - match: \(
+      scope: support.paren.open.expr.ataribasic
+      push: expr_paren_open
+    - match: \)
+      set: syntax_error
+
+    # Consume separators and operators
+    - include: mixin_operators
+
+    # Consume values
+    - include: mixin_values
+
+  # Start a top-level expression.
+  expr_start:
+    - meta_content_scope: ctx.expr_start.ataribasic
+
+    # Return if statement ends
+    - include: mixin_statement_end
+
+    # Handle as a top-level expression
+    - include: mixin_top_expr
+
+  # Start a top-level expression that must end the line
+  # TODO: Make smarter about parsing the expression so
+  #       it can use line_should_end. Currently this just
+  #       takes over the line and marks the next statement.
+  expr_start_last:
+    - meta_content_scope: ctx.expr_start_last.ataribasic
+
+    # Handle as a top-level expression
+    - include: mixin_top_expr
+
+    # Statement end? Mark the line dead
+    - match: ':'
+      scope: support.token.delimiter.statement.ataribasic
+      set: dead_code
+
+  # An expression already within at least one parenthesis
+  # so it has a rule to pop on closing ")".
+  expr_paren_open:
+    - meta_content_scope: ctx.expr_paren_open.ataribasic
+
+    # Handle strings and parentheses
+    - include: mixin_containers
+
+    # Handle values
+    - include: mixin_values
+
+    # Handle operators
+    - include: mixin_operators
+
+    # No closing parenthesis before the statement ends?
+    - match: '[^)]*(;:|$)'
+      set: syntax_error
+
+  # PRINT #n - Mark the device id, if present.
+  # Always just go to cmd_print, even if missing
+  # so the expression can be tested
+  # TODO: Require a numeric expression
+  cmd_print_dev:
+    - match: ({{flt}})?
+      scope: constant.numeric.device-id.ataribasic
+      set: cmd_print
+
+  # A string opener that pushes quoted_string
+  mixin_string:
+    - match: \"
+      scope: punctuation.definition.string.open.ataribasic
+      push: quoted_string
+
+  # PRINT - Expressions separated by commas and semicolons
+  # Currently not very smart. Expression evaluation will
+  # make it smarter.
+  cmd_print_old:
+    - meta_content_scope: ctx.cmd_print_old.ataribasic
+
+    # Return if the statement ends
+    - include: mixin_statement_end
+
+    # Consume a parenthesized expression
+    - match: \(
+      scope: support.paren.open.dim.ataribasic
+      push: expr_paren_open
+    - match: \)
+      set: syntax_error
+
+    # Consume a string
+    - include: mixin_string
+
+    # Consume the concatenator
+    - match: ;
+      scope: support.token.delimiter.concat.ataribasic
+
+    # Consume commas and other operators
+    - include: mixin_operators
+
+    # Consume values
+    - include: mixin_values
+
+  # PRINT - Expressions separated by commas and semicolons
+  # Currently not very smart. Expression evaluation will
+  # make it smarter.
+  cmd_print:
+    - meta_content_scope: ctx.cmd_print.ataribasic
+
+    # Return if the statement ends
+    - include: mixin_statement_end
+
+    # Consume the concatenator
+    - match: ;
+      scope: support.token.delimiter.concat.ataribasic
+
+    - match: \,
+      scope: support.token.delimiter.tab.ataribasic
+
+    - include: real_expr
+
+  # On Atari there's no escaping a string.
+  # Strings may legally be quite long, with
+  # escape characters in them, etc., by hacking
+  # the BASIC language.
+  quoted_string:
+    - meta_scope: string.quoted.ataribasic
+    - match: '[^"]*$'
+      set: syntax_error
+    - match: \"
+      scope: punctuation.definition.string.close.ataribasic
+      pop: true
+
+  # Everything after this point is broken by a syntax error
+  syntax_error:
+    - meta_scope: invalid.error.syntax.ataribasic
+    - match: $
+      pop: true
+
+  # Not currently in use
+  line_should_end:
+    - match: $
+      pop: true
+
+    - match: (?i)\s*(:)\s*(RE[M.]|\.)
+      captures:
+        1: support.token.delimiter.statement.ataribasic
+        2: keyword.rem.ataribasic
+      set: cmd_rem
+
+    - match: \S.*
+      set: dead_code
+
+  # A statement should end after its last parameter
+  statement_should_end:
+    - match: ':'
+      pop: true
+
+    - match: ''
+      set: syntax_error
+
+  # A statement might also want to end the line
+  line_and_statement_should_end:
+    - match: ':'
+      scope: support.token.delimiter.statement.ataribasic
+      set: dead_code
+
+    - match: ''
+      set: syntax_error
+
+  # Other than REM lines, mark the background with "warning" color.
+  dead_code:
+    - match: ':'
+      scope: support.token.delimiter.statement.ataribasic
+
+    - match: (?i)RE[M.]|\.
+      scope: keyword.rem.ataribasic marked.dead
+      set: cmd_rem
+
+    - match: ''
+      set: marked_dead
+
+  marked_dead:
+    - meta_scope: invalid.warning.dead-code.ataribasic
+
+    - include: code_line
+
+  # real_expr Wants a proper expression or it throws syntax error
+  # So we start an expression, first we want a modifier or a value.
+  # If we don't find either of those then the expression is moot.
+  # However, if we do find them, then we must mark them here also,
+  # and change the context so that an operator is next required.
+  # (Later it will be possible to tell whether strings in a float
+  #  context are converting to float).
+  real_expr:
+
+    - include: mixin_statement_end
+
+    - match: ''
+      push: expr_eat_modifier
+
+  # Tag a modifier
+  expr_eat_modifier:
+    - meta_content_scope: ctx.expr_eat_modifier.ataribasic
+
+    - match: '{{flt}}'
+      scope: constant.numeric.float.ataribasic
+      set: expr_wants_operator
+
+    - match: (?i)(NOT)|(-)|(\+)
+      captures:
+        1: keyword.operator.logic.ataribasic
+        2: keyword.operator.negative.ataribasic
+        3: keyword.operator.positive.ataribasic
+      set: expr_2nd_modifier
+
+    - match: ''
+      set: expr_wants_value
+
+  expr_2nd_modifier:
+    - meta_content_scope: ctx.expr_2nd_modifier.ataribasic
+
+    - match: '{{flt}}'
+      scope: constant.numeric.float.ataribasic
+      set: expr_wants_operator
+
+    - match: (?i)NOT|[-+]
+      set: syntax_error
+
+    - match: ''
+      set: expr_wants_value
+
+  # Expression wants a value
+  expr_wants_value:
+    - meta_content_scope: ctx.expr_wants_value.ataribasic
+
+      # TODO: Enter functions with \s*(\() push expr_paren_open
+    - match: '(?i)CHR\$'
+      scope: meta.function-call.chrS.ataribasic
+      set: [expr_wants_operator, required_args]
+    - match: '(?i)STR\$'
+      scope: meta.function-call.str.ataribasic
+      set: [expr_wants_operator, required_args]
+
+    # FRE takes a numerical expression
+    # Meanwhile a var named "FRE" is ok
+    - match: (?i)(FRE)|(USR)|(ABS)|(ADR)|(ASC)|(ATN)|(CLOG)|(COS)|(EXP)|(INT)|(LEN)|(LOG)|(PEEK)|(RND)|(SGN)|(SIN)|(SQR)|(VAL)|(PADDLE)|(PTRIG)|(STICK)|(STRIG)
+      captures:
+        1: meta.function-call.fre.ataribasic
+        2: meta.function-call.usr.ataribasic
+        3: meta.function-call.abs.ataribasic
+        4: meta.function-call.adr.ataribasic
+        5: meta.function-call.asc.ataribasic
+        6: meta.function-call.atn.ataribasic
+        7: meta.function-call.clog.ataribasic
+        8: meta.function-call.cos.ataribasic
+        9: meta.function-call.exp.ataribasic
+        10: meta.function-call.int.ataribasic
+        11: meta.function-call.len.ataribasic
+        12: meta.function-call.log.ataribasic
+        13: meta.function-call.peek.ataribasic
+        14: meta.function-call.rnd.ataribasic
+        15: meta.function-call.sgn.ataribasic
+        16: meta.function-call.sin.ataribasic
+        17: meta.function-call.sqr.ataribasic
+        18: meta.function-call.val.ataribasic
+        19: meta.function-call.paddle.ataribasic
+        20: meta.function-call.ptrig.ataribasic
+        21: meta.function-call.stick.ataribasic
+        22: meta.function-call.strig.ataribasic
+      set: [expr_wants_operator, required_args]
+
+    - match: \(
+      scope: support.paren.open.ataribasic
+      set: expr_till_close
+
+    - match: \"
+      scope: punctuation.definition.string.open.ataribasic
+      set: expr_eat_string
+
+    # - match: '-+]?(\d+\.\d*|\.?\d+)'
+    #   set: marked_dead
+
+    - match: '{{flt}}'
+      scope: variable.float.ataribasic
+      set: expr_wants_operator
+
+    # Flag these variable names as errors, as the
+    # BASIC parser also does so (in expression context)
+    - match: (?i)THEN|GOTO|GOSUB
+      scope: invalid.error.reserved-word.ataribasic
+      set: syntax_error
+
+    - match: '{{var}}\$'
+      scope: variable.string.ataribasic
+      set: expr_eat_subscript
+
+    - match: '{{var}}'
+      scope: variable.float.ataribasic
+      set: expr_eat_subscript
+
+    - match: ''
+      set: syntax_error
+
+  # Expression wants an operator
+  # If one is not found the expression is done, so pop
+  expr_wants_operator:
+    - meta_content_scope: ctx.expr_wants_operator.ataribasic
+
+    - match: (?i)((<>|[<>]=|[-+*/^<=>]|AND|OR)\s*(:|$))
+      set: syntax_error
+
+    - match: '[-+*/^]'
+      scope: keyword.operator.math.ataribasic
+      set: expr_eat_modifier
+
+    - match: (?i)<>|[<>]=?|=|AND|OR
+      scope: keyword.operator.logic.ataribasic
+      set: expr_eat_modifier
+
+    # Handle THEN <line> here, since pop will go
+    # back to cmd_if. Caveat: THEN will be treated
+    # as a keyword in every expression
+    - match: (?i)(THEN)\s*({{flt}})
+      captures:
+        1: keyword.then.ataribasic
+        2: constant.numeric.line-number.ataribasic
+      set: line_and_statement_should_end
+
+    - match: (?i)THEN
+      scope: keyword.then.ataribasic
+      set: code_line
+
+    # For the ON keyword, experimenting with
+    # pushing and popping. The goto/gosub pattern
+    # is very simple. In fact, in sum:
+    # ((GOTO)|(GOSUB))\s*({{flt}})(\s*(,)\s*({{flt}}))*\s*(:|$)
+    - match: (?i)(GOTO)|(GOSUB)
+      captures:
+        1: keyword.goto.ataribasic
+        2: keyword.gosub.ataribasic
+      pop: true
+
+    - match: ({{var}})|({{flt}})|\(
+      set: syntax_error
+
+    - match: ''
+      pop: true
+
+  # Expression wants a comparison operator
+  #
+  # Needed for a string in a numeric context. Consider:
+  #   A+""    :. is a syntax error, but
+  #   A+A$="" :. gives a numeric result
+  #
+  # If one is not found the expression is done, so pop
+  expr_wants_comparison:
+    - meta_content_scope: ctx.expr_wants_comparison.ataribasic
+
+    - match: (<>|[<>]=?|=)\s*(:|$)
+      set: syntax_error
+
+    - match: <>|[<>]=?|=
+      scope: keyword.operator.logic.ataribasic
+      set: expr_eat_modifier
+
+    # Handle THEN <line> here, since pop would go
+    # back to cmd_if. Caveat: THEN will be treated
+    # as a keyword in every expression.
+    # This syntax discourages the use of these
+    # keywords as variable names.
+    - match: (?i)(THEN)\s*({{flt}})
+      captures:
+        1: keyword.then.ataribasic
+        2: constant.numeric.line-number.ataribasic
+      set: line_and_statement_should_end
+
+    - match: (?i)THEN
+      scope: keyword.then.ataribasic
+      set: code_line
+
+    - match: (?i)(GOTO)|(GOSUB)
+      captures:
+        1: keyword.goto.ataribasic
+        2: keyword.gosub.ataribasic
+      pop: true
+
+    - match: ({{var}})|({{flt}})|\(
+      set: syntax_error
+
+    - match: ''
+      pop: true
+
+  # Consume the subscript on a variable
+  expr_eat_subscript:
+    - meta_content_scope: ctx.expr_eat_subscript.ataribasic
+
+    - match: \s*(\()
+      captures:
+        1: support.paren.open.subscript.ataribasic
+      set: expr_till_close
+
+    - match: ''
+      set: expr_wants_operator
+
+  # Consume the subscript on a variable
+  expr_eat_string:
+    - meta_scope: string.quoted.ataribasic
+
+    - match: $
+      pop: true
+
+    - match: '[^"]*(")'
+      captures:
+        1: punctuation.definition.string.close.ataribasic
+      set: expr_wants_operator
+
+    - match: ''
+      set: syntax_error
+
+  # An enclosed expression. Comma delimited. No items limit.
+  expr_till_close:
+    - meta_content_scope: ctx.expr_till_close.ataribasic
+
+    - match: '[^)]*(;:|$)'
+      set: syntax_error
+
+    # Return if the statement ends
+    - include: mixin_statement_end
+
+    # Closing the group? Then an operator is next.
+    - match: \)
+      scope: support.paren.close.subscript.ataribasic
+      set: expr_wants_operator
+
+    # Expression followed by a comma? Tag it.
+    - match: \,
+      scope: support.token.delimiter.subscripts.ataribasic
+
+    # Push the expression chain so it pops back here.
+    - match: ''
+      push: expr_eat_modifier
+
+  # Consume a float variable
+  expr_wants_float:
+    - meta_content_scope: ctx.expr_wants_float.ataribasic
+
+    - match: '{{var}}\$'
+      set: syntax_error
+
+    - match: '{{var}}'
+      scope: variable.float.ataribasic
+      set: expr_eat_subscript
+
+    - match: '{{flt}}'
+      scope: constant.numeric.float.ataribasic
+      set: expr_wants_operator
+
+    - match: ''
+      set: syntax_error
+
+  # Expression wants a string
+  expr_wants_string:
+    - match: '{{var}}\$'
+      scope: variable.string.ataribasic
+      set: expr_wants_operator
+
+    - include: mixin_string
+
+    - match: ''
+      set: syntax_error
+
+  # String group and expression group
+  # to be used inside parentheses only
+  mixin_containers:
+    - include: mixin_string
+
+    - match: \(
+      scope: support.paren.open.expr.ataribasic
+      push: expr_paren_open
+    - match: \)
+      scope: support.paren.close.ataribasic
+      pop: true
+
+  mixin_some_exprs:
+    - include: mixin_statement_end
+
+    - include: mixin_string
+
+    - match: (?i)(<>|[<>]=?|=|AND|NOT|OR)
+      scope: keyword.operator.logic.ataribasic
+
+    - include: mixin_values
+
+    - match: \(
+      scope: support.paren.open.expr.ataribasic
+      push: expr_paren_open
+    - match: \)
+      set: syntax_error
+
+    - match: '[:$]'
+      set: syntax_error
+
+    - match: ([-+*/^])
+      scope: keyword.operator.math.ataribasic
+
+  one_expr:
+    # Statement ends before... anything?
+    - match: '\s*([,;:]|$)'
+      set: syntax_error
+
+    - match: ''
+      set: real_expr
+
+  two_exprs:
+    - meta_content_scope: ctx.two_exprs.ataribasic
+
+    # A comma must follow before statement end
+    - match: \s*:|$
+      set: syntax_error
+
+    - match: \s*(,)
+      captures:
+        1: support.token.delimiter.list.1.ataribasic
+      set: one_expr
+
+    - include: real_expr
+
+  three_exprs:
+    - meta_content_scope: ctx.three_exprs.ataribasic
+
+    # A comma must follow before statement end
+    - match: \s*:|$
+      set: syntax_error
+
+    - match: \s*(,)
+      captures:
+        1: support.token.delimiter.list.2.ataribasic
+      set: two_exprs
+
+    - include: real_expr
+
+  four_exprs:
+    - meta_content_scope: ctx.four_exprs.ataribasic
+
+    # A comma must follow before statement end
+    - match: \s*:|$
+      set: syntax_error
+
+    - match: \s*(,)
+      captures:
+        1: support.token.delimiter.list.3.ataribasic
+      set: three_exprs
+
+    - include: real_expr
+
+  # Mix-in to pop the context if the statement ends.
+  mixin_statement_end:
+    # Stray statement delimiter is an error
+    - match: :\s*$
+      set: syntax_error
+
+    # Statement end? Return.
+    - match: :|$
+      scope: support.token.delimiter.statement.ataribasic
+      pop: true
