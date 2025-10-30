@@ -21,7 +21,7 @@
 #
 name: bAtariBASIC
 file_extensions:
-  - [bas]
+  - [bas,bbas,batari]
 first_line_match: ' (rem|set) .*'
 scope: source.batari
 variables:
