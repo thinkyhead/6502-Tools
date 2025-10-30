@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 basic.py - AtariBASIC language tokenizer and interpreter
 
@@ -47,19 +47,28 @@ from atascii import atascii_to_unicode_str, unicode_to_atascii_str
 
 DEBUG_CODE = False
 args_abbrev = False
+args_colorify = False
+list_colorify = False
 
 # ANSI color formatting
 # black, grey, red, green, yellow, blue, magenta, cyan, light_..., white
 DARK_MODE = False
-def color_print(text, color):
+def color_print(text, color, end=None):
     if DARK_MODE:
        if color == 'black': color = 'white'
        elif not (color.startswith('light_') or color == 'white'):
            color = 'light_' + color
-    elif color == 'white':
-        color = 'black'
+    #elif color == 'white':
+    #    color = 'black'
 
-    print(colored(text, color))
+    print(colored(text, color), end=end)
+
+# Colorize only if the flag is set
+def colorize(text, color=None, end=None):
+    if list_colorify and color:
+        color_print(text, color, end=end)
+    else:
+        print(text, end=end)
 
 # Symbols used by the original tokenizer:
 
@@ -216,8 +225,15 @@ def handle_LOAD() -> None:
 
 def handle_LIST() -> None:
     """Handle the LIST command."""
+    """TODO: Handle one or two line number arguments"""
     print()
-    list_program()
+    list_program(abbrev=args_abbrev)
+
+def handle_CLIST() -> None:
+    """List the program with syntax highlighting."""
+    """TODO: Handle one or two line number arguments"""
+    print()
+    list_program(abbrev=args_abbrev, colorify=True)
 
 def handle_SAVE() -> None:
     """Handle the SAVE command."""
@@ -241,6 +257,7 @@ COMMAND_HANDLERS: Dict[str, Callable[[], None]] = {
     "NEW":   handle_NEW,
     "LOAD":  handle_LOAD,
     "LIST":  handle_LIST,
+    "CLIST": handle_CLIST,
     "SAVE":  handle_SAVE,
     "DOS":   handle_DOS,
     "BYE":   handle_BYE,
@@ -315,9 +332,18 @@ def variable_name(token):
 # BASIC listing
 # --------------------------------------------------------------------------- #
 
+def _colour_for_token(tok_type: str) -> str:
+    """Return the ANSI colour name for a token type."""
+    return {
+        'command':  'light_green',
+        'number':   'white',
+        'string':   'light_blue',
+        'variable': 'yellow',
+    }[tok_type]
+
 def emit_arg_rest_of_line(start, end):
     """The command argument is the rest of the line"""
-    print(atascii_to_unicode_str(statement_table[start:end]), end='')
+    colorize(atascii_to_unicode_str(statement_table[start:end]), 'yellow', end='')
     pass
 
 def op_func_string(atok):
@@ -356,7 +382,7 @@ def emit_token_at_index(i):
 
     # VARIABLE ID
     if atok & 0x80:
-        print(variable_name(atok), end='')
+        colorize(variable_name(atok), color='yellow', end='')
         return 1
 
     # 20 End of Statement
@@ -376,24 +402,21 @@ def emit_token_at_index(i):
     if atok == 0x0E:
         bcd_bytes = statement_table[i:i+6]
         bcd_value = decode_bcd(bcd_bytes)
-        print(bcd_value, end='')
+        colorize(bcd_value, color='white', end='')
         return 7
 
     # 15 String Literal, Next byte is length
     if atok == 0x0F:
         strlen = statement_table[i]
         str_bytes = statement_table[i+1:i+1+strlen]
-        print('"' + atascii_to_unicode_str(str_bytes) + '"', end='')
+        colorize('"' + atascii_to_unicode_str(str_bytes) + '"', color='light_blue', end='')
         return strlen + 2
 
     # Other operators and functions
-    print(op_func_string(atok), end='')
+    colorize(op_func_string(atok), color='green', end='')
     return 1
 
-def list_program_abbrev(start=0, end=32767):
-    list_program(start, end, True)
-
-def list_program(start=0, end=32767, abbrev=args_abbrev):
+def list_program(start=0, end=32767, abbrev=args_abbrev, colorify=None):
     """
     Implement the LIST command to list the program in human-readable form.
     For 'abbrev' output abbreviated commands (e.g., "D." rather than "DATA")
@@ -408,6 +431,10 @@ def list_program(start=0, end=32767, abbrev=args_abbrev):
 
     # Start at the first byte of the program
     i = 0
+
+    # Global state during listing
+    global list_colorify
+    list_colorify = colorify if colorify else args_colorify
 
     # Loop through the program's lines
     while True:
@@ -429,7 +456,7 @@ def list_program(start=0, end=32767, abbrev=args_abbrev):
         #print(lineno, end=' ')
 
         if DEBUG_CODE: print(f"{{{line_len}}}", end='')
-        print(f"{lineno}", end=' ')
+        colorize(f"{lineno}", color='white', end=' ')
 
         # Skip to the first statement
         i += 3
@@ -441,10 +468,13 @@ def list_program(start=0, end=32767, abbrev=args_abbrev):
             if DEBUG_CODE: print(f"{{{st_off}}}", end='')
             next_st = thisline + st_off
 
-            # Get the command token and print the command
+            # Get the command token
             cmd_tok = statement_table[i+1]
             if DEBUG_CODE: print(f"<{cmd_tok:02X}>", end='')
-            print(string_for_command_token(cmd_tok, abbrev), end=qsp)
+
+            # Print the command (if it's not "implied LET")
+            tstr = string_for_command_token(cmd_tok, abbrev)
+            if tstr != "": colorize(tstr, color='green', end=qsp)
 
             i += 2
 
@@ -475,6 +505,8 @@ def list_program(start=0, end=32767, abbrev=args_abbrev):
 
         print()
         if i >= len(statement_table): break
+
+    list_colorify = False
 
 # --------------------------------------------------------------------------- #
 # BASIC tokenization
@@ -532,10 +564,7 @@ def save_program(outpath, asListing=False, abbrev=args_abbrev):
     if asListing:
         oldout = sys.stdout
         sys.stdout = f
-        if abbrev:
-            list_program_abbrev()
-        else:
-            list_program()
+        list_program(abbrev=abbrev)
         sys.stdout = oldout
     else:
         buffer = consolidate_tokenized_program()
@@ -737,6 +766,11 @@ def load_file_LST(inpath):
     pass
 
 def main():
+    # Requires Python 3
+    if sys.version_info[0] < 3:
+        print("This script requires Python 3")
+        sys.exit(1)
+
     """
     Parse input arguments and decide where to route the program next.
     - If there is an 'infile' argument tokenize all the file's lines.
@@ -753,6 +787,7 @@ def main():
         usage="basic.py [-l|--list] [-o|--output <outfile>] [infile]"
     )
     parser.add_argument('-l', '--list', action="store_true", help='Just list the program and exit.')
+    parser.add_argument('-c', '--clist', action="store_true", help='List the colorized program and exit.')
     parser.add_argument('-a', '--abbrev', action="store_true", help='Produce an abbreviated listing.')
     parser.add_argument('-s', '--struct', action="store_true", help='Display structured output.')
     parser.add_argument('-t', '--tvars', action="store_true", help='Print the VNT and VVT tables.')
@@ -764,6 +799,7 @@ def main():
     if not args.infile:
         if args.output: parser.error("The '-o/--output' option requires an input file.")
         if args.list: parser.error("The '-l/--list' option requires an input file.")
+        if args.clist: parser.error("The '-c/--clist' option requires an input file.")
         if args.tvars: parser.error("The '-t/--tvars' option requires an input file.")
 
     # Display listings with abbreviated keywords, minimal whitespace
@@ -773,6 +809,12 @@ def main():
     # Display listings in a structured format
     global args_struct
     if args.struct: args_struct = True
+
+    # Display listings in color
+    global args_colorify
+    if args.clist:
+        args.list = True
+        args_colorify = True
 
     # ----- Init BASIC data and state -----
 
@@ -791,10 +833,7 @@ def main():
         elif args.list:
             print()
             if args.tvars: print_variable_tables()
-            if args_abbrev:
-                list_program_abbrev()
-            else:
-                list_program()
+            list_program(abbrev=args_abbrev)
             print()
             exit(0)
         elif args.tvars:
