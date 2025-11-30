@@ -70,44 +70,6 @@ def colorize(text, color=None, end=None):
     else:
         print(text, end=end)
 
-# Symbols used by the original tokenizer:
-
-# LOMEM (80, 81) points to this 256 byte buffer (at the end of OS RAM):
-tokenized_line = []
-
-# VNTP (82, 83) points to the Variable Name Table start
-# VNTD (84, 85) points to the Variable Name Table end (or a dummy "\0" byte)
-# Entries can be indexed by the variable ID & 0x7F
-variable_name_table = []
-
-# VVTP (86, 87) points to the Variable Value Table start
-# Each entry is 8 bytes long and depends on the type:
-# Scalar: | 00    | Var# ||       6 byte BCD        |
-# Array:  | 40/41 | Var# || valoffs || dim1 || dim2 |
-# String: | 80/81 | Var# || valoffs || len  || dim  |
-variable_value_table = []
-
-# STMTAB (88, 89) points the Statement Table containing the Tokenized Program and Tokenized Immediate Line.
-statement_table = []
-immediate_line = None
-
-# STMCUR points to the current statement during Program Execution.
-# In Interactive Mode it points to the start of the Immediate Line.
-current_statement = immediate_line
-
-# STARP (8C, 8D) points to the string/array buffer
-strings_and_arrays = []
-
-# RUNSTK (8E, 8F) points to the BASIC runtime stack used for GOSUB/RETURN and FOR/NEXT. (And POP)
-# A GOSUB entry is 4 bytes: | 0 || lineno || stoffs |
-# A FOR entry is 16 bytes:
-#   0: limit BCD, 6: step BCD, 12: var ID, 13: lineno, 14: stoffs
-program_stack = []
-
-# MEMTOP (90, 91) points to the end of the BASIC program.
-# Atari BASIC programs will often use the RAM between this address and HIMEM (2E5, 2E6) on real machines.
-#program_end = None
-
 # --------------------------------------------------------------------------- #
 # Static lookup Tables
 # --------------------------------------------------------------------------- #
@@ -277,6 +239,122 @@ cLOG    = 0x4B  # LOG()
 cCLOG   = 0x4C  # CLOG()
 cSQR    = 0x4D  # SQR()
 cSGN    = 0x4E  # SGN()
+
+class Program:
+    """
+    Encapsulates an Atari BASIC program: the VNT, VVT, ST,
+    runtime stack, and all helper methods for loading, listing,
+    tokenising, etc.
+    """
+    def __init__(self) -> None:
+        # --- Core program data ---------------------------------------------
+
+        # VNTP (82, 83) points to the Variable Name Table start
+        # VNTD (84, 85) points to the Variable Name Table end (or a dummy "\0" byte)
+        # Entries can be indexed by the variable ID & 0x7F
+        self.variable_name_table: List[str] = []
+
+        # VVTP (86, 87) points to the Variable Value Table start
+        # Each entry is 8 bytes long and depends on the type:
+        # Scalar: | 00    | Var# ||       6 byte BCD        |
+        # Array:  | 40/41 | Var# || valoffs || dim1 || dim2 |
+        # String: | 80/81 | Var# || valoffs || len  || dim  |
+        self.variable_value_table: List[Dict] = []   # entries are dicts
+
+        # STMTAB (88, 89) points the Statement Table containing the Tokenized Program and Tokenized Immediate Line.
+        # Each statement is variable length, with the following format:
+        # 00-01 : Line Number in 16 bit little endian format
+        #    02 : Offset to the next line from the start of this line
+        # 03-?? : Statements with their own offsets, end markers, etc.
+        self.statement_table: bytearray = bytearray()
+
+        # Statements could be split up by line for easier insertion of new statements
+        # whereas the original tokenizer expands and contracts each buffer as needed
+        self.program_statements: Dict = {}
+
+        # STARP (8C, 8D) points to the string/array buffer
+        self.strings_and_arrays: bytearray = bytearray()
+
+        # --- Runtime state --------------------------------------------------
+
+        # RUNSTK (8E, 8F) points to the BASIC runtime stack used for GOSUB/RETURN and FOR/NEXT. (And POP)
+        # A GOSUB entry is 4 bytes: | 0 || lineno || stoffs |
+        # A FOR entry is 16 bytes:
+        #   0: limit BCD, 6: step BCD, 12: var ID, 13: lineno, 14: stoffs
+        self.program_stack: List[int] = []          # GOSUB/RETURN, FOR/NEXT
+
+        # MEMTOP (90, 91) points to the end of the BASIC program.
+        # Atari BASIC programs will often use the RAM between this address and HIMEM (2E5, 2E6) on real machines.
+        #self.program_end = None
+
+        # STMCUR points to the current statement during Program Execution.
+        # In Interactive Mode it points to the start of the Immediate Line.
+        self.current_statement: int | None = None   # offset in statement_table
+
+        # --- UI / listing flags ---------------------------------------------
+        self.abbrev: bool = False
+        self.colorify: bool = False
+
+    def insert_statement(self, statement) -> None:
+        """
+        Insert a statement - an array of bytes - into the existing
+        statement_table, expanding the bytearray to put this
+        statement in sequence by line number.
+        """
+        # Get the line number from the first two bytes of 'statement'
+        lineno = getint(statement[0:2])
+        # Scan the statement_table to find the start of a
+        # line with a higher number than 'lineno'.
+        # ...
+        pass
+
+    def handle_NEW(self) -> None:
+        """Handle the NEW command."""
+        self.variable_name_table = []
+        self.variable_value_table = []
+        self.statement_table = []
+        self.strings_and_arrays = []
+        self.program_stack = []
+
+prog = Program()
+
+# Symbols used by the original tokenizer:
+
+# LOMEM (80, 81) points to this 256 byte buffer (at the end of OS RAM):
+tokenized_line: bytearray = bytearray()
+
+# VNTP (82, 83) points to the Variable Name Table start
+# VNTD (84, 85) points to the Variable Name Table end (or a dummy "\0" byte)
+# Entries can be indexed by the variable ID & 0x7F
+variable_name_table: bytearray = bytearray()
+
+# VVTP (86, 87) points to the Variable Value Table start
+# Each entry is 8 bytes long and depends on the type:
+# Scalar: | 00    | Var# ||       6 byte BCD        |
+# Array:  | 40/41 | Var# || valoffs || dim1 || dim2 |
+# String: | 80/81 | Var# || valoffs || len  || dim  |
+variable_value_table: bytearray = bytearray()
+
+# STMTAB (88, 89) points the Statement Table containing the Tokenized Program and Tokenized Immediate Line.
+statement_table: bytearray = bytearray()
+immediate_line = None
+
+# STMCUR points to the current statement during Program Execution.
+# In Interactive Mode it points to the start of the Immediate Line.
+current_statement = immediate_line
+
+# STARP (8C, 8D) points to the string/array buffer
+strings_and_arrays: bytearray = bytearray()
+
+# RUNSTK (8E, 8F) points to the BASIC runtime stack used for GOSUB/RETURN and FOR/NEXT. (And POP)
+# A GOSUB entry is 4 bytes: | 0 || lineno || stoffs |
+# A FOR entry is 16 bytes:
+#   0: limit BCD, 6: step BCD, 12: var ID, 13: lineno, 14: stoffs
+program_stack: bytearray = bytearray()
+
+# MEMTOP (90, 91) points to the end of the BASIC program.
+# Atari BASIC programs will often use the RAM between this address and HIMEM (2E5, 2E6) on real machines.
+#program_end = None
 
 # --------------------------------------------------------------------------- #
 # Operator and Function Execution
