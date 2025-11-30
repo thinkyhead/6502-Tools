@@ -109,12 +109,12 @@ program_stack = []
 #program_end = None
 
 # --------------------------------------------------------------------------- #
-# Lookup Tables
+# Static lookup Tables
 # --------------------------------------------------------------------------- #
 
 # Commands indexed by their Token ID
 statement_name_table = (
-    "R.EM", "D.ATA", "I.NPUT", "C.OLOR", "L.IST", "E.NTER", "LE.T", "IF", "F.OR", "N.EXT",
+    ".REM", "D.ATA", "I.NPUT", "C.OLOR", "L.IST", "E.NTER", "LE.T", "IF", "F.OR", "N.EXT",
     "G.OTO", "GO TO", "GOS.UB", "T.RAP", "B.YE", "CONT", "COM", "CL.OSE", "CLR", "DEG",
     "DIM", "END", "NEW", "O.PEN", "LO.AD", "S.AVE", "ST.ATUS", "NO.TE", "P.OINT", "XIO",
     "ON", "POK.E", "PR.INT", "RAD", "REA.D", "RES.TORE", "RET.URN", "RU.N", "STO.P", "POP",
@@ -267,7 +267,7 @@ COMMAND_HANDLERS: Dict[str, Callable[[], None]] = {
 # Lookup and conversion
 # --------------------------------------------------------------------------- #
 
-def getint(inbytes):
+def getint(inbytes: bytearray) -> int:
     return int.from_bytes(inbytes, byteorder='little')
 
 def decode_bcd(bcd_bytes: bytearray) -> float:
@@ -306,6 +306,7 @@ def init_lookups():
             'abbrev': pcs[0] + '.' if len(pcs) > 1 else name,
             'minlen': len(pcs[0])
         }
+        if v['abbrev'] == '.': v['abbrev'] = '. '
         commands_info.append(v)
         c[name] = i
 
@@ -335,15 +336,17 @@ def variable_name(token):
 def _colour_for_token(tok_type: str) -> str:
     """Return the ANSI colour name for a token type."""
     return {
-        'command':  'light_green',
+        'command':  'yellow',
+        'function': 'light_red',
         'number':   'white',
         'string':   'light_blue',
-        'variable': 'yellow',
+        'variable': 'green',
+        'data':     'grey'
     }[tok_type]
 
 def emit_arg_rest_of_line(start, end):
     """The command argument is the rest of the line"""
-    colorize(atascii_to_unicode_str(statement_table[start:end]), 'yellow', end='')
+    colorize(atascii_to_unicode_str(statement_table[start:end]), _colour_for_token('data'), end='')
     pass
 
 def op_func_string(atok):
@@ -380,17 +383,17 @@ def emit_token_at_index(i):
     atok = statement_table[i]
     if DEBUG_CODE: print(f"<{atok:02X}>", end='')
 
-    # VARIABLE ID
+    # 80-FF Variable ID
     if atok & 0x80:
-        colorize(variable_name(atok), color='yellow', end='')
+        colorize(variable_name(atok), color=_colour_for_token('variable'), end='')
         return 1
 
-    # 20 End of Statement
+    # 14 (20) End of Statement
     #if atok == 0x14:
     #    print(ops_and_funcs[atok], end='')
     #    return 1
 
-    # 22 End of Last Statement
+    # 16 (22) End of Last Statement
     #if atok == 0x16:
     #    print(ops_and_funcs[atok], end='')
     #    return 1
@@ -398,22 +401,25 @@ def emit_token_at_index(i):
     # Advance past token
     i += 1
 
-    # 14 BCD Literal, Next 6 bytes
+    # 0E (14) BCD Literal, Next 6 bytes
     if atok == 0x0E:
         bcd_bytes = statement_table[i:i+6]
         bcd_value = decode_bcd(bcd_bytes)
-        colorize(bcd_value, color='white', end='')
+        colorize(bcd_value, color=_colour_for_token('number'), end='')
         return 7
 
-    # 15 String Literal, Next byte is length
+    # 0F (15) String Literal, Next byte is length
     if atok == 0x0F:
         strlen = statement_table[i]
         str_bytes = statement_table[i+1:i+1+strlen]
-        colorize('"' + atascii_to_unicode_str(str_bytes) + '"', color='light_blue', end='')
+        colorize('"' + atascii_to_unicode_str(str_bytes) + '"', color=_colour_for_token('string'), end='')
         return strlen + 2
 
+    is_func = atok >= 0x3D
+    color_type = 'function' if is_func else 'command'
+
     # Other operators and functions
-    colorize(op_func_string(atok), color='green', end='')
+    colorize(op_func_string(atok), color=_colour_for_token(color_type), end='')
     return 1
 
 def list_program(start=0, end=32767, abbrev=args_abbrev, colorify=None):
@@ -444,19 +450,19 @@ def list_program(start=0, end=32767, abbrev=args_abbrev, colorify=None):
 
         # The next byte is the offset to the next line
         line_len = statement_table[i+2]
+        nextline = i + line_len
 
         # Reached the first listing line yet?
-        if lineno < start: i += line_len ; continue
+        if lineno < start: i = nextline ; continue
 
         # Remember the index of the start of the line
         thisline = i
-        nextline = i + line_len
 
         # Print out the line number and detokenize the rest of the line
         #print(lineno, end=' ')
 
         if DEBUG_CODE: print(f"{{{line_len}}}", end='')
-        colorize(f"{lineno}", color='white', end=' ')
+        colorize(f"{lineno}", color=_colour_for_token('number'), end=' ')
 
         # Skip to the first statement
         i += 3
@@ -464,22 +470,24 @@ def list_program(start=0, end=32767, abbrev=args_abbrev, colorify=None):
         # Detokenize statements
         while i < nextline:
             # Get the statement offset from start of line
-            st_off = statement_table[i]
+            st_off = statement_table[i] ; i += 1
             if DEBUG_CODE: print(f"{{{st_off}}}", end='')
             next_st = thisline + st_off
 
             # Get the command token
-            cmd_tok = statement_table[i+1]
+            cmd_tok = statement_table[i] ; i += 1
             if DEBUG_CODE: print(f"<{cmd_tok:02X}>", end='')
+
+            # REM, DATA, ERROR
+            is_fluff = cmd_tok in (_REM, _DATA, _ERROR)
+            tok_type = 'data' if is_fluff else 'command'
 
             # Print the command (if it's not "implied LET")
             tstr = string_for_command_token(cmd_tok, abbrev)
-            if tstr != "": colorize(tstr, color='green', end=qsp)
-
-            i += 2
+            if tstr != "": colorize(tstr, color=_colour_for_token(tok_type), end=qsp)
 
             # REM, DATA, ERROR
-            if cmd_tok in (_REM, _DATA, _ERROR):
+            if is_fluff:
                 emit_arg_rest_of_line(i, nextline-1)
                 i = nextline                    # Go right to the next line
                 break
