@@ -1,3 +1,8 @@
+;
+; BASIC program with all tokens represented.
+; For use by the basic.py script to test LOAD and LIST
+; and to exercise the complete syntaxer / tokenizer.
+;
  0   . Comment
  0 RE. Comment
  0 REM Comment

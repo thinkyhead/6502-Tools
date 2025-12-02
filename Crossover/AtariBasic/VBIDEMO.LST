@@ -1,7 +1,7 @@
 0 .
 1 . VBI Blink Cursor
 2 .
-3 . Test 
+3 . Test with G.200 / G.201
 4 .
 10 DIM H$(150):POKE 559,2:P=3
 20 RES.5000:GOS.500:?:?"Load Complete":POKE 559,34

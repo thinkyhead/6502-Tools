@@ -1,5 +1,5 @@
 1 . MAKEASCI
-2 .            
+2 .
 3 . Writes out a BASIC program with
 4 . all printable ATASCII characters.
 5 . The EOL 155 (9B) is omitted
