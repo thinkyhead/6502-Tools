@@ -38,12 +38,12 @@ The Atari BASIC Source Book covers a lot of this. We'll just lay out the basics:
 - Phase 4: Program Runner to actually execute statements and complete programs.
 
 """
-import re, os, sys, argparse
+import re, os, sys, math, argparse
 from termcolor import colored
 from pathlib import Path
 from typing import Callable, Dict, Iterable
 
-from atascii import atascii_to_unicode_str, unicode_to_atascii_str
+from atascii import atascii_to_unicode_str, unicode_to_atascii_str, ATEOL
 
 DEBUG_CODE = False
 args_abbrev = False
@@ -536,21 +536,219 @@ def identify_keyword(statement_txt):
     """
     pass
 
-def tokenize_line(line_txt):
+def skip_blanks(inbuf, index):
     """
-    Tokenize a complete input line of AtariBASIC.
-    Return the tokenized representation ready for whatever use.
-    This may return a line tokenized with "ERROR" ($37) if there was a problem.
+    Scan the input text starting at the given index.
+    Return the index of the first non-blank character.
     """
+    while index < len(inbuf) and inbuf[index] == ' ':
+        index += 1
+    return index
+
+import math
+
+def get_line_number(inbuf:bytes, index: int):
+    """
+    Extract a numeric token from 'inbuf' starting at 'index'.
+
+    The token may be an integer (e.g. "123") or a floating point number
+    (e.g. "234.5").  The token ends at the first character that is not
+    a digit or a decimal point.
+
+    After extraction, 'index' is advanced to the position of that
+    terminating character.  The numeric value is converted to a floor
+    integer and stored in a two‑byte little‑endian bytearray.
+
+    Parameters
+    ----------
+    inbuf : bytearray
+        The source text.
+    index : int
+        Current position in 'inbuf'.
+
+    Returns
+    -------
+    tuple[bytearray, int]
+        The two‑byte little‑endian representation of the floored number
+        and the updated index.
+    """
+
+    # Pull out the numeric token as a string
+    start = index
+    got_dot = False
+    while index < len(inbuf):
+        c = chr(inbuf[index])
+        d = c.isdigit()
+        #print(f"Scan for num ... {index} = {c} ({d})")
+        is_dot = c == '.'
+        if not (is_dot or c.isdigit()): break
+        if is_dot:
+            if got_dot: break
+            got_dot = True
+        index += 1
+
+    # If nothing was read, return the default line number (0x00, 0x80)
+    if index == start:
+        return bytearray([0x00, 0x80]), index
+
+    # Decode the numeric bytes into a string
+    num_str = inbuf[start:index]
+    try:
+        num_val = float(num_str)
+    except ValueError:
+        # If parsing fails, fall back to the default
+        return bytearray([0x00, 0x80]), index
+
+    floored = math.floor(num_val)
+
+    # Pack into a little‑endian two‑byte array
+    line_num = bytearray([floored & 0xFF, (floored >> 8) & 0xFF])
+
+    return line_num, index
+
+def delete_line(line_no):
+    """
+    Delete a tokenized line from the Statement Table
+    """
+    # TODO:
+    # - Scan the statement table to find the line with the given number.
+    # - Get the length of that line.
+    # - Contract the Statement Table to chop out the line.
+    print(f"Deleting line {line_no}")
     pass
 
-def tokenize_and_apply_line(line_txt):
+def tokenize_line(inbuff:bytes):
+    """
+    Tokenize a complete input line of AtariBASIC.
+
+    Parameters
+    ----------
+    inbuff : bytes
+        The raw text of the BASIC line to be tokenized.
+
+    Returns
+    -------
+    dict
+        A dictionary containing at least the parsed line number.
+        If the line could not be tokenized, an empty dictionary is returned
+        (you can change this to raise an exception or return a special
+        "ERROR" token if you prefer).
+    """
+
+    # Reset the tokenized line buffer
+    tokenized = bytearray()
+
+    # Init the input and output indexes to zero
+    cix, cox = 0, 0
+
+    # Highest cix so far
+    maxcix = 0
+
+    # Direct statement?
+    direct_flag = False
+
+    # Saved name table output
+    svontx, svontc, svvvte = 0, 0, 0
+
+    # Point to the variable name table
+    svvntp = 0 # (Offset into) variable_name_table
+
+    # Skip leading blanks
+    cix = skip_blanks(inbuff, cix)
+
+    # Get the line number
+    line_num, cix = get_line_number(inbuff, cix)
+
+    # Init the tokenized line with the line num
+    tokenized = line_num
+    cox += 2
+
+    # Line Number as an int
+    line_val = line_num[0] + line_num[1] * 256
+
+    print(f"[in={cix}, out={cox}] Stored Line Number {line_val}")
+
+    # The original immediate trick is to use line 32768
+    # so AtariBASIC programs are limited to 32768 lines.
+    direct_flag = line_val >= 32768
+
+    # Store a dummy line length that will be populated later
+    tokenized.append(0)
+    cox += 1
+
+    print(f"[in={cix}, out={cox}] Appended dummy line len")
+
+    # Skip following blanks
+    cix = skip_blanks(inbuff, cix)
+
+    # Remember the start of the statement for processing
+    statement_start = cix
+
+    print(f"[in={cix}, out={cox}] Skipped blanks")
+
+    # Is the next character a CR?
+    # If so we'll be deleting the given line number.
+    c = inbuff[cix]
+    if c == ATEOL:
+        # Find the line in the statement table and delete it
+        delete_line(line_val)
+        return 101 # For now, 101 = continue on to the next line of input
+
+    # Get the rest of the bytes and print their hex values
+    while cix < len(inbuff):
+        c = inbuff[cix]
+        print(f"{cix} : {c}")
+        cix += 1
+    print("<end>")
+
+    return
+
+    # Dictionary for a Python level tokenized line
+    line_dict = {}
+
+    #
+    # Process strategy:
+    #
+    # The original implementation scans bytes and does sub-calls
+    # that also scan bytes, modifying the scan pointer as they
+    # go along. So here we should follow that rather than use
+    # split() and other modern Python tricks.
+    # We also have to follow the BNF once we identify the command,
+    # fall back to implied LET, or fall back to error.
+    #
+    # So, when we grab the line number we must advance the input index.
+    # Once we have the command we test each BNF connected by _OR
+    # and dive down the BNF rabbit hole. Some BNF are just char match,
+    # while others use callbacks for tests. We advance the input as we go,
+    # but can fall back when subitems fail.
+    #
+
+
+    # -------------------------------------------------------------
+    # Step 1. Grab the line number (if present)
+    #   ^\s*     – any leading spaces (already stripped, but harmless)
+    #   (\d+)    – one or more digits
+    #   \b       – word boundary (ensures we stop at the first non‑digit)
+    line_no_match = re.match(r'^(\d+)\b', inbuff)
+
+    if line_no_match:
+        # Has a line number
+        line_no = int(line_no_match.group(1))   # convert to an integer
+        line_dict['line'] = line_no
+    else:
+        # Immediate Line has number 32768. (Too bad it's not "0" so we could have 65535 lines.)
+        line_dict['line'] = 32768
+
+    return line_dict
+
+def tokenize_and_apply_line(inbuff:bytes):
     """
     Tokenize a complete input line of AtariBASIC and apply it.
     - Lines with no number are executed right away (as if they were the last line in the program).
     - Lines with only a number cause the line with matching number to be deleted from the program.
     - Lines with a number and one or more statements are added to the program.
     """
+    tokenized_line = tokenize_line(inbuff)
     pass
 
 def consolidate_tokenized_program():
@@ -620,7 +818,7 @@ def interactive_mode():
         if nowReady: print("\nREADY") ; nowReady = False
 
         try:
-            raw = input()
+            line_str = input() # String
         except (KeyboardInterrupt, EOFError) as exc:
             if isinstance(exc, KeyboardInterrupt):
                 # Ctrl‑C logic
@@ -631,7 +829,7 @@ def interactive_mode():
                 print()
                 break
 
-        cmd = raw.strip().upper()
+        cmd = line_str.strip().upper()
         if cmd in ("QUIT", "EXIT", "Q"):
             print("\nBye!\n")
             break
@@ -641,8 +839,14 @@ def interactive_mode():
         if handler:
             handler()
             nowReady = True
-        elif cmd != "":
-            print(f"Unknown command: {cmd_name!r}.  Valid commands are: {', '.join(COMMAND_HANDLERS)}")
+
+        elif line_str != "":
+            # Let's just dive into tokenizing the line
+            # Convert from UTF-8 bytes to ATASCII bytes and append ATEOL
+            line_bytes = unicode_to_atascii_str(bytes(line_str, "utf-8")) + bytes([ATEOL])
+            tokenize_and_apply_line(line_bytes);
+
+            #print(f"Unknown command: {cmd_name!r}.  Valid commands are: {', '.join(COMMAND_HANDLERS)}")
 
 # --------------------------------------------------------------------------- #
 # LOAD from BAS file

@@ -189,7 +189,7 @@ def unicode_to_atascii(filename, sflag):
     sys.stdout.buffer.write(out_bytes)
 
 # Convert a UTF‑8 string to ATASCII.
-def unicode_to_atascii_str(bindata: bytes, sflag=False) -> bytes:
+def unicode_to_atascii_str(bindata:bytes, sflag=False) -> bytes:
     """Convert a UTF‑8 string to ATASCII."""
     state = ASCII
     scheck = sflag
@@ -270,7 +270,7 @@ def atascii_to_unicode(filename, pflag, iflag, aflag, nflag):
     sys.stdout.buffer.write(out_text.encode('utf-8'))
 
 # Convert an ATASCII string to UTF‑8.
-def atascii_to_unicode_str(bindata: bytes, pflag=False, iflag=False, aflag=False, nflag=False) -> bytes:
+def atascii_to_unicode_str(bindata:bytes, pflag=False, iflag=False, aflag=False, nflag=False) -> bytes:
     """Convert an ATASCII string to UTF‑8."""
     got_lf = False
     out = bytearray()
