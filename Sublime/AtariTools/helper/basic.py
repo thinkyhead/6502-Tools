@@ -43,7 +43,9 @@ from termcolor import colored
 from pathlib import Path
 from typing import Callable, Dict, Iterable
 
-from atascii import atascii_to_unicode_str, unicode_to_atascii_str, ATEOL
+from atascii import *
+from ataribasic import *
+from ataribasic_syntax import *
 
 DEBUG_CODE = False
 args_abbrev = False
@@ -69,176 +71,6 @@ def colorize(text, color=None, end=None):
         color_print(text, color, end=end)
     else:
         print(text, end=end)
-
-# --------------------------------------------------------------------------- #
-# Static lookup Tables
-# --------------------------------------------------------------------------- #
-
-# Commands indexed by their Token ID
-statement_name_table = (
-    ".REM", "D.ATA", "I.NPUT", "C.OLOR", "L.IST", "E.NTER", "LE.T", "IF", "F.OR", "N.EXT",
-    "G.OTO", "GO TO", "GOS.UB", "T.RAP", "B.YE", "CONT", "COM", "CL.OSE", "CLR", "DEG",
-    "DIM", "END", "NEW", "O.PEN", "LO.AD", "S.AVE", "ST.ATUS", "NO.TE", "P.OINT", "XIO",
-    "ON", "POK.E", "PR.INT", "RAD", "REA.D", "RES.TORE", "RET.URN", "RU.N", "STO.P", "POP",
-    "?", "GET", "PUT", "GR.APHICS", "PL.OT", "POS.ITION", "DOS", "DR.AWTO", "SE.TCOLOR", "LOC.ATE",
-    "SO.UND", "LP.RINT", "CS.AVE", "CL.OAD", "(let)" if DEBUG_CODE else "", "ERROR  -"
-)
-
-kREM    = 0 ; kGOTO   = 10 ; cDIM    = 20 ; kON     = 30 ; kQUESTION=40 ; kSOUND  = 50
-kDATA   = 1 ; kGO_TO  = 11 ; cEND    = 21 ; kPOKE   = 31 ; kGET    = 41 ; kLPRINT = 51
-kINPUT  = 2 ; kGOSUB  = 12 ; cNEW    = 22 ; kPRINT  = 32 ; kPUT    = 42 ; kCSAVE  = 52
-kCOLOR  = 3 ; kTRAP   = 13 ; cOPEN   = 23 ; kRAD    = 33 ; kGRAPHIC= 43 ; kCLOAD  = 53
-kLIST   = 4 ; kBYE    = 14 ; cLOAD   = 24 ; kREAD   = 34 ; kPLOT   = 44 ; kILET   = 54
-kENTER  = 5 ; kCONT   = 15 ; cSAVE   = 25 ; kRESTORE= 35 ; kPOSITION=45 ; kERROR  = 55
-kLET    = 6 ; kCOM    = 16 ; cSTATUS = 26 ; kRETURN = 36 ; kDOS    = 46
-kIF     = 7 ; kCLOSE  = 17 ; cNOTE   = 27 ; kRUN    = 37 ; kDRAWTO = 47
-kFOR    = 8 ; kCLR    = 18 ; cPOINT  = 28 ; kSTOP   = 38 ; kSETCOLOR=48
-kNEXT   = 9 ; kDEG    = 19 ; cXIO    = 29 ; kPOP    = 39 ; kLOCATE = 49
-
-commands_info = []
-c = {}
-
-ops_and_funcs = (
-    "", "", "", "", "", "", "",
-    "", "", "", "", "", "", "",
-    # 14-60: Operators
-    "",       # 14 BCD Literal, Next 6 bytes
-    "",       # 15 String Literal, Next byte is length
-    "",       # 16 Double Quote (UNUSED)
-    "",       # 17 Operator Stack Marker (SOE)
-    ",",      # 18 , in PRINT statement
-    "$",      # 19 Dollar Sign
-    ":",      # 20 End of expr / statement
-    ";",      # 21 ; in PRINT statement
-    "",       # 22 End of expr / line
-    " GOTO",  # 23 ON...GOTO
-    " GOSUB", # 24 ON...GOSUB
-    " TO",    # 25 FOR ... TO
-    " STEP",  # 26 FOR ... TO ... STEP
-    " THEN",  # 27 IF...THEN
-    "#",      # 28 OPEN #
-    "<=",     # 29 IF A<=B
-    "<>",     # 30 IF A<>B
-    ">=",     # 31 IF A<=B
-    "<",      # 32 IF A<B
-    ">",      # 33 IF A>B
-    "=",      # 34 IF A=B
-    "^",      # 35 A=B^C
-    "*",      # 36 A=B*C
-    "+",      # 37 A=B+C
-    "-",      # 38 A=B-C
-    "/",      # 39 A=B/C
-    "NOT",    # 40 ... Boolean logic
-    " OR",    # 41
-    " AND",   # 42
-    "(",      # 43 ... ( math
-    ")",      # 44 ... close for all parens. Solve before moving on.
-    "=",      # 45 ... S1=S2
-    "=",      # 46 ... N$=A$
-    "<=",     # 47 ... cmp A$<=B$
-    "<>",     # 48 ... cmp A$<>B$
-    ">=",     # 49 ... cmp A$>=B$
-    "<",      # 50 ... cmp A$<B$
-    ">",      # 51 ... cmp A$<B$
-    "=",      # 52 ... cmp A$=B$
-    "+",      # 53 ... POSITIVE
-    "-",      # 54 ... NEGATIVE
-    "(",      # 55 ... A$(
-    "(",      # 56 ... SC(
-    "(",      # 57 ... DIM SC(
-    "(",      # 58 ... CHR$(, PEEK(
-    "(",      # 59 ... DIM S$(
-    ",",      # 60 ... comma
-
-    # 61-84: Functions
-    "STR$", "CHR$", "USR", "ASC", "VAL", "LEN", "ADR", "ATN", "COS", "PEEK",
-    "SIN", "RND", "FRE", "EXP", "LOG", "CLOG", "SQR", "SGN", "ABS", "INT",
-    "PADDLE", "STICK", "PTRIG", "STRIG"
-)
-
-# Syntax Rules Tokens
-
-kANTV   = 0x00  # Absolute Non-Terminal Vector (ANTV) to sub-call another rule
-kESRT   = 0x01  # External Subroutine Call (ESRT) to call a handler for more complex rules
-kOR     = 0x02  # ABML or
-kRTN    = 0x03  # (aka <END>) Return, marks the end of an ABML rule. Return pass or fail.
-kVEXP   = 0x0E  # (aka <EXP>) Expression Non-Terminal Vector. Shorthand for ANTV AD(EXP)
-kCHNG   = 0x0F  # Change Last Token to X. e.g., to rectify '=' as assign or compare.
-
-# Program Tokens
-
-cDQ     = 0x10  # "      Double-Quote (UNUSED?)
-cSOE    = 0x11  #        Expression Stack Marker
-cCOM    = 0x12  # ,      in PRINT statement
-cDOL    = 0x13  # $      Dollar Sign
-cEOS    = 0x14  # :      End of expr / statement
-cSC     = 0x15  # ;      in PRINT statement
-cCR     = 0x16  #        End of expr / line
-cGTO    = 0x17  # GOTO   ON...GOTO
-cGS     = 0x18  # GOSUB  ON...GOSUB
-cTO     = 0x19  # TO     FOR ... TO
-cSTEP   = 0x1A  # STEP   FOR ... TO ... STEP
-cTHEN   = 0x1B  # THEN   IF...THEN
-cPND    = 0x1C  # #      OPEN #
-
-# "Real" Operators
-cSROP   = 0x1D  # First "real" operator
-
-cLE     = 0x1D  # <=     IF A<=B
-cNE     = 0x1E  # <>     IF A<>B
-cGE     = 0x1F  # >=     IF A<=B
-cGT     = 0x20  # <      IF A<B
-cLT     = 0x21  # >      IF A>B
-cEO     = 0x22  # =      IF A=B
-cEXP    = 0x23  # ^      A=B^C   (Up Arrow $5E+$80)
-cMUL    = 0x24  # *      A=B*C
-cPLUS   = 0x25  # +      A=B+C
-cMINUS  = 0x26  # -      A=B-C
-cDIV    = 0x27  # /      A=B/C
-cNOT    = 0x28  # NOT    Boolean logic
-cOR     = 0x29  # OR
-cAND    = 0x2A  # AND
-cLPRN   = 0x2B  # (      ( math
-cRPRN   = 0x2C  # )      close for all parens
-cAASN   = 0x2D  # =      S1=S2
-cSASN   = 0x2E  # =      N$=A$
-cSLE    = 0x2F  # <=     cmp A$<=B$
-cSNE    = 0x30  # <>     cmp A$<>B$
-cSGE    = 0x31  # >=     cmp A$>=B$
-cSLT    = 0x32  # <      cmp A$<B$
-cSGT    = 0x33  # >      cmp A$<B$
-cSEQ    = 0x34  # =      cmp A$=B$
-cUPLUS  = 0x35  # +      POSITIVE
-cUMINUS = 0x36  # -      NEGATIVE
-cSLPRN  = 0x37  # (      A$(
-cALPRN  = 0x38  # (      SC(
-cDLPRN  = 0x39  # (      DIM SC(
-cFLPRN  = 0x3A  # (      CHR$(, PEEK(
-cDSLPR  = 0x3B  # (      DIM S$(
-cACOM   = 0x3C  # ,      Array Subscript Separator
-
-# Function Tokens
-cFFUN   = 0x3D  # FIRST FUNCTION CODE
-
-cSTR    = 0x3D  # STR$()
-cCHR    = 0x3E  # CHR$()
-cUSR    = 0x3F  # USR()
-cASC    = 0x40  # ASC()
-cVAL    = 0x41  # VAL()
-cLEN    = 0x42  # LEN()
-cADR    = 0x43  # ADR()
-cNFNP   = 0x44  # Numeric Functions
-cATN    = 0x44  # ATN()
-cCOS    = 0x45  # COS()
-cPEEK   = 0x46  # PEEK()
-cSIN    = 0x47  # SIN()
-cRND    = 0x48  # RND()
-cFRE    = 0x49  # FRE()
-cEXP    = 0x4A  # EXP()
-cLOG    = 0x4B  # LOG()
-cCLOG   = 0x4C  # CLOG()
-cSQR    = 0x4D  # SQR()
-cSGN    = 0x4E  # SGN()
 
 class Program:
     """
@@ -295,6 +127,91 @@ class Program:
         self.abbrev: bool = False
         self.colorify: bool = False
 
+    def ingest_variable_name_table(self, vnt_data):
+        """
+        Extract variable names from the VNT buffer.
+        Return the extracted VNT array.
+        """
+        vnt = []
+        name_bytes = bytearray()            # Temporary holder
+
+        for b in vnt_data:
+            if b & 0x80:                    # High bit set -> end of name
+                name_bytes.append(b & 0x7F) # Clear high bit
+                vnt.append(name_bytes.decode('ascii'))
+                name_bytes.clear()          # Start a new name
+                #print(f"Variable {len(vnt)-1}: '{varname}'")
+            else:
+                name_bytes.append(b)        # Accumulate the name bytes
+
+        # For now ignore any trailing incomplete name
+        self.variable_name_table = vnt
+
+    def variable_name(self, token):
+        """Return the variable name for the given variable token."""
+        i = token & 0x7F
+        if i < len(self.variable_name_table): return re.sub(r'[\(]', '', self.variable_name_table[i])
+        return f"<var#{i}>"
+
+    def ingest_variable_value_table(self, vvt_data):
+        """Extract variable dimensions and values from the VVT buffer."""
+        vvt = []
+        val_bytes = bytearray()                         # Temporary holder
+
+        for i in range(0, len(vvt_data), 8):
+            chunk = vvt_data[i:i+8]
+
+            if len(chunk) != 8:
+                raise ValueError(f"Incomplete 8‑byte entry at offset {vvt_offset + i}")
+
+            var_type = chunk[0] & 0xC0                  # High 2 bits: type
+            var_id = chunk[1] & 0x7F                    # Low 7 bits: variable number
+            item = { 'type': var_type, 'id': var_id }
+            if var_type == 0x40:
+                # Array: disp, dim1, dim2
+                item['disp'] = getint(chunk[2:4])    # Displacement in string/array memory
+                item['dim1'] = getint(chunk[4:6])    # Array dimension 1
+                item['dim2'] = getint(chunk[6:8])    # Array dimension 2 (or 1)
+                #print(f"Array {prog.variable_name(var_id)}({item['dim1']}, {item['dim2']}) [{item['disp']}]")
+            elif var_type == 0x80:
+                # String: disp, curl, maxl
+                item['disp'] = getint(chunk[2:4])    # Displacement in string/array memory
+                item['curl'] = getint(chunk[4:6])    # Current length
+                item['maxl'] = getint(chunk[6:8])    # Max length as indicated by DIM
+                #print(f"String {prog.variable_name(var_id)}({item['maxl']}) [{item['disp']}] = \"{'.'*item['curl']}\"")
+            else:
+                item['value'] = decode_bcd(chunk[2:])
+                #print(f"Scalar {prog.variable_name(var_id)} = {item['value']}")
+
+            vvt.append(item)
+
+        # If the file is malformed and we ended mid‑name, we could handle it here.
+        # For now we ignore any trailing incomplete name.
+        self.variable_value_table = vvt
+
+    def print_variable_tables(self):
+        """Print all the variables with their types and sizes"""
+        if len(self.variable_value_table):
+            print("Variables:")
+        else:
+            print("No Variables")
+        for i,v in enumerate(self.variable_value_table):
+            vname = self.variable_name(i)
+            disp = v.get('disp', -1)
+            dstr = f"[{v['disp']:04X}]" if disp >= 0 else "      "
+            print(f"${(i|0x80):02X} {dstr} {vname}", end='')
+            t = v['type']
+            if t == 0x40:
+                print(f"({v['dim1']}, {v['dim2']})")
+            elif t == 0x80:
+                print(f"({v['maxl']}) = \"{'.'*v['curl']}\"")
+            else:
+                print(f" = {v['value']}")
+        print()
+
+    def ingest_statement_table(self, st_data):
+        self.statement_table = st_data
+
     def insert_statement(self, statement) -> None:
         """
         Insert a statement - an array of bytes - into the existing
@@ -308,7 +225,7 @@ class Program:
         # ...
         pass
 
-    def handle_NEW(self) -> None:
+    def h_NEW(self) -> None:
         """Handle the NEW command."""
         self.variable_name_table = []
         self.variable_value_table = []
@@ -316,126 +233,16 @@ class Program:
         self.strings_and_arrays = []
         self.program_stack = []
 
+# A class to contain the static tokenized BASIC program, variable names, etc.
 prog = Program()
+
+# A class to validate and tokenize a complete line of Atari BASIC, which can then be added to the Program
+syntaxer = Syntaxer()
 
 # Symbols used by the original tokenizer:
 
 # LOMEM (80, 81) points to this 256 byte buffer (at the end of OS RAM):
 tokenized_line: bytearray = bytearray()
-
-# VNTP (82, 83) points to the Variable Name Table start
-# VNTD (84, 85) points to the Variable Name Table end (or a dummy "\0" byte)
-# Entries can be indexed by the variable ID & 0x7F
-variable_name_table: bytearray = bytearray()
-
-# VVTP (86, 87) points to the Variable Value Table start
-# Each entry is 8 bytes long and depends on the type:
-# Scalar: | 00    | Var# ||       6 byte BCD        |
-# Array:  | 40/41 | Var# || valoffs || dim1 || dim2 |
-# String: | 80/81 | Var# || valoffs || len  || dim  |
-variable_value_table: bytearray = bytearray()
-
-# STMTAB (88, 89) points the Statement Table containing the Tokenized Program and Tokenized Immediate Line.
-statement_table: bytearray = bytearray()
-immediate_line = None
-
-# STMCUR points to the current statement during Program Execution.
-# In Interactive Mode it points to the start of the Immediate Line.
-current_statement = immediate_line
-
-# STARP (8C, 8D) points to the string/array buffer
-strings_and_arrays: bytearray = bytearray()
-
-# RUNSTK (8E, 8F) points to the BASIC runtime stack used for GOSUB/RETURN and FOR/NEXT. (And POP)
-# A GOSUB entry is 4 bytes: | 0 || lineno || stoffs |
-# A FOR entry is 16 bytes:
-#   0: limit BCD, 6: step BCD, 12: var ID, 13: lineno, 14: stoffs
-program_stack: bytearray = bytearray()
-
-# MEMTOP (90, 91) points to the end of the BASIC program.
-# Atari BASIC programs will often use the RAM between this address and HIMEM (2E5, 2E6) on real machines.
-#program_end = None
-
-# --------------------------------------------------------------------------- #
-# Operator and Function Execution
-# --------------------------------------------------------------------------- #
-
-def op_LE()     -> None: pass
-def op_NE()     -> None: pass
-def op_GE()     -> None: pass
-def op_LT()     -> None: pass
-def op_GT()     -> None: pass
-def op_EQ()     -> None: pass
-def op_POWER()  -> None: pass
-def op_MUL()    -> None: pass
-def op_PLUS()   -> None: pass
-def op_MINUS()  -> None: pass
-def op_DIV()    -> None: pass
-def op_NOT()    -> None: pass
-def op_OR()     -> None: pass
-def op_AND()    -> None: pass
-def op_LPRN()   -> None: pass
-def op_RPRN()   -> None: pass
-def op_AASN()   -> None: pass
-def xs_AASN()   -> None: pass
-def op_SLE()    -> None: pass
-def op_SNE()    -> None: pass
-def op_SGE()    -> None: pass
-def op_SLT()    -> None: pass
-def op_SGT()    -> None: pass
-def op_SEQ()    -> None: pass
-def op_UPLUS()  -> None: pass
-def op_UMINUS() -> None: pass
-def op_SLPRN()  -> None: pass
-def op_ALPRN()  -> None: pass
-def op_DLPRN()  -> None: pass
-def op_FLPRN()  -> None: pass
-def op_DSLPR()  -> None: pass
-def op_ACOM()   -> None: pass
-def op_STR()    -> None: pass
-def op_CHR()    -> None: pass
-def op_USR()    -> None: pass
-def op_ASC()    -> None: pass
-def op_VAL()    -> None: pass
-def op_LEN()    -> None: pass
-def op_ADR()    -> None: pass
-def op_ATN()    -> None: pass
-def op_COS()    -> None: pass
-def op_PEEK()   -> None: pass
-def op_SIN()    -> None: pass
-def op_RND()    -> None: pass
-def op_FRE()    -> None: pass
-def op_EXP()    -> None: pass
-def op_LOG()    -> None: pass
-def op_L10()    -> None: pass
-def op_SQR()    -> None: pass
-def op_SGN()    -> None: pass
-def op_ABS()    -> None: pass
-def op_INT()    -> None: pass
-def op_PADDLE() -> None: pass
-def op_STICK()  -> None: pass
-def op_PTRIG()  -> None: pass
-def op_STRIG()  -> None: pass
-
-# OPETAB - Operator Execution Table
-# - Contains operator handler function refs
-# - Same order as Operator Name Table
-misc_ops_table = (
-    op_LE,      op_NE,      op_GE,      op_LT,      op_GT,
-    op_EQ,      op_POWER,   op_MUL,     op_PLUS,    op_MINUS,
-    op_DIV,     op_NOT,     op_OR,      op_AND,     op_LPRN,
-    op_RPRN,    op_AASN,    xs_AASN,    op_SLE,     op_SNE,
-    op_SGE,     op_SLT,     op_SGT,     op_SEQ,     op_UPLUS,
-    op_UMINUS,  op_SLPRN,   op_ALPRN,   op_DLPRN,   op_FLPRN,
-    op_DSLPR,   op_ACOM,
-    op_STR,     op_CHR,     op_USR,     op_ASC,     op_VAL,
-    op_LEN,     op_ADR,     op_ATN,     op_COS,     op_PEEK,
-    op_SIN,     op_RND,     op_FRE,     op_EXP,     op_LOG,
-    op_L10,     op_SQR,     op_SGN,     op_ABS,     op_INT,
-    op_PADDLE,  op_STICK,   op_PTRIG,   op_STRIG,
-)
-
-#_ops_and_funcs = [ f"<{x:02X}={ops_and_funcs[x]}>" for x in range(60) ]
 
 # --------------------------------------------------------------------------- #
 # Immediate Command Handlers
@@ -451,13 +258,24 @@ def h_DOS() -> None: x_DOS()
 def h_BYE() -> None: x_BYE()
 def h_NEW() -> None: x_NEW()
 
-def h_LIST() -> None:
-    print()
-    list_program(abbrev=args_abbrev)
+def two_int_args(args):
+    if args:
+        m = re.match(r'(\d+),? *(\d*)', args)
+        r1 = int(m[1])
+        r2 = int(m[2]) if m[2] else r1
+    else:
+        r1, r2 = 0, 32767
+    return r1, r2
 
-def h_CLIST() -> None:
-    print()
-    list_program(abbrev=args_abbrev, colorify=True)
+def do_LIST(args=None, colorify=False):
+    start, end = two_int_args(args)
+    list_program(start=start, end=end, abbrev=args_abbrev, colorify=colorify)
+
+def h_LIST(args=None) -> None:
+    do_LIST(args)
+
+def h_CLIST(args=None) -> None:
+    do_LIST(args, True)
 
 # --------------------------------------------------------------------------- #
 # Command dispatch table
@@ -506,20 +324,7 @@ def x_CLR()      -> None: pass
 def x_DEG()      -> None: pass
 def x_DIM()      -> None: pass
 def x_END()      -> None: pass
-
-def x_NEW()      -> None:
-    global variable_name_table
-    global variable_value_table
-    global statement_table
-    global strings_and_arrays
-    global program_stack
-    variable_name_table = []
-    variable_value_table = []
-    statement_table = []
-    strings_and_arrays = []
-    program_stack = []
-    pass
-
+def x_NEW()      -> None: prog.h_NEW()
 def x_OPEN()     -> None: pass
 def x_LOAD()     -> None: pass
 def x_SAVE()     -> None: pass
@@ -578,203 +383,37 @@ handler_table = [
     x_ERROR
 ]
 
-# Syntax tables encodes required patterns for each command
-s_REM      = ()
-s_DATA     = ()
-s_INPUT    = ()
-s_COLOR    = ()
-s_LIST     = ()
-s_ENTER    = ()
-s_LET      = ()
-s_IF       = ()
-s_FOR      = ()
-s_NEXT     = ()
-s_GOTO     = ()
-s_GOTO     = ()
-s_GOSUB    = ()
-s_TRAP     = ()
-s_BYE      = ()
-s_CONT     = ()
-s_COM      = ()
-s_CLOSE    = ()
-s_CLR      = ()
-s_DEG      = ()
-s_DIM      = ()
-s_END      = ()
-s_NEW      = ()
-s_OPEN     = ()
-s_LOAD     = ()
-s_SAVE     = ()
-s_STATUS   = ()
-s_NOTE     = ()
-s_POINT    = ()
-s_XIO      = ()
-s_ON       = ()
-s_POKE     = ()
-s_PRINT    = ()
-s_RAD      = ()
-s_READ     = ()
-s_RESTORE  = ()
-s_RETURN   = ()
-s_RUN      = ()
-s_STOP     = ()
-s_POP      = ()
-s_PRINT    = ()
-s_GET      = ()
-s_PUT      = ()
-s_GRAPHICS = ()
-s_PLOT     = ()
-s_POSITION = ()
-s_DOS      = ()
-s_DRAWTO   = ()
-s_SETCOLOR = ()
-s_LOCATE   = ()
-s_SOUND    = ()
-s_LPRINT   = ()
-s_CSAVE    = ()
-s_CLOAD    = ()
-s_ILET     = ()
-s_ERROR    = ()
-
-# Statement Syntax Table : Pointers to syntax tables from the "Statement Name Table"
-statement_syntax_table = [
-    s_REM,      s_DATA,     s_INPUT,    s_COLOR,    s_LIST,
-    s_ENTER,    s_LET,      s_IF,       s_FOR,      s_NEXT,
-    s_GOTO,     s_GOTO,     s_GOSUB,    s_TRAP,     s_BYE,
-    s_CONT,     s_COM,      s_CLOSE,    s_CLR,      s_DEG,
-    s_DIM,      s_END,      s_NEW,      s_OPEN,     s_LOAD,
-    s_SAVE,     s_STATUS,   s_NOTE,     s_POINT,    s_XIO,
-    s_ON,       s_POKE,     s_PRINT,    s_RAD,      s_READ,
-    s_RESTORE,  s_RETURN,   s_RUN,      s_STOP,     s_POP,
-    s_PRINT,    s_GET,      s_PUT,      s_GRAPHICS, s_PLOT,
-    s_POSITION, s_DOS,      s_DRAWTO,   s_SETCOLOR, s_LOCATE,
-    s_SOUND,    s_LPRINT,   s_CSAVE,    s_CLOAD,    s_ILET,
-    s_ERROR
-]
-
-# --------------------------------------------------------------------------- #
-# Lookup and conversion
-# --------------------------------------------------------------------------- #
-
-def getint(inbytes: bytearray) -> int:
-    return int.from_bytes(inbytes, byteorder='little')
-
-def decode_bcd(bcd_bytes: bytearray) -> float:
-    """Decode a 6‑byte BCD floating‑point value."""
-    if len(bcd_bytes) != 6:
-        raise ValueError("BCD float must be exactly 6 bytes")
-
-    # Exponent
-    exp = bcd_bytes[0]
-    sign = 1
-    if exp > 127:              # sign bit set → negative
-        sign, exp = -1, 128
-
-    # Integer part
-    num = 0
-    for b in bcd_bytes[1:]:     # Bytes 1‑5 are the BCD digits
-        num = num * 100 + (b - 6 * (b >> 4))
-
-    # Exponential Scaling
-    exp -= 68
-    if exp > 0:
-        num *= 100 ** exp
-    elif exp < 0:
-        num /= 100 ** (-exp)
-
-    return re.sub(r'\.0+$', '', str(sign * num))  # Trim trailing zeros
-
-def init_lookups():
-    """Init more convenient lookup data based on the predefined arrays."""
-    for i in range(len(statement_name_table)):
-        cmd = statement_name_table[i]
-        pcs = cmd.split('.')
-        name = ''.join(pcs)
-        v = {
-            'name': name,
-            'abbrev': pcs[0] + '.' if len(pcs) > 1 else name,
-            'minlen': len(pcs[0])
-        }
-        if v['abbrev'] == '.': v['abbrev'] = '. '
-        commands_info.append(v)
-        c[name] = i
-
-def string_for_command_token(token, abbrev=False):
-    """Return the full or abbreviated command string for the given token."""
-    if token >= len(commands_info): return "<?>"
-    return commands_info[token]['abbrev' if abbrev else 'name']
-
-def string_for_function_token(token):
-    """Return the string corresponding to the given function token byte."""
-    pass
-
-def string_for_operator_token(token):
-    """Return the string corresponding to the given operator token byte."""
-    pass
-
-def variable_name(token):
-    """Return the variable name for the given variable token."""
-    i = token & 0x7F
-    if i < len(variable_name_table): return re.sub(r'[\(]', '', variable_name_table[i])
-    return f"<var#{i}>"
-
 # --------------------------------------------------------------------------- #
 # BASIC listing
 # --------------------------------------------------------------------------- #
 
-def _colour_for_token(tok_type: str) -> str:
-    """Return the ANSI colour name for a token type."""
-    return {
-        'command':  'yellow',
-        'function': 'light_red',
-        'number':   'white',
-        'string':   'light_blue',
-        'variable': 'green',
-        'data':     'grey'
-    }[tok_type]
+token_color = {
+    'command':  'yellow',
+    'function': 'light_red',
+    'number':   'white',
+    'string':   'light_blue',
+    'variable': 'green',
+    'data':     'grey',
+    'comment':  'black'
+}
 
 def emit_arg_rest_of_line(start, end):
     """The command argument is the rest of the line"""
-    colorize(atascii_to_unicode_str(statement_table[start:end]), _colour_for_token('data'), end='')
+    colorize(atascii_to_unicode_str(prog.statement_table[start:end]), token_color['data'], end='')
     pass
-
-def op_func_string(atok):
-    """Return the string for the given operator or function token"""
-    if atok < len(ops_and_funcs): return ops_and_funcs[atok]
-    return f"<{atok:02X}>"
-
-def print_variable_tables():
-    """Print all the variables with their types and sizes"""
-    if len(variable_value_table):
-        print("Variables:")
-    else:
-        print("No Variables")
-    for i,v in enumerate(variable_value_table):
-        vname = variable_name(i)
-        disp = v.get('disp', -1)
-        dstr = f"[{v['disp']:04X}]" if disp >= 0 else "      "
-        print(f"${(i|0x80):02X} {dstr} {vname}", end='')
-        t = v['type']
-        if t == 0x40:
-            print(f"({v['dim1']}, {v['dim2']})")
-        elif t == 0x80:
-            print(f"({v['maxl']}) = \"{'.'*v['curl']}\"")
-        else:
-            print(f" = {v['value']}")
-    print()
 
 # For structured output use an indent
 args_structured = False
 indent = ""
 
 def emit_token_at_index(i):
-    """Emit the token at thie given index in the statement_table"""
-    atok = statement_table[i]
+    """Emit the token at the given index in the statement_table"""
+    atok = prog.statement_table[i]
     if DEBUG_CODE: print(f"<{atok:02X}>", end='')
 
     # 80-FF Variable ID
     if atok & 0x80:
-        colorize(variable_name(atok), color=_colour_for_token('variable'), end='')
+        colorize(prog.variable_name(atok), color=token_color['variable'], end='')
         return 1
 
     # 14 (20) End of Statement
@@ -792,23 +431,23 @@ def emit_token_at_index(i):
 
     # 0E (14) BCD Literal, Next 6 bytes
     if atok == 0x0E:
-        bcd_bytes = statement_table[i:i+6]
+        bcd_bytes = prog.statement_table[i:i+6]
         bcd_value = decode_bcd(bcd_bytes)
-        colorize(bcd_value, color=_colour_for_token('number'), end='')
+        colorize(bcd_value, color=token_color['number'], end='')
         return 7
 
     # 0F (15) String Literal, Next byte is length
     if atok == 0x0F:
-        strlen = statement_table[i]
-        str_bytes = statement_table[i+1:i+1+strlen]
-        colorize('"' + atascii_to_unicode_str(str_bytes) + '"', color=_colour_for_token('string'), end='')
+        strlen = prog.statement_table[i]
+        str_bytes = prog.statement_table[i+1:i+1+strlen]
+        colorize('"' + atascii_to_unicode_str(str_bytes) + '"', color=token_color['string'], end='')
         return strlen + 2
 
     is_func = atok >= 0x3D
     color_type = 'function' if is_func else 'command'
 
     # Other operators and functions
-    colorize(op_func_string(atok), color=_colour_for_token(color_type), end='')
+    colorize(op_func_string(atok), color=token_color[color_type], end='')
     return 1
 
 def list_program(start=0, end=32767, abbrev=args_abbrev, colorify=None):
@@ -817,7 +456,7 @@ def list_program(start=0, end=32767, abbrev=args_abbrev, colorify=None):
     For 'abbrev' output abbreviated commands (e.g., "D." rather than "DATA")
     """
 
-    stend = len(statement_table)
+    stend = len(prog.statement_table)
     if stend == 0: return
 
     qsp = "" if abbrev else " "
@@ -834,11 +473,11 @@ def list_program(start=0, end=32767, abbrev=args_abbrev, colorify=None):
     # Loop through the program's lines
     while True:
         # The first two bytes are the little-endian line number
-        lineno = getint(statement_table[i:i+2])
+        lineno = getint(prog.statement_table[i:i+2])
         if lineno > end: break
 
         # The next byte is the offset to the next line
-        line_len = statement_table[i+2]
+        line_len = prog.statement_table[i+2]
         nextline = i + line_len
 
         # Reached the first listing line yet?
@@ -851,7 +490,7 @@ def list_program(start=0, end=32767, abbrev=args_abbrev, colorify=None):
         #print(lineno, end=' ')
 
         if DEBUG_CODE: print(f"{{{line_len}}}", end='')
-        colorize(f"{lineno}", color=_colour_for_token('number'), end=' ')
+        colorize(f"{lineno}", color=token_color['number'], end=' ')
 
         # Skip to the first statement
         i += 3
@@ -859,12 +498,12 @@ def list_program(start=0, end=32767, abbrev=args_abbrev, colorify=None):
         # Detokenize statements
         while i < nextline:
             # Get the statement offset from start of line
-            st_off = statement_table[i] ; i += 1
+            st_off = prog.statement_table[i] ; i += 1
             if DEBUG_CODE: print(f"{{{st_off}}}", end='')
             next_st = thisline + st_off
 
             # Get the command token
-            cmd_tok = statement_table[i] ; i += 1
+            cmd_tok = prog.statement_table[i] ; i += 1
             if DEBUG_CODE: print(f"<{cmd_tok:02X}>", end='')
 
             # REM, DATA, ERROR
@@ -873,7 +512,7 @@ def list_program(start=0, end=32767, abbrev=args_abbrev, colorify=None):
 
             # Print the command (if it's not "implied LET")
             tstr = string_for_command_token(cmd_tok, abbrev)
-            if tstr != "": colorize(tstr, color=_colour_for_token(tok_type), end=qsp)
+            if tstr != "": colorize(tstr, color=token_color[tok_type], end=qsp)
 
             # REM, DATA, ERROR
             if is_fluff:
@@ -901,7 +540,7 @@ def list_program(start=0, end=32767, abbrev=args_abbrev, colorify=None):
         #print(f" ({i})")
 
         print()
-        if i >= len(statement_table): break
+        if i >= len(prog.statement_table): break
 
     list_colorify = False
 
@@ -925,75 +564,15 @@ def identify_keyword(statement_txt):
     """
     pass
 
+# SKBLANK, SKBLANKS, SKPBLANK
 def skip_blanks(inbuf, index):
     """
     Scan the input text starting at the given index.
     Return the index of the first non-blank character.
     """
-    while index < len(inbuf) and inbuf[index] == ' ':
+    while index < len(inbuf) and inbuf[index] == ord(' '):
         index += 1
     return index
-
-import math
-
-def get_line_number(inbuf:bytes, index: int):
-    """
-    Extract a numeric token from 'inbuf' starting at 'index'.
-
-    The token may be an integer (e.g. "123") or a floating point number
-    (e.g. "234.5").  The token ends at the first character that is not
-    a digit or a decimal point.
-
-    After extraction, 'index' is advanced to the position of that
-    terminating character.  The numeric value is converted to a floor
-    integer and stored in a two‑byte little‑endian bytearray.
-
-    Parameters
-    ----------
-    inbuf : bytearray
-        The source text.
-    index : int
-        Current position in 'inbuf'.
-
-    Returns
-    -------
-    tuple[bytearray, int]
-        The two‑byte little‑endian representation of the floored number
-        and the updated index.
-    """
-
-    # Pull out the numeric token as a string
-    start = index
-    got_dot = False
-    while index < len(inbuf):
-        c = chr(inbuf[index])
-        d = c.isdigit()
-        #print(f"Scan for num ... {index} = {c} ({d})")
-        is_dot = c == '.'
-        if not (is_dot or c.isdigit()): break
-        if is_dot:
-            if got_dot: break
-            got_dot = True
-        index += 1
-
-    # If nothing was read, return the default line number (0x00, 0x80)
-    if index == start:
-        return bytearray([0x00, 0x80]), index
-
-    # Decode the numeric bytes into a string
-    num_str = inbuf[start:index]
-    try:
-        num_val = float(num_str)
-    except ValueError:
-        # If parsing fails, fall back to the default
-        return bytearray([0x00, 0x80]), index
-
-    floored = math.floor(num_val)
-
-    # Pack into a little‑endian two‑byte array
-    line_num = bytearray([floored & 0xFF, (floored >> 8) & 0xFF])
-
-    return line_num, index
 
 def delete_line(line_no):
     """
@@ -1006,22 +585,68 @@ def delete_line(line_no):
     print(f"Deleting line {line_no}")
     pass
 
-def tokenize_line(inbuff:bytes):
+# $A1C3 SYNENT - Evaluate command arguments with a BNF evaluator
+def run_bnf_for_command(tokenized:bytearray, command_id:int, lbuff:bytes, index:int):
+    """
+    This is where it gets complicated, so we need to understand
+    how the original BNF evaluator worked and how to make this
+    one work in the same basic manner.
+    """
+
+
+    # Now we can fetch the result 
+    index, result = syntaxer.result()
+    return index
+
+def tokenize_statement(tokenized:bytearray, lbuff:bytes, index:int):
+    """
+    Tokenize a statement starting with a command
+
+    Parameters
+    ----------
+    lbuff : bytes
+        The raw text of the BASIC line to be tokenized.
+
+    Returns
+    -------
+    The new index and the bytes of the tokenized statement
+    """
+
+    # $A0C1
+    # Scan for a recognized command. Only (uppercase) letters are used in commands.
+    # The command ID will be used to look up the BNF.
+    command_id, index = search_statement_name_table(lbuff, index)
+
+    print(f"[in={index}, out=?] Got command {command_id} ({commands_info[command_id]['name']})")
+
+    # Assume the command will be appended to the output, for now.
+    # Other tokens are added only as the BNF is satisfied.
+    tokenized.append(command_id)
+
+    # Now process the BNF for the identified command (which may be Implied LET)
+    # to check the syntax and produce a complete tokenized statement.
+    # Compound statements may be chained with IF A THEN IF B THEN ...
+
+    # Run the syntaxer on the statement
+    syntaxer.tokenize_statement(command_id, lbuff, index, tokenized)
+
+    index = run_bnf_for_command(tokenized, command_id, lbuff, index)
+
+    return index
+
+# $A060 SYNTAX - 
+def tokenize_line(lbuff:bytes):
     """
     Tokenize a complete input line of AtariBASIC.
 
     Parameters
     ----------
-    inbuff : bytes
+    lbuff : bytes
         The raw text of the BASIC line to be tokenized.
 
     Returns
     -------
-    dict
-        A dictionary containing at least the parsed line number.
-        If the line could not be tokenized, an empty dictionary is returned
-        (you can change this to raise an exception or return a special
-        "ERROR" token if you prefer).
+    A tuple with an error number and the tokenized line bytes
     """
 
     # Reset the tokenized line buffer
@@ -1030,11 +655,13 @@ def tokenize_line(inbuff:bytes):
     # Init the input and output indexes to zero
     cix, cox = 0, 0
 
+    def dbug(msg): print(f"[in={cix}, out={cox}] {msg}")
+
     # Highest cix so far
     maxcix = 0
 
     # Direct statement?
-    direct_flag = False
+    direct_flag = 0x00
 
     # Saved name table output
     svontx, svontc, svvvte = 0, 0, 0
@@ -1043,10 +670,18 @@ def tokenize_line(inbuff:bytes):
     svvntp = 0 # (Offset into) variable_name_table
 
     # Skip leading blanks
-    cix = skip_blanks(inbuff, cix)
+    cix = skip_blanks(lbuff, cix)
 
     # Get the line number
-    line_num, cix = get_line_number(inbuff, cix)
+    lineno, cix = get_line_number(lbuff, cix)
+
+    # Handle an invalid line number (ERROR 3)
+    if not (0 <= lineno <= 32767):
+        print(f"ERROR-   3")
+        return 3, tokenized
+
+    # Pack into a little‑endian two‑byte array
+    line_num = pack_word(lineno)
 
     # Init the tokenized line with the line num
     tokenized = line_num
@@ -1055,89 +690,58 @@ def tokenize_line(inbuff:bytes):
     # Line Number as an int
     line_val = line_num[0] + line_num[1] * 256
 
-    print(f"[in={cix}, out={cox}] Stored Line Number {line_val}")
+    dbug(f"Stored Line Number {line_val}")
 
     # The original immediate trick is to use line 32768
     # so AtariBASIC programs are limited to 32768 lines.
-    direct_flag = line_val >= 32768
+    if lineno >= 32768: direct_flag = 0x80
 
     # Store a dummy line length that will be populated later
     tokenized.append(0)
     cox += 1
 
-    print(f"[in={cix}, out={cox}] Appended dummy line len")
+    dbug(f"Appended dummy line len")
 
     # Skip following blanks
-    cix = skip_blanks(inbuff, cix)
+    cix = skip_blanks(lbuff, cix)
 
-    # Remember the start of the statement for processing
+    dbug(f"Skipped blanks")
+
+    # Remember the start of the statement for later processing
     statement_start = cix
-
-    print(f"[in={cix}, out={cox}] Skipped blanks")
 
     # Is the next character a CR?
     # If so we'll be deleting the given line number.
-    c = inbuff[cix]
+    c = lbuff[cix]
     if c == ATEOL:
         # Find the line in the statement table and delete it
         delete_line(line_val)
-        return 101 # For now, 101 = continue on to the next line of input
+        return 101, bytearray() # Return a value indicating to continue taking input
+
+    # ============================================================
+    # Tokenize a single command statement
+    # ============================================================
+
+    cix = tokenize_statement(tokenized, lbuff, cix)
 
     # Get the rest of the bytes and print their hex values
-    while cix < len(inbuff):
-        c = inbuff[cix]
+    while cix < len(lbuff):
+        c = lbuff[cix]
         print(f"{cix} : {c}")
         cix += 1
     print("<end>")
 
-    return
-
-    # Dictionary for a Python level tokenized line
-    line_dict = {}
-
-    #
-    # Process strategy:
-    #
-    # The original implementation scans bytes and does sub-calls
-    # that also scan bytes, modifying the scan pointer as they
-    # go along. So here we should follow that rather than use
-    # split() and other modern Python tricks.
-    # We also have to follow the BNF once we identify the command,
-    # fall back to implied LET, or fall back to error.
-    #
-    # So, when we grab the line number we must advance the input index.
-    # Once we have the command we test each BNF connected by _OR
-    # and dive down the BNF rabbit hole. Some BNF are just char match,
-    # while others use callbacks for tests. We advance the input as we go,
-    # but can fall back when subitems fail.
-    #
+    return 0, tokenized
 
 
-    # -------------------------------------------------------------
-    # Step 1. Grab the line number (if present)
-    #   ^\s*     – any leading spaces (already stripped, but harmless)
-    #   (\d+)    – one or more digits
-    #   \b       – word boundary (ensures we stop at the first non‑digit)
-    line_no_match = re.match(r'^(\d+)\b', inbuff)
-
-    if line_no_match:
-        # Has a line number
-        line_no = int(line_no_match.group(1))   # convert to an integer
-        line_dict['line'] = line_no
-    else:
-        # Immediate Line has number 32768. (Too bad it's not "0" so we could have 65535 lines.)
-        line_dict['line'] = 32768
-
-    return line_dict
-
-def tokenize_and_apply_line(inbuff:bytes):
+def tokenize_and_apply_line(lbuff:bytes):
     """
     Tokenize a complete input line of AtariBASIC and apply it.
     - Lines with no number are executed right away (as if they were the last line in the program).
     - Lines with only a number cause the line with matching number to be deleted from the program.
     - Lines with a number and one or more statements are added to the program.
     """
-    tokenized_line = tokenize_line(inbuff)
+    result, tokenized_line = tokenize_line(lbuff)
     pass
 
 def consolidate_tokenized_program():
@@ -1210,11 +814,11 @@ def interactive_mode():
             line_str = input() # String
         except (KeyboardInterrupt, EOFError) as exc:
             if isinstance(exc, KeyboardInterrupt):
-                # Ctrl‑C logic
+                # Ctrl‑C is the BREAK key
                 print(" BREAK")
                 continue
             else:
-                # Ctrl‑D logic
+                # Ctrl‑D quits from interactive mode
                 print()
                 break
 
@@ -1223,16 +827,24 @@ def interactive_mode():
             print("\nBye!\n")
             break
 
-        cmd_name = cmd.split(' ')[0]
-        handler = COMMAND_HANDLERS.get(cmd_name)
-        if handler:
-            handler()
-            nowReady = True
+        # Run simple recognized commands without tokenizing
+        m = re.match(r'([A-Z]+|[.\?])(.*)', cmd)
+        if m:
+            cmd_name = m[1]
+            handler = COMMAND_HANDLERS.get(cmd_name)
+            if handler:
+                if cmd_name in ["LIST", "CLIST"]:
+                    args = m[2].strip()
+                    handler(args)
+                else:
+                    handler()
+                nowReady = True
+                continue
 
-        elif line_str != "":
+        if line_str != "":
             # Let's just dive into tokenizing the line
             # Convert from UTF-8 bytes to ATASCII bytes and append ATEOL
-            line_bytes = unicode_to_atascii_str(bytes(line_str, "utf-8")) + bytes([ATEOL])
+            line_bytes = unicode_to_atascii_str(bytes(line_str + "\n", "utf-8"))
             tokenize_and_apply_line(line_bytes);
 
             #print(f"Unknown command: {cmd_name!r}.  Valid commands are: {', '.join(COMMAND_HANDLERS)}")
@@ -1240,62 +852,6 @@ def interactive_mode():
 # --------------------------------------------------------------------------- #
 # LOAD from BAS file
 # --------------------------------------------------------------------------- #
-
-def ingest_variable_name_table(vnt_data):
-    """Extract variable names from the VNT buffer."""
-    vnt = []
-    name_bytes = bytearray()            # Temporary holder
-
-    for b in vnt_data:
-        if b & 0x80:                    # High bit set → end of name
-            name_bytes.append(b & 0x7F) # Clear high bit
-            vnt.append(name_bytes.decode('ascii'))
-            name_bytes.clear()          # Start a new name
-            #print(f"Variable {len(vnt)-1}: '{varname}'")
-        else:
-            name_bytes.append(b)        # Accumulate the name bytes
-
-    # For now ignore any trailing incomplete name
-    return vnt
-
-def ingest_variable_value_table(vvt_data):
-    """Extract variable dimensions and values from the VVT buffer."""
-    vvt = []
-    val_bytes = bytearray()                         # Temporary holder
-
-    for i in range(0, len(vvt_data), 8):
-        chunk = vvt_data[i:i+8]
-
-        if len(chunk) != 8:
-            raise ValueError(f"Incomplete 8‑byte entry at offset {vvt_offset + i}")
-
-        var_type = chunk[0] & 0xC0                  # High 2 bits: type
-        var_id = chunk[1] & 0x7F                    # Low 7 bits: variable number
-        item = { 'type': var_type, 'id': var_id }
-        if var_type == 0x40:
-            # Array: disp, dim1, dim2
-            item['disp'] = getint(chunk[2:4])    # Displacement in string/array memory
-            item['dim1'] = getint(chunk[4:6])    # Array dimension 1
-            item['dim2'] = getint(chunk[6:8])    # Array dimension 2 (or 1)
-            #print(f"Array {variable_name(var_id)}({item['dim1']}, {item['dim2']}) [{item['disp']}]")
-        elif var_type == 0x80:
-            # String: disp, curl, maxl
-            item['disp'] = getint(chunk[2:4])    # Displacement in string/array memory
-            item['curl'] = getint(chunk[4:6])    # Current length
-            item['maxl'] = getint(chunk[6:8])    # Max length as indicated by DIM
-            #print(f"String {variable_name(var_id)}({item['maxl']}) [{item['disp']}] = \"{'.'*item['curl']}\"")
-        else:
-            item['value'] = decode_bcd(chunk[2:])
-            #print(f"Scalar {variable_name(var_id)} = {item['value']}")
-
-        vvt.append(item)
-
-    # If the file is malformed and we ended mid‑name, we could handle it here.
-    # For now we ignore any trailing incomplete name.
-    return vvt
-
-def ingest_statement_table(st_data):
-    return st_data
 
 def load_file_BAS(inpath):
     """
@@ -1334,19 +890,16 @@ def load_file_BAS(inpath):
     end_offset = HEADER_SIZE + getint(buffer[12:14]) - 0x100
 
     # Load the raw Variable Name Table data into the variable_name_table array
-    global variable_name_table                  # global required for reaassignment
     vnt_data = buffer[HEADER_SIZE:vvt_offset]
-    variable_name_table = ingest_variable_name_table(vnt_data)
+    prog.ingest_variable_name_table(vnt_data)
 
     # Load the raw Variable Value Table data into the variable_value_table array
-    global variable_value_table
     vvt_data = buffer[vvt_offset:st_offset]
-    variable_value_table = ingest_variable_value_table(vvt_data)
+    prog.ingest_variable_value_table(vvt_data)
 
     # Load the raw Statement Table data into the statement_table array
-    global statement_table
     st_data = buffer[st_offset:end_offset]
-    statement_table = ingest_statement_table(st_data)
+    prog.ingest_statement_table(st_data)
 
     #print(f"Offsets: VNT={HEADER_SIZE}, VVT={vvt_offset}, ST={st_offset}, END={end_offset}")
     #print(f"Lengths: VNT={len(vnt_data)}, VVT={len(vvt_data)}, ST={len(st_data)}")
@@ -1371,6 +924,8 @@ def main():
     if sys.version_info[0] < 3:
         print("This script requires Python 3")
         sys.exit(1)
+
+    color_print("AtariBASIC Playground\n(c) 2025 Thinkyhead", color=token_color['comment'])
 
     """
     Parse input arguments and decide where to route the program next.
@@ -1417,10 +972,6 @@ def main():
         args.list = True
         args_colorify = True
 
-    # ----- Init BASIC data and state -----
-
-    init_lookups()
-
     # ----- Handle the three modes -----
     if args.infile:
         # Load the input file (currently just raw bytes)
@@ -1433,12 +984,12 @@ def main():
             exit(0)
         elif args.list:
             print()
-            if args.tvars: print_variable_tables()
+            if args.tvars: prog.print_variable_tables()
             list_program(abbrev=args_abbrev)
             print()
             exit(0)
         elif args.tvars:
-            print_variable_tables()
+            prog.print_variable_tables()
             exit(0)
 
     interactive_mode()

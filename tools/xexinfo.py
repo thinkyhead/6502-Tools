@@ -2,7 +2,7 @@
 """
 xexinfo.py
 
-Scan an Atari XEX/BIN file, list each chunk (start → end, payload size),
+Scan an Atari XEX/BIN file, list each chunk (start -> end, payload size),
 and report any trailing garbage that cannot form a valid chunk.
 
 Usage:
@@ -35,7 +35,7 @@ def parse_chunks(data: bytes, strict: bool = False):
         if offset + 4 > total_len:
             if strict:
                 raise ValueError(f"Truncated header at offset ${offset:04X}")
-            # Not enough data for another header → finish
+            # Not enough data for another header -> finish
             break
 
         # Little‑endian 16‑bit start/end
@@ -101,7 +101,7 @@ def main():
 
         idx, start, end, size, payload = result
 
-        line = f"Chunk {idx:02d}: {format_address(start)} → {format_address(end)}  ({size:5d} bytes)"
+        line = f"Chunk {idx:02d}: {format_address(start)} - {format_address(end)}  ({size:5d} bytes)"
 
         # Detect RUNAD / INITAD chunks
         if start == 0x2E0 and end == 0x2E1 and size == 2:
