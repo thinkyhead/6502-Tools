@@ -1726,7 +1726,7 @@ _CHNG	= $0F	; Change Last Token to X. e.g., to rectify '=' as assign or compare.
 
 .define	JS(aa) $80 + (((aa - *) & $7F) ^ $40)	; Jump to Sub-rule address label
 .define	AD(aa) (aa - 1)				; Adr-1 for use with PHA+PHA+RTS (e.g., @STGO, _EXOP)
-.define	CHNG(vv) _CHNG, vv			; Change found token to target token
+.define	CHNG(a,b) a, _CHNG, b			; Seek generic token and change it to specific token
 .define	ANTV(aa) _ANTV, <AD(aa), >AD(aa)	; Process a distant Sub-rule
 .define	ESRT(aa) _ESRT, <AD(aa), >AD(aa)	; JSR to 6502 subroutine code
 .define	UNJS(vv) (* + (vv ^ $40) - $80)		; Utility function reverse JS back to offset
@@ -1747,7 +1747,7 @@ _EXP:		.if	BASIC_REVISION = 1
 ; <UNARY> = + | - | NOT#
 ;---------------------------------------------------------------
 
-_UNARY:		.byte	CPLUS,CHNG(CUPLUS),_OR,CMINUS,CHNG(CUMINUS),_OR,CNOT,_RTN
+_UNARY:		.byte	CHNG(CPLUS,CUPLUS),_OR,CHNG(CMINUS,CUMINUS),_OR,CNOT,_RTN
 
 ;---------------------------------------------------------------
 ; <NV> = <NFUN> | <NVAR> | <NCON> | <STCOMP>#
@@ -1781,13 +1781,13 @@ _NVAR:		.byte	ESRT(_TNVAR),JS(_NMAT),_RTN
 _NMAT:		.if	BASIC_REVISION > 1
 		.byte	_UNKN
 		.endif
-		.byte	CLPRN,CHNG(CALPRN),_VEXP,JS(_NMAT2),CRPRN,_OR,_RTN
+		.byte	CHNG(CLPRN,CALPRN),_VEXP,JS(_NMAT2),CRPRN,_OR,_RTN
 
 ;---------------------------------------------------------------
 ; <NMAT2> = ,<EXP> | &#
 ;---------------------------------------------------------------
 
-_NMAT2:		.byte	CCOM,CHNG(CACOM),_VEXP,_OR,_RTN
+_NMAT2:		.byte	CHNG(CCOM,CACOM),_VEXP,_OR,_RTN
 
 ;---------------------------------------------------------------
 ; <NFUN> = <NFNP><NFP> | <NFSP><SFP> | <NFUSR>#
@@ -1799,19 +1799,19 @@ _NFUN:		.byte	CNFNP,JS(_NFP),_OR,ANTV(_NFSP),JS(_SFP),_OR,JS(_NFUSR),_RTN
 ; <NFUSR> = USR(<PUSR>)#
 ;---------------------------------------------------------------
 
-_NFUSR:		.byte	CUSR,CLPRN,CHNG(CFLPRN),ANTV(_PUSR),CRPRN,_RTN
+_NFUSR:		.byte	CUSR,CHNG(CLPRN,CFLPRN),ANTV(_PUSR),CRPRN,_RTN
 
 ;---------------------------------------------------------------
 ; <NFP> = (<EXP>)#
 ;---------------------------------------------------------------
 
-_NFP:		.byte	CLPRN,CHNG(CFLPRN),_VEXP,CRPRN,_RTN
+_NFP:		.byte	CHNG(CLPRN,CFLPRN),_VEXP,CRPRN,_RTN
 
 ;---------------------------------------------------------------
 ; <SFP> = <STR>)#
 ;---------------------------------------------------------------
 
-_SFP:		.byte	CLPRN,CHNG(CFLPRN),JS(_STR),CRPRN,_RTN
+_SFP:		.byte	CHNG(CLPRN,CFLPRN),JS(_STR),CRPRN,_RTN
 
 ;---------------------------------------------------------------
 ; <STCOMP> = <STR><SOP><STR>#
@@ -1841,24 +1841,24 @@ _SVAR:		.byte	ESRT(_TSVAR),JS(_SMAT),_RTN
 ; <SMAT> = (<EXP><SMAT2>) | &#
 ;---------------------------------------------------------------
 
-_SMAT:		.byte	CLPRN,CHNG(CSLPRN),_VEXP,JS(_SMAT2),CRPRN,_OR,_RTN
+_SMAT:		.byte	CHNG(CLPRN,CSLPRN),_VEXP,JS(_SMAT2),CRPRN,_OR,_RTN
 
 ;---------------------------------------------------------------
 ; <SMAT2> = ,<EXP> | &#
 ;---------------------------------------------------------------
 
-_SMAT2:		.byte	CCOM,CHNG(CACOM),_VEXP,_OR,_RTN
+_SMAT2:		.byte	CHNG(CCOM,CACOM),_VEXP,_OR,_RTN
 
 ;---------------------------------------------------------------
 ; <SOP> = <><#
 ;---------------------------------------------------------------
 
-_SOP:		.byte	CLE,CHNG(CSLE),_OR
-		.byte	CNE,CHNG(CSNE),_OR
-		.byte	CGE,CHNG(CSGE),_OR
-		.byte	CGT,CHNG(CSGT),_OR
-		.byte	CLT,CHNG(CSLT),_OR
-		.byte	CEQ,CHNG(CSEQ),_RTN
+_SOP:		.byte	CHNG(CLE,CSLE),_OR
+		.byte	CHNG(CNE,CSNE),_OR
+		.byte	CHNG(CGE,CSGE),_OR
+		.byte	CHNG(CGT,CSGT),_OR
+		.byte	CHNG(CLT,CSLT),_OR
+		.byte	CHNG(CEQ,CSEQ),_RTN
 
 ;---------------------------------------------------------------
 ;	PUT statement
@@ -1905,8 +1905,8 @@ _SRAD:		.byte	JS(_EOS),_RTN
 ;---------------------------------------------------------------
 
 _SLET:
-_SILET:		.byte	ANTV(_NVAR),CEQ,CHNG(CAASN),_VEXP,JS(_EOS),_OR
-		.byte	JS(_SVAR),CEQ,CHNG(CSASN),ANTV(_STR),JS(_EOS),_RTN
+_SILET:		.byte	ANTV(_NVAR),CHNG(CEQ,CAASN),_VEXP,JS(_EOS),_OR
+		.byte	JS(_SVAR),CHNG(CEQ,CSASN),ANTV(_STR),JS(_EOS),_RTN
 
 ;---------------------------------------------------------------
 ;	FOR statement
@@ -1914,7 +1914,7 @@ _SILET:		.byte	ANTV(_NVAR),CEQ,CHNG(CAASN),_VEXP,JS(_EOS),_OR
 ; <FOR> = <TNVAR> = <EXP> TO <EXP><FSTEP><EOS>#
 ;---------------------------------------------------------------
 
-_SFOR:		.byte	ESRT(_TNVAR),CEQ,CHNG(CAASN),_VEXP,CTO,_VEXP,JS(_FSTEP),JS(_EOS),_RTN
+_SFOR:		.byte	ESRT(_TNVAR),CHNG(CEQ,CAASN),_VEXP,CTO,_VEXP,JS(_FSTEP),JS(_EOS),_RTN
 
 ;---------------------------------------------------------------
 ; <FSTEP> = STEP<EXP> | &
@@ -2184,8 +2184,8 @@ _NSMAT:		.byte	ESRT(_TNVAR)
 		.if	BASIC_REVISION > 1
 		.byte	_UNKN
 		.endif
-		.byte	CLPRN,CHNG(CDLPRN),_VEXP,ANTV(_NMAT2),CRPRN,_OR
-		.byte	ESRT(_TSVAR),CLPRN,CHNG(CDSLPR),_VEXP,CRPRN,_RTN
+		.byte	CHNG(CLPRN,CDLPRN),_VEXP,ANTV(_NMAT2),CRPRN,_OR
+		.byte	ESRT(_TSVAR),CHNG(CLPRN,CDSLPR),_VEXP,CRPRN,_RTN
 
 ;---------------------------------------------------------------
 ; <NSML> = <NSMAT><NSML2> | &#
@@ -2264,7 +2264,7 @@ _SFNP:		.byte	CSTR,_OR,CCHR,_RTN
 
 _PUSR:		.byte	_VEXP,JS(_PUSR1),_RTN
 ; <PUSR1> = ,<PUSR> | &#
-_PUSR1:		.byte	CCOM,CHNG(CACOM),JS(_PUSR),_OR,_RTN
+_PUSR1:		.byte	CHNG(CCOM,CACOM),JS(_PUSR),_OR,_RTN
 
 ;---------------------------------------------------------------
 ; OPNTAB - Operator Name Table
