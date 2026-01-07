@@ -1,6 +1,6 @@
 %YAML 1.2
 ---
-#  =================>------------<==================
+## =================>------------<==================
  # =================( AtariBASIC )==================
  # =================(     by     )==================
  # =================( thinkyhead )==================
@@ -31,7 +31,7 @@
  # even binary operators. For any serious retro-programming on
  # the Atari I recommend using 6502 Assembly Language!
  #
-#  =============== AtariBASIC quirks ===============
+## =============== AtariBASIC quirks ===============
  #
  # The tokenizer is not very deep, so some things that seem
  # natural in modern languages may seem "broken" in BASIC.
@@ -55,7 +55,7 @@
  # So when the Sublime parser hits a dead end due to some ambiguity,
  # we know AtariBASIC will hit the same dead end and throw an error.
  #
-#  ============== AtariBASIC keywords ==============
+## ============== AtariBASIC keywords ==============
  #
  # Operators:
  # AND       Logical conjunction
@@ -174,7 +174,7 @@
  # Code:
  # R.EM or . Marks a comment in a program
  #
-#  ============== AtariBASIC entities ==============
+## ============== AtariBASIC entities ==============
  #
  # Values:
  #   - Literal (float)          1.23
@@ -204,7 +204,7 @@
  #     cannot be followed by anything other than an
  #     operator, or an error is thrown.
  #
-#
+##
 name: AtariBASIC (loose)
 file_extensions:
   - [lst,ataribas,ataribasic]
