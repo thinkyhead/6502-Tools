@@ -199,6 +199,16 @@ int main(int argc, char *argv[]) {
 
   int c; // note: int, not char, required to handle EOF
 
+  if (DEBUG) {
+    fprintf(stderr, "Converting ");
+    if (aflag) fprintf(stderr, "ATASCII to plain ASCII\n");
+    if (iflag) fprintf(stderr, "ATASCII to international UTF-8\n");
+    if (nflag) fprintf(stderr, "ATASCII to naive UTF-8\n");
+    if (pflag) fprintf(stderr, "LIST \"P:\" to UTF-8\n");
+    if (sflag) fprintf(stderr, "Strip host comments\n");
+    if (uflag) fprintf(stderr, "UTF-8 to ATASCII\n");
+  }
+
   if (uflag) {
     //
     // Convert from UTF-8 to ATASCII
@@ -208,15 +218,6 @@ int main(int argc, char *argv[]) {
          gotchar = !sflag,
          skip = false;
     unsigned char c1;
-
-    if (DEBUG) {
-      fprintf(stderr, "Converting ");
-      if (aflag) fprintf(stderr, "ATASCII to plain ASCII...\n");
-      if (iflag) fprintf(stderr, "ATASCII to international UTF-8...\n");
-      if (nflag) fprintf(stderr, "ATASCII to naive UTF-8...\n");
-      if (pflag) fprintf(stderr, "LIST \"P:\" to UTF-8\n");
-      if (uflag) fprintf(stderr, "UTF-8 to ATASCII...\n");
-    }
 
     while ((c = fgetc(fp)) != EOF) {
 
