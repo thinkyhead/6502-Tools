@@ -7,11 +7,12 @@
   "tab_size": 1,
   "translate_tabs_to_spaces": true,
   "detect_indentation": false,
-  "word_separators": "~|{}` !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz[\\]^_",
+  "word_separators": "~|{}` !\"#%&'()*+,-./:;<=>?@[\\]^", // Not: $
   "rulers": [38,40,76,80,114,120,254],
   "color_scheme": "Packages/User/AtariTools/Atari800.tmTheme",
-  // One of these lines should work...
-  "font_face": "AtariClassic-Regular",
+  // One of these fonts should work...
+  "font_face": "EightBit Atari",
+  //"font_face": "AtariClassic-Regular",
   //"font_face": "Atari Classic Int",
   //"font_face": "Atari Classic Chunky",
 }
