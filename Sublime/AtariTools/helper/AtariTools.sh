@@ -14,7 +14,7 @@ ATARI800=/usr/local/bin/atari800
 #ATARI800=/opt/local/bin/atari800
 
 # Runtime Atari 800 preferences
-ATARIOPTS="-win-width 1200 -win-height 900 -colors-preset deep-black"
+ATARIOPTS="-xl -win-width 1200 -win-height 900 -colors-preset deep-black"
 
 # Common Atari 800 files location
 ATARI_HOME=$EmuDir/Atari800
