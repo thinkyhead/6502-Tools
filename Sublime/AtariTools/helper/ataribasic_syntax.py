@@ -7,6 +7,7 @@
 #
 
 from ataribasic import *
+import functools
 
 CIX = 0
 COX = 0
@@ -248,20 +249,42 @@ kCHNG = 0x0F # Change Last Token to X. e.g., to rectify '=' as assign or compare
 # When converting to code use 'f_RULE()' and 'f_EXP()',
 #   'OR' => 'or', 'RTN' => 'return False'. Empty rule 'OR RTN' permits NADA.
 
+# As we go through the ABML we need to be able to manage state without making the
+# handlers more ugly and complicated.
+# In the syntaxer the main state is just the input index and the working buffer.
+# The working buffer will be inserted into the program if all its statements are valid.
+# When all rules for a statement fail the whole thing is flagged as an ERROR -.
+#
+# Unlike the original syntaxer we don't have to track the ABML position.
+#
+# When calling sub-rules we need to save cix and cox in a stack.
+# On success the new cix, cox are left as they are. On fail the stack values replace them.
+# To implement the stack behavior for rules we'll use a decorator.
+# First time using a decorator? Don't be shy. A decorator converts a function into a
+# callback within the decorator.
+def abml_rule(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        # 1. Save current input index and output buffer
+        current_state = (self.index, self.tokenized)
+        self.state_stack.append(current_state)
+
+        # 1. Just returning True/False. Does that trigger these?
+        try:
+            result = func(self, *args, **kwargs)
+            if not result:
+                self.index, self.tokenized = self.state_stack[-1]
+        finally:
+            self.index, self.tokenized = self.state_stack[-1]
+
+        self.state_stack.pop()
+        return result
+
 class Syntaxer:
 
     def util_SKIPBLANK(self):
         while self.lbuff[self.index] in (' ', '\t'):
             self.index += 1
-
-    def try_next_rule(self):
-        # Reset the input index to the start of the thing to rule-test
-        # We might have to pop from a stack here if rules can pile up.
-        self.index = self.rule_index_in
-        # Remove added tokens when the rule fails
-        self.tokenized.concat(self.rule_index_out)
-        # For convenience
-        return False
 
     # Search ONT
     # SRCONT: Check if the current symbol matches the terminal symbol represented by the current operator token (according to the Operator Name Table).
@@ -271,16 +294,22 @@ class Syntaxer:
     #         the test logic before the "or" that follows.
     #         The original syntaxer would have had logic to skip ahead to next rule following _OR,
     #         whereas we let Python go there. So each rule that could be tested must do the same.
-    def f_SRCONT(self, token):
+    #@abml_rule
+    def f_SRCONT(self, ltoken, rtoken=None):
         self.util_SKIPBLANK()
         token, next_index = search_operator_name_table(self.lbuff, self.index)
         # If the input matches the operator or function, store it and advance input index
-        if token:
-            self.tokenized.append(token)
+        if token == ltoken:
+            self.tokenized.append(rtoken if rtoken else ltoken)
             self.index = next_index
+            print(f"SRCONT({ltoken})")
             return True
+        return False
 
-        return self.try_next_rule()
+    # CHNG: Match a token, change it to the one that fits the context
+    def f_CHNG(self, ltoken, rtoken):
+        print(f"CHNG({ltoken}, {rtoken})")
+        return self.f_SRCONT(ltoken, rtoken)
 
     # TNVAR: Examine the current source symbol for a numeric variable. Array var names end with '('.
     #        On success create the var, put the var token in OUTBUFF, return 'pass'. Else return 'fail'.
@@ -728,7 +757,9 @@ class Syntaxer:
     # ABML: cPND VEXP RTN
     ### s_D1 = (cPND, s_EXP, kRTN)
 
-    def f_D1(self): return self.f_SRCONT(cPND) and self.f_EXP()
+    def f_D1(self):
+        print(f"D1...")
+        return self.f_SRCONT(cPND) and self.f_EXP()
 
     # ========================================
     # Numeric or String Variable
@@ -1219,16 +1250,19 @@ class Syntaxer:
             self.f_SOUND,    self.f_LPRINT,   self.f_CSAVE,    self.f_CLOAD,    self.f_ILET
         )
 
+        self.rule_index_out = 0
+
     # command_id - Token for the identified command
     # lbuff - Text Buffer containting the input line
     # index - Index in the buffer to tokenize from
     # tokenized - Output buffer to append onto
+    # state_stack - Rules need to save and restore position during tokenization
     def tokenize_statement(self, command_id:int, lbuff:bytes, index:int, tokenized:bytearray):
         self.lbuff = lbuff
         self.index = index
         self.tokenized = tokenized
-        self.old_tokenized_len = len(tokenized)
         self.statement_syntax_table[command_id]()
+        self.state_stack = []
 
     def result(self) -> (int, bytearray):
         self.tokenized += b'test123:'
