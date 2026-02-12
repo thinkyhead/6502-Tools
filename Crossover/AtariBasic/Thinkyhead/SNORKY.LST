@@ -1,0 +1,203 @@
+;
+; SNORKY! by Thinkyhead
+; An homage to Q*bert in AtarBASIC
+; Original 1983, Revival 2026
+;
+
+; Init vars, vblank, sprites, playfield
+0 GOS.32000:GOS.10000:G.13000:G.12000:G.11000:G.32767
+
+; Draw one row of angled sides of a cube
+# 4 C.N2:PL.X-N3,Z:DR.X,Z+N3:C.N3:DR.X+N3,Z:RET.
+
+; Draw a hollow cube at the given X,Y
+# 10 Z=Y:C.N3:PL.X-N3,Z:DR.X,Z-N3:DR.X+N3,Z:DR.X,Z+N3:DR.X-N3,Z
+# 11 Z=Z+N2:GOS.N4:Z=Z+N1:GOS.N4:Z=Z+N1:GOS.N4:Z=Z+N1:GOS.N4:Z=Z+N1:GOS.N4:.Z=Z+N1:GOS.N4
+# 12 C.N0:PL.X,Y+N6:PL.X,Y+N8:RET.
+;12 C.N0:PL.X,Y+N5:DR.X,Y+N10:RET.
+
+; Move data within the sprite
+15 ER=USR(MOVE,P1,N5,PX,OY,PY):RET.
+
+##################################
+#  20 Draw a solid top at CI,CR  #
+#     CR=ROW,CI=INDEX,C=COLOR    #
+##################################
+
+# 20 X=CTR-CR*N4+CI*N8:Y=CTOP+CR*N10:ER=USR(SGUY,SGUY,DIR=N1 ORDIR=N3,N0,P0,X,Y)
+# 21 C.C:PL.X,Y-N2:PL.X,Y+N2:PL.X-N1,Y-N1:DR.X+N1,Y-N1:PL.X-N1,Y+N1:DR.X+N1,Y+N1:PL.X-N2,Y:DR.X+N2,Y:RET.
+20 X=CTR-CR*N4+CI*N8:Y=CTOP+CR*N10:ER=USR(SGUY,SGUY,DIR=N1 ORDIR=N3,N0,P0,X,Y):ER=USR(CUBE,X,Y,C*85):RET.
+
+; Draw a less solid top at the given CI,CR
+# 30 Y=CTOP+CR*N10:X=CTR-CR*N4+CI*N8
+; Draw a less solid top at the given X,Y
+# 31 PL.X,Y-N1:PL.X,Y+N1:PL.X-N1,Y:DR.X+N1,Y:RET.
+
+######################################
+#  40 Set theme colors / brightness  #
+#     ER=THEME+SLOP N=0-14           #
+######################################
+
+40 PR=N/N14:POK.COL0,ER+PR*N14:POK.COL1,ER+PR*N6:POK.COL2,ER+PR*N10:RET.
+
+###############
+#    Init     #
+###############
+
+; Init all space-saving "constants"
+; Use of READ/DATA produces smaller code:
+; Constants cost 6 bytes each, DATA is plaintext.
+10000 REA.N0,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N11,N12,N13,N14,N15,N16:D.0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+10001 REA.COL0,COL1,COL2,COL3,COL4,N256,CTR:D.708,709,710,711,712,256,80
+
+; Reserve P/M space, Graphics 15, DMA off
+10010 RAMTOP=PEEK(106):PMB=RAMTOP-N16:POK.106,PMB:GR.N15+N16:POK.82,N0:POK.559,N0
+
+;
+; Init static cubes background
+; Use of USR cuts the time down from 26.4s to 3.4s ... 1/8th of the time.
+;
+
+10100 DIMCV(171),RI(18):II=N0:CTOP=N8:Y=CTOP:M1=CTR:M2=CTR:F.N=N0 TO17:RI(N)=II:II=II+N+N1
+#10110 F.X=M1 TOM2 STEPN8:GOS.N10:POK.COL4,II:II=II+N1:N.X
+10110 F.X=M1 TOM2 STEPN8:ER=USR(CUBE,X,Y):N.X
+10120 Y=Y+N10:M1=M1-N4:M2=M2+N4:N.N
+
+; Fade in the playfield
+10130 ER=N0:N=N0:GOS.40:POK.559,34:GOS.30030
+
+;
+; Set up Player/Missile DMA
+;
+
+10200 PMBASE=PMB*N256:P0=PMBASE+1024:P1=P0+N256:P0X=53248:P1X=P0X+N1:PBX=48
+; Set colors, start X and Y
+10210 ER=USR(INIT,PMBASE)
+10220 POK.704,234:POK.705,88:PX=PBX+CTR:PY=98:POK.P1X,PX-N4
+; Draw a simple 2-line block shape
+10230 POK.P1+PY,N8:POK.P1+PY+N1,28:POK.P1+PY+N2,62:POK.P1+PY+N3,28:POK.P1+PY+N4,N8:RET.
+10240 RET.
+
+#############################
+#  11000 Random with Fade   #
+#############################
+
+11000 SS=10
+11004 IFRND(N0)<0.01ORNOTSTRIG(N0)THENGOS.30015:POK.77,N0
+11005 C=INT(RND(N0)*N4):CR=INT(RND(N0)*17):CI=INT(RND(N0)*(CR+N1)):GOS.20:GOS.30000:G.11004
+
+#############################
+#  12000 Joystick testing   #
+#############################
+
+12000 S=STICK(N0):G.12000+S
+12005 G.12000
+12006 G.12000
+; Move SE
+12007 PX=PX+N4:OY=PY:PY=PY+N10:GOS.N15:G.12000
+12009 G.12000
+12010 G.12000
+; Move NW
+12011 PX=PX-N4:OY=PY:PY=PY-N10:GOS.N15:G.12000
+; Move SW
+12013 PX=PX-N4:OY=PY:PY=PY+N10:GOS.N15:G.12000
+; Move NE
+12014 PX=PX+N4:OY=PY:PY=PY-N10:GOS.N15:G.12000
+12015 POK.77,N0:G.12000
+
+#######################
+#  13000 Random Walk  #
+#######################
+
+;
+; Walk the cubes without falling off
+; DIR: 0=NW 1=NE 2=SW 3=SE
+; SW/SE legal for CR<17
+; NW legal for CI>N0
+; NE legal for CI<CR
+;
+13000 SS=N1:CR=N0:CI=N0:C.N1
+13001 IFRND(N0)<0.001ORNOTSTRIG(N0)THENGOS.30015:POK.77,N0
+; Pick a move that stays within the playfield.
+; Never South at the bottom.
+13002 DIR=INT(RND(N0)*N2*(N2-(CR>N16)))
+; Never North at the top.
+13003 IFCR=N0 ANDDIR<N2 THENDIR=DIR+N2
+; Reverse bad upward moves.
+13004 IF(CI=N0 ANDDIR=N0)OR(CI=CR ANDDIR=N1)THENDIR=N1-DIR
+; Apply the chosen directions
+13010 CR=CR+(DIR>N1)-(DIR<N2):CI=CI+(DIR=N3)-(DIR=N0)
+13011 II=RI(CR)+CI:C=CV(II)+N1:IFC=N4 THENC=0
+13012 CV(II)=C:GOS.20:GOS.30000:G.13001
+
+; Get permissible directions
+;14000 NW=CI>N0:NE=CI<CR:SW=CR<N16:SE=SW:RET.
+
+#############################
+#  30000 Wait for SS ticks  #
+#############################
+
+30000 GOS.30010:TT=T+SS
+30001 IFT<TT THENGOS.30010:G.30001
+30002 RET.
+
+################################
+#  30010 T = Ticks since boot  #
+################################
+
+30010 T=PEEK(20)+PEEK(19)*N256+PEEK(18)*65536:RET.
+
+###################################
+#  30015 Fade out to next scheme  #
+###################################
+
+30015 ER=THMF+0.1:F.N=N14 TON0 STEP-N2:GOS.40:N.N
+
+#############################
+#  30020 Go to next scheme  #
+#############################
+
+30020 THMF=THMF+N3*N16:IFTHMF>=N256 THENTHMF=THMF-N256
+30021 THMB=THMF:IFRND(N0)<0.5THEN30023
+30022 THMB=THMB+N8*N16:IFTHMB>=N256 THENTHMB=THMB-N256
+30023 POK.COL4,THMB
+
+; Fade in the color scheme and return
+30025 ER=THMF+0.1:F.N=N0 TON14 STEPN2:GOS.40:N.N:RET.
+
+###################################
+#  30030 Init with random scheme  #
+###################################
+
+30030 THMF=INT(RND(N0)*N16)*N16:G.30021
+
+###############################
+#  32000 Define USR Routines  #
+#        and data buffers.    #
+###############################
+
+; USR(INIT,PMBASE)
+; - Clear players RAM
+; - Enable DMA, 1-line res, normal playfield
+; - Enable player display in GTIA, all P/M in front
+32000 INIT=ADR("h(hih:/o")
+
+; USR(MOVE,P0,5,PX,OY,PY) - Data move within P/M
+32001 MOVE=ADR("hBhhhhhh8hhhh0")
+
+; USR(SGUY,SGUY,DIR,FRAME,Pn,X,Y) - Draw the main player sprite
+32002 SGUY=ADR("hhhhh'eehheeeehhhhi,=hhi=")
+
+; ER=USR(CUBE,X,Y [,C*85]) - Draw a cube or cube top
+32004 CUBE=ADR("hXYhh8JJeehh8&&&eeeeDhheeI11ee(eeee(ee00#3(*?**?0")
+32010 RET.
+
+#################################
+#  32760 K = Wait for Keypress  #
+#################################
+32760 O.#1,4,0,"K":GET#1,K:CL.#1:RET.
+
+######################
+#  32767 Wait, Quit  #
+######################
+32767 GOS.32760
