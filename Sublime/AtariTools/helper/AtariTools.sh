@@ -31,6 +31,7 @@ SUBLFILE="SUBLIME.LST"
 
 # Printed output from atari800:
 PRINTFILE="ATARIOUT.LST"
+PRINTBIN="ATARIOUT.BIN"
 
 #
 # Atari 2600
