@@ -32,16 +32,16 @@ PMBASE          =       $D407
         .endmacro
 
 ;
-; Add16
+; AddWord
 ;
-        .macro Add16 adr
+        .macro AddWord adr
         clc
-        Add16CC adr
+        AddWordCC adr
         .endmacro
 ;
-; Add16CC
+; AddWordCC
 ;
-        .macro Add16CC adr
+        .macro AddWordCC adr
         adc adr
         sta adr
         lda #0
