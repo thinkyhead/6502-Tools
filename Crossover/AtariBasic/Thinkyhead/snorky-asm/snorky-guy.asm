@@ -29,26 +29,23 @@ RSV2:   .res 1
 SnorkyGuy:
         pla             ; ARGC from USR()
 
-        ; SNORKY (Address of this code)
+        ; Sprites Address
 
         pla
         sta PSRC+1
         pla
-        ; Point to our graphics data
-        clc
-        adc #(sprites-SnorkyGuy)
         sta PSRC
-        bcc _noinc
-        inc PSRC+1
-_noinc:
 
-        ; DIR 0=LEFT 1=RIGHT
+        ; DIR   0-1=UP   2-3=DOWN
+        ;       0/2=LEFT 1/3=RIGHT
+        ;
 
         pla
         pla
+        and #1
         beq _noadd
-        lda #(r_sprites-l_sprites)
-        Add16 PSRC
+        lda #(frame_size*3)
+        AddWord PSRC
 _noadd:
 
         ; FRAME 0-2 ... multiply by 13, add to PSRC
@@ -64,7 +61,7 @@ _noadd:
         txa             ; (draw x4)
         asl             ; x8
         adc PTMP        ; x13
-        Add16CC PSRC
+        AddWordCC PSRC
 
         ; Get player top address
 
@@ -113,15 +110,7 @@ _copy:
 
 _exit:  rts
 
-sprites:
-l_sprites:
-        .byte $1c,$3e,$7f,$d3,$93,$3f,$7f,$7e,$3c,$24,$24,$24,$6c
-frame_size = *-l_sprites
-        .byte $1e,$3f,$73,$d3,$bf,$7f,$7e,$3c,$24,$24,$24,$24,$6c
-        .byte $1e,$3f,$73,$d3,$bf,$7f,$7e,$3c,$24,$24,$6c,$00,$00
-r_sprites:
-        .byte $38,$7c,$fe,$cb,$c9,$fc,$fe,$7e,$3c,$24,$24,$24,$36
-        .byte $78,$fc,$ce,$cb,$fd,$fe,$7e,$3c,$24,$24,$24,$24,$36
-        .byte $78,$fc,$ce,$cb,$fd,$fe,$7e,$3c,$24,$24,$36,$00,$00
-
         .endproc
+
+; Sprites stub
+frame_size = 13
