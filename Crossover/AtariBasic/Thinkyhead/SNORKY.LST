@@ -24,9 +24,10 @@
 #     CR=ROW,CI=INDEX,C=COLOR    #
 ##################################
 
-# 20 X=CTR-CR*N4+CI*N8:Y=CTOP+CR*N10:ER=USR(SGUY,SGUY,DIR=N1 ORDIR=N3,N0,P0,X,Y)
+# 20 X=CTR-CR*N4+CI*N8:Y=CTOP+CR*N10:ER=USR(SGUY,GGUY,DIR,N0,P0,X,Y)
 # 21 C.C:PL.X,Y-N2:PL.X,Y+N2:PL.X-N1,Y-N1:DR.X+N1,Y-N1:PL.X-N1,Y+N1:DR.X+N1,Y+N1:PL.X-N2,Y:DR.X+N2,Y:RET.
-20 X=CTR-CR*N4+CI*N8:Y=CTOP+CR*N10:ER=USR(SGUY,SGUY,DIR=N1 ORDIR=N3,N0,P0,X,Y):ER=USR(CUBE,X,Y,C*85):RET.
+20 X=CTR-CR*N4+CI*N8:Y=CTOP+CR*N10:ER=USR(SGUY,GGUY,DIR,N0,P0,X,Y)
+21 ER=USR(CUBE,X,Y,C*85):RET.
 
 ; Draw a less solid top at the given CI,CR
 # 30 Y=CTOP+CR*N10:X=CTR-CR*N4+CI*N8
@@ -84,7 +85,7 @@
 
 11000 SS=10
 11004 IFRND(N0)<0.01ORNOTSTRIG(N0)THENGOS.30015:POK.77,N0
-11005 C=INT(RND(N0)*N4):CR=INT(RND(N0)*17):CI=INT(RND(N0)*(CR+N1)):GOS.20:GOS.30000:G.11004
+11005 C=INT(RND(N0)*N4):CR=INT(RND(N0)*17):CI=INT(RND(N0)*(CR+N1)):X=CTR-CR*N4+CI*N8:Y=CTOP+CR*N10:GOS.21:GOS.30000:G.11004
 
 #############################
 #  12000 Joystick testing   #
@@ -186,7 +187,10 @@
 32001 MOVE=ADR("hBhhhhhh8hhhh0")
 
 ; USR(SGUY,SGUY,DIR,FRAME,Pn,X,Y) - Draw the main player sprite
-32002 SGUY=ADR("hhhhh'eehheeeehhhhi,=hhi=")
+32002 SGUY=ADR("hhhhh)'eehheeeehhhhi,=hhi=")
+32003 GGUY=ADR(">?<$$$l?s<$$$$l?s<$$l8<$$$6x<$$$$6x<$$6")
+
+; TODO: Mirror GGUY data into some string RAM
 
 ; ER=USR(CUBE,X,Y [,C*85]) - Draw a cube or cube top
 32004 CUBE=ADR("hXYhh8JJeehh8&&&eeeeDhheeI11ee(eeee(ee00#3(*?**?0")

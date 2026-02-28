@@ -1,10 +1,10 @@
 # Makefile for "Snorky" helper code
 
-.PHONY : default view-init view-move view-guy view-cube mclean clean
+.PHONY : default view-init view-move view-guy view-cube snorky-gfx mclean clean
 
 default : all-bin
 
-all-bin : snorky-init.bin snorky-move.bin snorky-guy.bin snorky-cube.bin
+all-bin : snorky-init.bin snorky-move.bin snorky-guy.bin snorky-cube.bin snorky-gfx
 
 # Snorky Init Code
 
@@ -50,6 +50,22 @@ snorky-cube.bin : snorky-cube.o
 view-cube : snorky-cube.o
 	nano snorky-cube.s
 
+# Snorky Graphics Data
+
+snorky-gfx: snorky-gfx1.bin snorky-gfx2.bin
+
+snorky-gfx1.o : snorky-gfx1.asm
+	ca65 --target atarixl --cpu 6502 snorky-gfx1.asm -l snorky-gfx1.s -o snorky-gfx1.o
+
+snorky-gfx1.bin : snorky-gfx1.o
+	ld65 -o snorky-gfx1.bin -C snorky.cfg snorky-gfx1.o
+
+snorky-gfx2.o : snorky-gfx2.asm
+	ca65 --target atarixl --cpu 6502 snorky-gfx2.asm -l snorky-gfx2.s -o snorky-gfx2.o
+
+snorky-gfx2.bin : snorky-gfx2.o
+	ld65 -o snorky-gfx2.bin -C snorky.cfg snorky-gfx2.o
+
 mclean :
 	$(RM) *~ *.o *.map *.s *.bin
 
@@ -79,6 +95,8 @@ TEST.LST : all-bin
 	@move_bin=$$( $(ATASCII) -p snorky-move.bin ); echo "21 MOVE=ADR(\"$$move_bin\")" >>$(OUT)
 	@guy_bin=$$( $(ATASCII) -p snorky-guy.bin ); echo "22 SGUY=ADR(\"$$guy_bin\")" >>$(OUT)
 	@cube_bin=$$( $(ATASCII) -p snorky-cube.bin ); echo "23 CUBE=ADR(\"$$cube_bin\")" >>$(OUT)
+	@gfx1_bin=$$( $(ATASCII) -p snorky-gfx1.bin ); echo "24 GGUY=ADR(\"$$gfx1_bin\")" >>$(OUT)
+	@gfx2_bin=$$( $(ATASCII) -p snorky-gfx2.bin ); echo "25 GFX2=ADR(\"$$gfx2_bin\")" >>$(OUT)
 
 	@printf '%s\n' \
 		'30 RAMTOP=PEEK(106):PMB=RAMTOP-16:POK.106,PMB:GR.15+16' \
@@ -87,5 +105,5 @@ TEST.LST : all-bin
 		'33 POK.P1+Y,8:POK.P1+Y+N1,28:POK.P1+Y+2,62:POK.P1+Y+3,28:POK.P1+Y+4,8:POK.53249,X-4' \
 		'40 M1=80:M2=M1:F.CY=N10 TO170STEPN10:F.CX=M1 TOM2 STEP8:E=USR(CUBE,CX,CY):N.CX:M1=M1-4:M2=M2+4:N.CY' \
 		'41 E=USR(CUBE,80,N10,85):E=USR(CUBE,72,30,170):E=USR(CUBE,88,30,255)' \
-		'50 E=USR(SGUY,SGUY,N0,N0,P0,88,30)' \
+		'50 E=USR(SGUY,GGUY,N0,N0,P0,88,30)' \
 		'60 RET.' >>$(OUT)
