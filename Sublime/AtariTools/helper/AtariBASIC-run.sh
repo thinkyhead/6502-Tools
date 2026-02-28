@@ -103,6 +103,7 @@ else
   [ "$EXTRA" == "turbo" ] && { ATARIOPTS="-turbo $ATARIOPTS" ; echo "          (Running TURBO SPEED)" ; }
 
   # A basic helper file is needed to run a LST file
+  echo "$ATARI800 $ATARIOPTS -basic -run \"$HDD/$SUBLFILE\" \"$FLOPPY1\" \"$FLOPPY2\""
   $ATARI800 $ATARIOPTS -basic -run "$HDD/$SUBLFILE" "$FLOPPY1" "$FLOPPY2" &
 
 fi
