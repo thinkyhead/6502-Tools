@@ -52,7 +52,7 @@ DrawCube:
         sbc #4          ; X is Centered
         lsr             ; Divide by 4
         lsr
-        Add16 DDST
+        AddWord DDST
 
         ; Apply Y Position
 
@@ -92,7 +92,7 @@ _times4:
         ; FR0 contains the address of this USR.
         ; Offset to point to our graphics data.
         lda #(cube_body-DrawCube)
-        Add16 DSRC
+        AddWord DSRC
 
         ; With 2 arguments draw the cube body
 
@@ -108,15 +108,15 @@ _times4:
 ;
 _draw_top:
         lda #cube_top-cube_body
-        Add16 DSRC
+        AddWord DSRC
 
         ldx #size_top/2
 @1:
         LidLineDraw
         lda #2
-        Add16CC DSRC
+        AddWordCC DSRC
         lda #40
-        Add16CC DDST
+        AddWordCC DDST
         dex
         bne @1
         rts
@@ -129,9 +129,9 @@ _draw_body:
 @1:
         BodyLineDraw
         lda #2
-        Add16 DSRC
+        AddWord DSRC
         lda #40
-        Add16CC DDST
+        AddWordCC DDST
         dex
         bne @1
         rts
