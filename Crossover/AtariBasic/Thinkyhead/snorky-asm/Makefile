@@ -4,7 +4,7 @@
 
 default : all-bin
 
-all-bin : snorky-init.bin snorky-move.bin snorky-guy.bin snorky-cube.bin snorky-gfx
+all-bin : snorky-init.bin snorky-move.bin snorky-guy.bin snorky-cube.bin snorky-text.bin snorky-gfx
 
 # Snorky Init Code
 
@@ -49,6 +49,17 @@ snorky-cube.bin : snorky-cube.o
 
 view-cube : snorky-cube.o
 	nano snorky-cube.s
+
+# Snorky String Code
+
+snorky-text.o : snorky-text.asm
+	ca65 --target atarixl --cpu 6502 snorky-text.asm -l snorky-text.s -o snorky-text.o
+
+snorky-text.bin : snorky-text.o
+	ld65 -o snorky-text.bin -C snorky.cfg snorky-text.o
+
+view-text : snorky-text.o
+	nano snorky-text.s
 
 # Snorky Graphics Data
 
@@ -96,8 +107,9 @@ TEST.LST : all-bin
 	@move_bin=$$( $(ATASCII) -p snorky-move.bin ); echo "21 MOVE=ADR(\"$$move_bin\")" >>$(OUT)
 	@guy_bin=$$( $(ATASCII) -p snorky-guy.bin ); echo "22 SGUY=ADR(\"$$guy_bin\")" >>$(OUT)
 	@cube_bin=$$( $(ATASCII) -p snorky-cube.bin ); echo "23 CUBE=ADR(\"$$cube_bin\")" >>$(OUT)
-	@gfx1_bin=$$( $(ATASCII) -p snorky-gfx1.bin ); echo "24 GGUY=ADR(\"$$gfx1_bin\")" >>$(OUT)
-	@gfx2_bin=$$( $(ATASCII) -p snorky-gfx2.bin ); echo "25 GFX2=ADR(\"$$gfx2_bin\")" >>$(OUT)
+	@text_bin=$$( $(ATASCII) -p snorky-text.bin ); echo "24 TEXT=ADR(\"$$text_bin\")" >>$(OUT)
+	@gfx1_bin=$$( $(ATASCII) -p snorky-gfx1.bin ); echo "25 GGUY=ADR(\"$$gfx1_bin\")" >>$(OUT)
+	@gfx2_bin=$$( $(ATASCII) -p snorky-gfx2.bin ); echo "26 GFX2=ADR(\"$$gfx2_bin\")" >>$(OUT)
 
 	@printf '%s\n' \
 		'30 RAMTOP=PEEK(106):PMB=RAMTOP-16:POK.106,PMB:GR.15+16' \
@@ -107,7 +119,8 @@ TEST.LST : all-bin
 		'40 M1=80:M2=M1:F.CY=N10 TO170STEPN10:F.CX=M1 TOM2 STEP8:E=USR(CUBE,CX,CY):N.CX:M1=M1-4:M2=M2+4:N.CY' \
 		'41 E=USR(CUBE,80,N10,85):E=USR(CUBE,72,30,170):E=USR(CUBE,88,30,255)' \
 		'50 E=USR(SGUY,GGUY,N0,N0,P0,88,30)' \
-		'60 RET.' >>$(OUT)
+		'60 E=USR(TEXT,4,0,1,ADR("Hello|")):E=USR(TEXT,8,10,2,ADR("Atari|")):E=USR(TEXT,12,20,3,ADR("World!|"))' \
+		'70 RET.' >>$(OUT)
 
 test: TEST.LST mclean
 	@$(ATASCII) -s -u $(OUT) >"~run~"
