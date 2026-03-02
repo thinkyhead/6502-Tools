@@ -20,7 +20,7 @@ source "$HERE/AtariTools.sh"
 case "$#" in
   1 ) LSTFILE=$1 ;;
   2 ) EXTRA=$1 ; LSTFILE=$2 ;;
-  * ) echo "Usage: `basename $0` [macx|turbo|save] filename" 1>&2 ; exit 1 ;;
+  * ) echo "Usage: ${0##*/} [macx|turbo|save] filename" 1>&2 ; exit 1 ;;
 esac
 
 set -e
@@ -28,8 +28,10 @@ set -e
 # Make the HD folder if it doesn't exist
 mkdir -p "$HDD"
 
+[[ -z $SUBLFILE ]] && SUBLFILE=${LSTFILE##*/}
+
 # Convert the UTF-8 file to ATASCII
-"$HERE/atascii" -s -u "$LSTFILE" >"$HDD/$SUBLFILE"
+"$HERE/atascii.py" -s -u "$LSTFILE" >"$HDD/$SUBLFILE"
 
 # SAVE or RUN?
 if [ "$EXTRA" == "save" ]; then
@@ -96,7 +98,7 @@ else
   # The atari800 package can be installed from MacPorts, Homebrew, etc.
   #
   echo "atari800: Creating a new 'atari800' instance."
-  echo "          Running $HDD/$SUBLFILE (`basename "$LSTFILE"`)"
+  echo "          Running ${LSTFILE##*/} (as $HDD/$SUBLFILE)"
   echo "          Press F12 to toggle Turbo."
 
   # [ $JOY ] || ATARIOPTS="-nojoystick $ATARIOPTS"
@@ -104,5 +106,7 @@ else
 
   # A basic helper file is needed to run a LST file
   $ATARI800 $ATARIOPTS -basic -run "$HDD/$SUBLFILE" "$FLOPPY1" "$FLOPPY2" &
+
+  echo
 
 fi

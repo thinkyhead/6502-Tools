@@ -15,7 +15,7 @@ source "$HERE/AtariTools.sh"
 PATH="$bB/source:$PATH"
 which preprocess || { echo "Building bAtariBasic..." ;  cd $bB/source ; make ; echo ; }
 
-echo -n "Starting build of " ; echo -n $( basename "$1" ) ...
+echo -n "Starting build of ${1##*/} ..."
 
 # Process and Compile bAtariBasic to 6502 Assembly Language
 preprocess < "$1" | 2600basic -i "$bB" > bB.asm

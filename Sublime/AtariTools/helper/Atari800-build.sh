@@ -13,7 +13,7 @@ SELF="$0" ; ORIG=$(readlink "$SELF")
 HERE=$(dirname "$SELF")
 source "$HERE/AtariTools.sh"
 
-echo -n "Starting build of " ; echo -n $( basename "$1" ) ...
+echo -n "Starting build of ${1##*/} ..."
 
 # Output filename for atari800 executable
 INSRC="$1"
