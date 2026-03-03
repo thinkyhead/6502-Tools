@@ -6,7 +6,7 @@
 *.65o
 *.vobj
 Icon?
-bdos.s
+*.s
 a.out
 DoAtari.app
 *LST.bin
@@ -17,3 +17,4 @@ work/
 *-rev*.lst
 *.rom
 *.prg
+TEST.LST
