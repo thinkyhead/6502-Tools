@@ -9,22 +9,26 @@ EmuDir=/Applications
 # Atari 800
 #
 
+# Location of Atari800MacX.app
+ATARI800MACX="${EmuDir}/Atari800MacX/Atari800MacX.app"
+
 # Installed 'atari800' binary
 ATARI800=/usr/local/bin/atari800
 #ATARI800=/opt/local/bin/atari800
+#ATARI800="${ATARI800MACX}/Contents/MacOS/Atari800MacX"
 
-# Runtime Atari 800 preferences
+# Runtime atari800 preferences
 ATARIOPTS="-xl -win-width 1200 -win-height 900 -colors-preset deep-black"
 
-# Common Atari 800 files location
-ATARI_HOME=$EmuDir/Atari800
+# Common atari800 files location
+ATARI_HOME="${EmuDir}/Atari800"
 
 # A folder to act as virtual H1 drive
-HDD=$ATARI_HOME/HardDrive1
+HDD="${ATARI_HOME}/HardDrive1"
 
 # Optional floppy drives to mount
-#FLOPPY1="$ATARI_HOME/Disks/floppy1.atr"
-#FLOPPY2="$ATARI_HOME/Disks/floppy2.atr"
+#FLOPPY1="${ATARI_HOME}/Disks/floppy1.atr"
+#FLOPPY2="${ATARI_HOME}/Disks/floppy2.atr"
 
 # Build output from Sublime:
 SUBLFILE="SUBLIME.LST"
@@ -41,8 +45,8 @@ PRINTBIN="ATARIOUT.BIN"
 VCS_DIR=/usr/local/include/vcs
 
 # Atari 2600 Emulator app. Choose only one.
-# z26="$EmuDir/z26.app"
-Stella="$EmuDir/Stella.app"
+# z26="${EmuDir}/z26.app"
+STELLA="${EmuDir}/Stella.app"
 
 #
 # Get the shell environment

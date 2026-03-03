@@ -104,9 +104,15 @@ else
   # [ $JOY ] || ATARIOPTS="-nojoystick $ATARIOPTS"
   [ "$EXTRA" == "turbo" ] && { ATARIOPTS="-turbo $ATARIOPTS" ; echo "          (Running TURBO SPEED)" ; }
 
-  # A basic helper file is needed to run a LST file
-  $ATARI800 $ATARIOPTS -basic -run "$HDD/$SUBLFILE" "$FLOPPY1" "$FLOPPY2" &
+  # Run the LST file from Sublime that was converted to ATASCII
 
   echo
+
+  # If atari800 points at Atari800MacX use a simpler command
+  if [[ ${ATARI800##*/} == "Atari800MacX" ]]; then
+    ${ATARI800} "$HDD/$SUBLFILE" "$FLOPPY1" &
+  else
+    ${ATARI800} $ATARIOPTS -basic -run "$HDD/$SUBLFILE" "$FLOPPY1" "$FLOPPY2"
+  fi
 
 fi

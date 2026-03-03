@@ -27,10 +27,10 @@ dasm "$INSRC" -f3 -o"$OUTFILE" -I"$VCS_DIR" -E2 | sed '/(.+\\..+):(\\d+): ()(err
 [ "$?" -ne "0" ] && { echo "Assembly failed."; exit; }
 
 # On success, run the binary in an emulator
-if [[ -d "$z26" || -d "$Stella" ]]; then
+if [[ -d "$z26" || -d "$STELLA" ]]; then
   echo -n "Starting emulator..."
   [ -d "$z26" ] && "$z26/Contents/MacOS/z26" "$OUTFILE"
-  [ -d "$Stella" ] && "$Stella/Contents/MacOS/Stella" "$OUTFILE"
+  [ -d "$STELLA" ] && "$STELLA/Contents/MacOS/Stella" "$OUTFILE"
   echo
 else
   echo "No Atari 2600 emulator found!"

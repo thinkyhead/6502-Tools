@@ -44,6 +44,6 @@ echo "Build complete."
 
 # Run the binary in one or more emulators
 [ -d "$z26" ] && "$z26/Contents/MacOS/z26" "$1.bin"
-[ -d "$Stella" ] && "$Stella/Contents/MacOS/Stella" "$1.bin"
+[ -d "$STELLA" ] && "$STELLA/Contents/MacOS/Stella" "$1.bin"
 
 exit
