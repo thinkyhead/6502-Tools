@@ -16,7 +16,9 @@ DSRC:   .res 2
 DDST:   .res 2
 YOFF:   .res 2
 FONT:   .res 2
+CBITS:  .res 2
 BMASK:  .res 1
+TMP1:   .res 1
 
         .ORG $0600
         .segment "CODE"
@@ -166,7 +168,29 @@ _dcloop:
         inc DSRC
         bne _dc2
         inc DSRC+1
-_dc2:   sta (DDST),y
+_dc2:
+
+        ldy #8          ; 8 bits wide
+_loop8:
+        sta TMP1        ; Save A before shift
+        asl             ; Shift out HI
+        rol CBITS+1     ; Shift into CBITS
+        rol CBITS
+        lda TMP1        ; Restore A
+        asl             ; Shift again
+        rol CBITS+1     ; Shift into CBITS again
+        rol CBITS
+        dey
+        bne _loop8
+
+        lda CBITS,y
+        and BMASK
+        sta (DDST),y
+        iny             ; ldy #1
+        lda CBITS,y
+        and BMASK
+        sta (DDST),y
+        dey
 
         lda #40
         AddWord DDST
@@ -179,12 +203,14 @@ _dc2:   sta (DDST),y
         inc STRG        ; Increment source
         bne _dc3
         inc STRG+1
-_dc3:   inc YOFF        ; Increment dest top
-        bne _dc4
-        inc YOFF+1
-_dc4:   lda YOFF        ; Top of char for next loop
+_dc3:
+        lda YOFF
+        adc #2
+        sta YOFF
         sta DDST
         lda YOFF+1
+        adc #0
+        sta YOFF+1
         sta DDST+1
 
         bne _charloop
