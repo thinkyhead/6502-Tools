@@ -1,0 +1,6 @@
+[
+    { "caption": "ATASCII: Insert Inverted", "command": "atascii_inv_insert" },
+    { "caption": "ATASCII: Insert Special", "command": "atascii_insert" },
+    { "caption": "ATASCII: Insert Drawing", "command": "atascii_draw_insert" },
+    { "caption": "ATASCII: Invert Selected Text", "command": "atascii_invert_text" }
+]

@@ -1,0 +1,32 @@
+[
+    {
+        "id": "preferences",
+        "children": [
+            {
+                "caption": "Package Settings",
+                "id": "package-settings",
+                "children": [
+                    {
+                        "caption": "ATASCII",
+                        "children": [
+                            {
+                                "caption": "Key Bindings – Default",
+                                "command": "open_file",
+                                "args": {
+                                    "file": "${packages}/AtasciiInsert/Default.sublime-keymap"
+                                }
+                            },
+                            {
+                                "caption": "Key Bindings – User",
+                                "command": "open_file",
+                                "args": {
+                                    "file": "${packages}/User/Default.sublime-keymap"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+]

@@ -128,8 +128,8 @@ This file, set up for a 2600 cartridge build, is used by Atom's standard [Build 
   - [Sublime Text 3](https://www.sublimetext.com/3) - A light and fast extensible editor with a Python core. Can use TextMate bundles.
   - [atari800](https://atari800.github.io/) - A good, working Atari emulator that fails much of the acid test but runs pretty well. (Use F1 for settings!) Also available via package managers like [MacPorts](https://www.macports.org/ports.php?by=name&substr=atari800) and [Homebrew](https://formulae.brew.sh/formula/atari800#default).
   - [Atari800MacX](https://github.com/atarimacosx/Atari800MacX) - This nice Mac UI wrapper for Atari800. There's a Universal version 6.0.1 but sometimes 5.3.1 seems to work better.
-  - [Atari Classic Fonts](http://members.bitstream.net/marksim/atarimac/fonts.html) - Regular, Chunky, Smooth, and ExtraSmooth - especially for use with `Atari800.tmTheme`. Use the newest all-in-one font for full ATASCII support.
-  - [Eightbit-Atari-Fonts](https://github.com/TheRobotFactory/EightBit-Atari-Fonts) - A collection of custom Atari fonts for use with `Atari800.tmTheme`. "EightBit Atari" is now the default for AtariBASIC syntax.
+  - [Atari Classic Fonts](http://members.bitstream.net/marksim/atarimac/fonts.html) - Regular, Chunky, Smooth, and ExtraSmooth - especially for use with `Atari800.tmTheme`. Use the newest all-in-one font for full ATASCII support. This is the preferred font for editing AtariBASIC.
+  - [Eightbit-Atari-Fonts](https://github.com/TheRobotFactory/EightBit-Atari-Fonts) - A collection of custom Atari fonts for use with `Atari800.tmTheme`.
   - [dasm](http://dasm-dillon.sourceforge.net) - A 6502 cross-assembler most commonly used to build Atari 2600 code. Also included with bAtariBASIC.
   - [cc65](https://github.com/cc65/cc65) - A C cross-compiler for many 6502 platforms. A rich set of libraries is included.
   - [ca65](https://github.com/cc65/cc65) - A 6502 macro-assembler, also including headers for many 6502 platforms.
