@@ -35,7 +35,7 @@ Syntax coloring for `.lnk` files (used with `ld65 -C`).
 ### Atari VCS Build
 
 #### `Atari VCS.sublime-build`
-Uses '`dasm`' with the '`vcs`' libraries to build the active 6502 source file for the Atari 2600 and run it in the configured emulator. This is the preferred build method during game development. It doesn't (currently) kill previous instances of `atari800`, so be sure to quit them to ensure they don't pile up!
+Uses '`dasm`' with the '`vcs`' libraries to build the active 6502 source file for the Atari 2600 and run it in the configured emulator. This is the preferred build method during game development. It doesn't (currently) kill previous instances of `stella`, so be sure to quit them to ensure they don't pile up!
 
 ### bAtariBasic Support
 To help with the development of bAtariBasic, I've created a proper Github fork of [bAtariBASIC](https://github.com/thinkyhead/bAtariBasic) where I'm cleaning up code, fixing bugs, and integrating [64K support by RevEng](http://atariage.com/forums/topic/214909-bb-with-native-64k-cart-support-11dreveng/) (v39 2017-01-08). I highly recommend working with this fork as it goes forward.

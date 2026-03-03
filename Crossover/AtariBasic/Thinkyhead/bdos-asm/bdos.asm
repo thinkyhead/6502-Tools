@@ -4,13 +4,14 @@
 ; The ld65 linker requires bdos.cfg.
 ;
 
-; 7 bytes at CB are available
+        ; 9 bytes in front of FR0
         .ORG $CB
         .segment "BSS"
 SCR0:   .res 1
 SCR1:   .res 2
 SCR2:   .res 2
 SCR3:   .res 2
+SCR4:   .res 2
 
 ;
 ; InvertString (relocatable)
