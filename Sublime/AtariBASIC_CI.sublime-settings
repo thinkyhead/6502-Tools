@@ -10,7 +10,7 @@
   //"word_separators": "~|{}` !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz[\\]^_",
   "word_separators": "~|{}` !\"#%&'()*+,-./:;<=>?@[\\]^", // Not: $
   "rulers": [38,40,76,80,114,120,254],
-  "color_scheme": "Packages/User/AtariTools/Atari800.tmTheme",
+  "color_scheme": "Packages/AtariTools/Atari800.tmTheme",
   "font_face": "Atari Classic",     // Best choice
   //"font_face": "EightBit Atari",  // Wider spacing
 }

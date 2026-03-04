@@ -1,0 +1,4 @@
+{
+  "cmd": ["cl65", "-tatari", "-Catari-xex.cfg", "$file", "-o", "$file_base_name.xex"],
+  "selector": "source.c"
+}

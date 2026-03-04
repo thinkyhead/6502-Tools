@@ -3,14 +3,24 @@ Tools and enhancements to make working with 6502 Assembly Language on macOS more
 
 ## For Sublime Text 3
 
-Copy the contents of the `Sublime` folder to your `Packages/User` folder (e.g., `~/Library/Application Support/Sublime Text 3/Packages/User`). Edit `AtariTools.sh` to configure the paths of your installed emulators and build tools. See below for the other tools you'll need.
+Open the `Sublime` folder and copy the two plugin folders to your `Packages` folder (`~/Library/Application Support/Sublime Text 3/Packages`). Then, copy all the `.sublime-settings` files to the `User` subfolder. For the BASIC theme you'll need the font linked below.
+
+Two plugins are currently provided:
+- *ATASCII Insert* adds commands to insert ATASCII text and to invert characters.
+- *AtariTools* provides all the capabilities described below.
+
+### AtariTools Settings
+
+`AtariTools.sh` is the common location where you'll set up the paths to your tools and other settings. Use this file to set the path to `atari800` (default is MacPorts `/opt/local/bin`), the path to your `HardDrive1` folder, preferred Atari 800 emulator, emulation settings, etc. For the Atari 800, you can mount up to 2 floppy disk images. (At least one floppy is required to get a DOS loaded.)
+
+For bAtariBASIC, the `$bB` environment variable should already exist, but it can be set or overridden here if needed.
 
 ### Atari Look-and-Feel
 
 #### `Atari800.tmTheme`
 The Atari800 theme provides the classic Atari blue-colored background and bluish-white text, plus extra color-coding used by the syntaxes for AtariBASIC and bAtariBASIC.
 
-In order to edit Atari BASIC (.LST) files you'll need to install the free Atari Classic fonts (see below). Tgese provide full ATASCII support by mapping the special characters to the Unicode user-defined area. Special ATASCII characters are automatically translated when passing code to and from the emulator.
+In order to edit Atari BASIC (`.LST`) files you'll need to install the free Atari Classic fonts (see below). These provide full ATASCII support by mapping the special characters to the Unicode user-defined area. Special ATASCII characters are automatically translated when passing code to and from the emulator.
 
 ![Atari800.tmTheme](_img/atari-code-theme.png)
 
@@ -18,33 +28,6 @@ In order to edit Atari BASIC (.LST) files you'll need to install the free Atari 
 `AtariTools.sh` is the common location where you'll set up the paths to your tools and other settings. Use this file to set the path to `atari800` (default is MacPorts `/opt/local/bin`), the path to your `HardDrive1` folder, preferred Atari 800 emulator, emulation settings, etc. For the Atari 800, you can mount up to 2 floppy disk images. (At least one floppy is required to get a DOS loaded.)
 
 For bAtariBASIC, the `$bB` environment variable should already exist, but it can be set or overridden here if needed.
-
-### 6502 Support
-
-#### `6502.sublime-settings`
-Settings suitable for 6502 code. Applies to `.asm` and `.s` files.
-
-#### `6502.sublime-syntax`
-This syntax parser for *Atari* and *Apple* 6502 code needs more work to support modern formats.
-- For best results with `ca65` code use the **ca65 Syntax** included with ["65816" Package](//github.com/ksherlock/65816.tmbundle).
-- Includes `syntax_test_6502.asm` to test the markup with Sublime [PackageDev](https://packagecontrol.io/packages/PackageDev) (Cmd-B).
-
-#### `LD65Config.sublime-syntax`
-Syntax coloring for `.lnk` files (used with `ld65 -C`).
-
-### Atari VCS Build
-
-#### `Atari VCS.sublime-build`
-Uses '`dasm`' with the '`vcs`' libraries to build the active 6502 source file for the Atari 2600 and run it in the configured emulator. This is the preferred build method during game development. It doesn't (currently) kill previous instances of `stella`, so be sure to quit them to ensure they don't pile up!
-
-### bAtariBasic Support
-To help with the development of bAtariBasic, I've created a proper Github fork of [bAtariBASIC](https://github.com/thinkyhead/bAtariBasic) where I'm cleaning up code, fixing bugs, and integrating [64K support by RevEng](http://atariage.com/forums/topic/214909-bb-with-native-64k-cart-support-11dreveng/) (v39 2017-01-08). I highly recommend working with this fork as it goes forward.
-
-#### `bAtariBASIC.sublime-settings`
-Settings for bAtariBASIC (.BAS) files, including the use of the Atari800 theme (no special font) to gain the extra syntax highlighting.
-
-#### `bAtariBASIC.sublime-syntax`
-Context-aware syntax coloring of bAtariBASIC 1.1 syntax with built-in error-checking. (work-in-progress)
 
 ### AtariBASIC Support
 AtariTools includes AtariBASIC syntax parsing/coloring and a build command to run AtariBASIC in your preferred Atari 800 emulator.
@@ -61,6 +44,33 @@ This adds `Tools` > `Build System` > `AtariBASIC` to the menu so you can use **B
 The **Build** command will run the current BASIC file in **atari800** or **Atari800MacX**, depending on what you last selected under **Build With…**. Make sure your **atari800** and **Atari800MacX** default settings have BASIC enabled, a local folder exposed as hard drive H:, and up to two floppies mounted for development purposes.
 
 **Build** saves a copy of the current file with ATASCII encoding as **SUBLIME.LST** to your configured Atari hard drive (H:) folder. The emulator then loads and runs **H:SUBLIME.LST** directly for fastest file loading. At this stage you can toggle Turbo in the emulator to speed things up.
+
+### bAtariBasic Support
+To help with the development of bAtariBasic, I've created a proper Github fork of [bAtariBASIC](https://github.com/thinkyhead/bAtariBasic) where I'm cleaning up code, fixing bugs, and integrating [64K support by RevEng](http://atariage.com/forums/topic/214909-bb-with-native-64k-cart-support-11dreveng/) (v39 2017-01-08). I highly recommend working with this fork as it goes forward.
+
+#### `bAtariBASIC.sublime-settings`
+Settings for bAtariBASIC (.BAS) files, including the use of the Atari800 theme (no special font) to gain the extra syntax highlighting.
+
+#### `bAtariBASIC.sublime-syntax`
+Context-aware syntax coloring of bAtariBASIC 1.1 syntax with built-in error-checking. (work-in-progress)
+
+### Atari VCS Build
+
+#### `Atari VCS.sublime-build`
+Uses '`dasm`' with the '`vcs`' libraries to build the active 6502 source file for the Atari 2600 and run it in the configured emulator. This is the preferred build method during game development. It doesn't (currently) kill previous instances of `stella`, so be sure to quit them to ensure they don't pile up!
+
+### 6502 Assembler Support
+
+#### `6502.sublime-settings`
+Settings suitable for 6502 code. Applies to `.asm` and `.s` files.
+
+#### `6502.sublime-syntax`
+This syntax parser for *Atari* and *Apple* 6502 code needs more work to support modern formats.
+- For best results with `ca65` code use the **ca65 Syntax** included with ["65816" Package](//github.com/ksherlock/65816.tmbundle).
+- Includes `syntax_test_6502.asm` to test the markup with Sublime [PackageDev](https://packagecontrol.io/packages/PackageDev) (Cmd-B).
+
+#### `LD65Config.sublime-syntax`
+Syntax coloring for `.lnk` files (used with `ld65 -C`).
 
 ## Helper Scripts
 

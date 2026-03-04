@@ -1,4 +1,4 @@
-; SYNTAX TEST "Packages/User/AtariTools/6502"
+; SYNTAX TEST "Packages/AtariTools/6502"
 ; <- source.asm
 ; <- punctuation.definition.comment.line.start
 

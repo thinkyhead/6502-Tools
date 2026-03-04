@@ -20,7 +20,7 @@
                                 "caption": "Key Bindings – User",
                                 "command": "open_file",
                                 "args": {
-                                    "file": "${packages}/User/Default.sublime-keymap"
+                                    "file": "${packages}/Default.sublime-keymap"
                                 }
                             }
                         ]

@@ -1,0 +1,4 @@
+{
+  "cmd": ["ca65", "-tatari", "-o", "$file_base_name.xex", "$file" ],
+  "selector": "source.asm"
+}

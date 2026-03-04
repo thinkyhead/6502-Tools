@@ -1,0 +1,50 @@
+[
+    {
+        "id": "preferences",
+        "children": [
+            {
+                "caption": "Package Settings",
+                "id": "package-settings",
+                "children": [
+                    {
+                        "caption": "Atari Tools",
+                        "children": [
+                            {
+                                "caption": "AtariBASIC Settings - Default",
+                                "command": "open_file",
+                                "args":
+                                {
+                                    "file": "${packages}/AtariTools/AtariBASIC.sublime-settings"
+                                }
+                            },
+                            {
+                                "caption": "AtariBASIC Settings - User",
+                                "command": "open_file",
+                                "args":
+                                {
+                                    "file": "${packages}/User/AtariBASIC.sublime-settings"
+                                }
+                            },
+                            {
+                                "caption": "AtariBASIC (loose) Settings - Default",
+                                "command": "open_file",
+                                "args":
+                                {
+                                    "file": "${packages}/AtariTools/AtariBASIC_CI.sublime-settings"
+                                }
+                            },
+                            {
+                                "caption": "AtariBASIC (loose) Settings - User",
+                                "command": "open_file",
+                                "args":
+                                {
+                                    "file": "${packages}/User/AtariBASIC_CI.sublime-settings"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+]

@@ -26,12 +26,22 @@ esac
 set -e
 
 # Make the HD folder if it doesn't exist
+HDD=${HDD:-"/tmp/HardDrive1"}
 mkdir -p "$HDD"
 
-[[ -z $SUBLFILE ]] && SUBLFILE=${LSTFILE##*/}
+# Running a LST file with this script overwrites prior LST file on H:
+# but a standard single filename can be configured with SUBLFILE.
+RUNFILE=${HDD}/${SUBLFILE:-${LSTFILE##*/}}
+RUNFILE=${RUNFILE/.ATARIBAS*/.LST}
+
+if [[ ! $RUNFILE =~ ".LST" ]]; then
+  echo "${0##*/} : Not a LST file??"
+  sleep 30
+  exit 1
+fi
 
 # Convert the UTF-8 file to ATASCII
-"$HERE/atascii.py" -s -u "$LSTFILE" >"$HDD/$SUBLFILE"
+"$HERE/atascii.py" -s -u "$LSTFILE" >"$RUNFILE"
 
 # SAVE or RUN?
 if [ "$EXTRA" == "save" ]; then
@@ -42,53 +52,81 @@ else
   ACTION=RUN
 fi
 
-# Print "Import Done" and auto-run the code
-printf '\233?"Import Complete.":?"F12 to toggle Turbo.":%s\233' $ACTION >>"$HDD/$SUBLFILE"
-
 #
 # Start Atari800MacX with BASIC, have it load and run the LST file.
 # It may be important that Atari800MacX stay in front until export starts.
 #
 # Prefer to run in Atari800MacX?
-if [ "$EXTRA" == "macx" ]; then
+if [[ $EXTRA == "macx" ]]; then
 
-  echo
-  echo "Please wait for import to start..."
-  echo "This can take a while. Leave Atari800MacX in front. Use F7 to toggle Turbo."
-  echo
+  # If possible run directly for much faster load
+  if [[ -n $ATARI800MACX ]]; then
 
-  # Temporary file for the script
-  ASCRIPT=$( mktemp ).applescript
+    echo "Atari800MacX: Creating a new 'Atari800MacX' instance."
+    echo "              Running ${LSTFILE##*/} (as $RUNFILE)"
+    echo "              Press F7 to toggle Limit Speed."
+    echo "              Press F5 for Warmstart."
 
-  # AppleScript tells Atari800MacX to run full speed, reset, and import the file
-  cat <<ASCRIPT >$ASCRIPT
+    ATARIEXE="${ATARI800MACX}/Contents/MacOS/Atari800MacX"
+
+    ${ATARIEXE} "$RUNFILE" "$FLOPPY1" &
+
+    sleep 1
+
+    # Command Atari800MacX to reset and import
+    /usr/bin/osascript -e 'tell application "Atari800MacX" to activate'
+
+  else
+
+    echo
+    echo "Please wait for Atari800MacX import to start..."
+    echo "This can take a while. Use F7 to toggle Limit Speed."
+    echo
+
+    # Set up the clipboard (loses previous contents, sorry!)
+    pbcopy <<COPY
+NEW
+?CHR\$(125);"Importing...":?"Use F7 to toggle Limit Speed.":E."H:${RUNFILE##*/}"
+COPY
+
+    # Print "Import Done" and either save to BAS or run the code
+    #KEYWAIT='?"Press any key...":O.#1,4,0,"K":GET#1,K:CL.#1:'
+    printf '\233?"Import Complete.":?"F7 to toggle Limit Speed.":%s%s\233' $KEYWAIT $ACTION >>"$RUNFILE"
+
+    # Temporary file for the script
+    ASCRIPT=$( mktemp ).applescript
+
+    # AppleScript tells Atari800MacX to run full speed, reset, and import the file
+    cat <<ASCRIPT >$ASCRIPT
 tell application "Atari800MacX"
   activate
   tell application "System Events"
     tell process "Atari800MacX"
-      set MC to menu bar item "Control" of menu bar 1
-      set M to menu item "Limit To Normal Speed" of menu 1 of MC
-      tell MC to click menu item "Warm Reset" of menu 1
+      set MB to menu bar 1
+      set MC to menu bar item "Control" of MB
+      set MC1 to menu 1 of MC
+      set M to menu item "Limit To Normal Speed" of MC1
       set X to value of attribute "AXMenuItemMarkChar" of M
-      if not (X = missing value) then
-        tell MC to click M
-      end if
-      tell menu bar item "Edit" of menu bar 1 to click menu item "Paste" of menu 1
+      ignoring application responses
+        if not (X = missing value) then
+          tell MC to click M
+        end if
+        tell MC to click menu item "Warm Reset" of MC1
+        tell menu bar item "Edit" of MB to click menu item "Paste" of menu 1
+      end ignoring
+      delay 10
+      tell MC to click M
       "ok"
     end tell
   end tell
 end tell
 ASCRIPT
 
-  # Set up the clipboard (loses previous contents, sorry!)
-  pbcopy <<COPY
-NEW
-?CHR\$(125);"Importing... Leave this window front. Use F7 to toggle Turbo.";:E."H:$SUBLFILE"
-COPY
+    # Command Atari800MacX to reset and import
+    /usr/bin/osascript "$ASCRIPT"
+    rm "$ASCRIPT"
 
-  # Command Atari800MacX to reset and import
-  /usr/bin/osascript "$ASCRIPT"
-  rm "$ASCRIPT"
+  fi
 
 else
 
@@ -98,7 +136,7 @@ else
   # The atari800 package can be installed from MacPorts, Homebrew, etc.
   #
   echo "atari800: Creating a new 'atari800' instance."
-  echo "          Running ${LSTFILE##*/} (as $HDD/$SUBLFILE)"
+  echo "          Running ${LSTFILE##*/} (as $RUNFILE)"
   echo "          Press F12 to toggle Turbo."
 
   # [ $JOY ] || ATARIOPTS="-nojoystick $ATARIOPTS"
@@ -108,11 +146,14 @@ else
 
   echo
 
+  # Print "Import Done" and either save to BAS or run the code
+  printf '\233?"Import Complete.":?"F12 to toggle Turbo.":%s\233' $ACTION >>"$RUNFILE"
+
   # If atari800 points at Atari800MacX use a simpler command
   if [[ ${ATARI800##*/} == "Atari800MacX" ]]; then
-    ${ATARI800} "$HDD/$SUBLFILE" "$FLOPPY1" &
+    ${ATARI800} "$RUNFILE" "$FLOPPY1" &
   else
-    ${ATARI800} $ATARIOPTS -basic -run "$HDD/$SUBLFILE" "$FLOPPY1" "$FLOPPY2"
+    ${ATARI800} $ATARIOPTS -basic -run "$RUNFILE" "$FLOPPY1" "$FLOPPY2"
   fi
 
 fi

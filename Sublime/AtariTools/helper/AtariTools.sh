@@ -24,7 +24,7 @@ ATARIOPTS="-xl -win-width 1200 -win-height 900 -colors-preset deep-black"
 ATARI_HOME="${EmuDir}/Atari800"
 
 # A folder to act as virtual H1 drive
-HDD="${ATARI_HOME}/HardDrive1"
+#HDD="${ATARI_HOME}/HardDrive1"
 
 # Optional floppy drives to mount
 #FLOPPY1="${ATARI_HOME}/Disks/floppy1.atr"

@@ -1,4 +1,4 @@
- rem SYNTAX TEST "Packages/User/AtariTools/bAtariBASIC"
+ rem SYNTAX TEST "Packages/AtariTools/bAtariBASIC"
 
  rem bB syntax color test!
  rem ^comment.batari
