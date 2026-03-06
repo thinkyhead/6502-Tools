@@ -1,0 +1,9 @@
+{ "color_scheme": "Packages/AtariTools/Atari800.tmTheme",
+  "extensions": [
+    "asm",
+    "inc",
+    "s"
+  ],
+  "tab_size": 8,
+  "translate_tabs_to_spaces": true
+}

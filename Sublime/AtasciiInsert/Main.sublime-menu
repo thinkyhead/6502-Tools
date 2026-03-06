@@ -1,32 +1,23 @@
 [
-    {
-        "id": "preferences",
+  { "id": "preferences",
+    "children": [
+      { "caption": "Package Settings",
+        "id": "package-settings",
         "children": [
-            {
-                "caption": "Package Settings",
-                "id": "package-settings",
-                "children": [
-                    {
-                        "caption": "ATASCII",
-                        "children": [
-                            {
-                                "caption": "Key Bindings – Default",
-                                "command": "open_file",
-                                "args": {
-                                    "file": "${packages}/AtasciiInsert/Default.sublime-keymap"
-                                }
-                            },
-                            {
-                                "caption": "Key Bindings – User",
-                                "command": "open_file",
-                                "args": {
-                                    "file": "${packages}/Default.sublime-keymap"
-                                }
-                            }
-                        ]
-                    }
-                ]
-            }
+          { "caption": "ATASCII",
+            "children": [
+              { "caption": "Key Bindings",
+                "command": "edit_settings",
+                "args": {
+                  "base_file": "${packages}/AtasciiInsert/Default.sublime-keymap",
+                  "user_file": "${packages}/AtasciiInsert/Default ($platform).sublime-keymap",
+                  "default": "[\n\t${0}\n]\n"
+                }
+              }
+            ]
+          }
         ]
-    }
+      }
+    ]
+  }
 ]

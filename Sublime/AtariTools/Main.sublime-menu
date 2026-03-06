@@ -1,50 +1,36 @@
 [
-    {
-        "id": "preferences",
+  { "id": "preferences",
+    "children": [
+      { "caption": "Package Settings",
+        "id": "package-settings",
         "children": [
-            {
-                "caption": "Package Settings",
-                "id": "package-settings",
-                "children": [
-                    {
-                        "caption": "Atari Tools",
-                        "children": [
-                            {
-                                "caption": "AtariBASIC Settings - Default",
-                                "command": "open_file",
-                                "args":
-                                {
-                                    "file": "${packages}/AtariTools/AtariBASIC.sublime-settings"
-                                }
-                            },
-                            {
-                                "caption": "AtariBASIC Settings - User",
-                                "command": "open_file",
-                                "args":
-                                {
-                                    "file": "${packages}/User/AtariBASIC.sublime-settings"
-                                }
-                            },
-                            {
-                                "caption": "AtariBASIC (loose) Settings - Default",
-                                "command": "open_file",
-                                "args":
-                                {
-                                    "file": "${packages}/AtariTools/AtariBASIC_CI.sublime-settings"
-                                }
-                            },
-                            {
-                                "caption": "AtariBASIC (loose) Settings - User",
-                                "command": "open_file",
-                                "args":
-                                {
-                                    "file": "${packages}/User/AtariBASIC_CI.sublime-settings"
-                                }
-                            }
-                        ]
-                    }
-                ]
-            }
+          { "caption": "Atari Tools",
+            "children": [
+              { "caption": "6502 Settings",
+                "command": "edit_settings",
+                "args": {
+                  "base_file": "${packages}/AtariTools/6502.sublime-settings",
+                  "default": "{\n\t$0\n}\n"
+                }
+              },
+              { "caption": "AtariBASIC Settings",
+                "command": "edit_settings",
+                "args": {
+                  "base_file": "${packages}/AtariTools/AtariBASIC.sublime-settings",
+                  "default": "{\n\t$0\n}\n"
+                }
+              },
+              { "caption": "AtariBASIC (loose) Settings",
+                "command": "edit_settings",
+                "args": {
+                  "base_file": "${packages}/AtariTools/AtariBASIC_CI.sublime-settings",
+                  "default": "{\n\t$0\n}\n"
+                }
+              }
+            ]
+          }
         ]
-    }
+      }
+    ]
+  }
 ]

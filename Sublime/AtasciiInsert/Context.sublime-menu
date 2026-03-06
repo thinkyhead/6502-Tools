@@ -1,29 +1,23 @@
 [
-    {
-        "caption": "ATASCII",
-        "id": "atascii",
-        "children":
-        [
-            {
-                "command": "atascii_inv_insert",
-                "caption": "Insert Inverted"
-            },
-            {
-                "command": "atascii_insert",
-                "caption": "Insert Special"
-            },
-            {
-                "command": "atascii_draw_insert",
-                "caption": "Insert Drawing"
-            },
-            {
-                "command": "atascii_invert_text",
-                "caption": "Invert Text"
-            }
-        ]
-    },
-    {
-        "caption": "-",
-        "id": "separator"
-    }
+  { "caption": "ATASCII",
+    "id": "atascii",
+    "children":
+    [
+      { "command": "atascii_inv_insert",
+        "caption": "Insert Inverted"
+      },
+      { "command": "atascii_insert",
+        "caption": "Insert Special"
+      },
+      { "command": "atascii_draw_insert",
+        "caption": "Insert Drawing"
+      },
+      { "command": "atascii_invert_text",
+        "caption": "Invert Text"
+      }
+    ]
+  },
+  { "caption": "-",
+    "id": "separator"
+  }
 ]
