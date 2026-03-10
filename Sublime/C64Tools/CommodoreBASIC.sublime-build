@@ -1,0 +1,11 @@
+{
+  "selector": "source.c64basic",
+  "variants": [
+    { "name":"Save to PRG",            "cmd":["$packages/C64Tools/helper/CommodoreBASIC-run.sh",  "--save", "$file_name"] },
+    { "name":"Save to PRG and List",   "cmd":["$packages/C64Tools/helper/CommodoreBASIC-run.sh",  "--list", "$file_name"] },
+    { "name":"Run in VICE",            "cmd":["$packages/C64Tools/helper/CommodoreBASIC-run.sh",  "--run",  "$file_name"] },
+    { "name":"Run in VICE (warp)",     "cmd":["$packages/C64Tools/helper/CommodoreBASIC-run.sh",  "--warp", "$file_name"] },
+    { "name":"Run in VICE (joystick)", "cmd":["$packages/C64Tools/helper/CommodoreBASIC-run.sh",  "--joy",  "$file_name"] },
+    { "name":"Edit Unicode L64",       "cmd":["$packages/C64Tools/helper/CommodoreBASIC-run.sh",  "--edit", "$file_name"] },
+  ]
+}

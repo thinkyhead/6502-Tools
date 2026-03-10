@@ -1,0 +1,1285 @@
+%YAML 1.2
+---
+## =================>------------<==================
+ # ===============( Commodore BASIC )===============
+ # =================(     by     )==================
+ # =================( thinkyhead )==================
+ # =================>------------<==================
+ #
+ # A complete Commodore BASIC syntax that catches most syntax errors.
+ # Best with "Commodore64.sublime-color-scheme" + "Pet Me 64" font.
+ #
+ # Commodore BASIC is a flat language with no blocks.
+ #
+ # Since there's no standard for displaying Commodore's special
+ # PETSCII characters, they should be entered into strings as
+ # decimal escape codes like \125. EXPORT.BAS and IMPORT.BAS
+ # (included with 6502-Tools) will escape/unescape the code.
+ #
+ # I'm working on a Unicode-based solution that will make it
+ # possible to view and enter PETSCII special characters, and
+ # have them converted as part of the build script.
+ #
+ # Note that line-length in Commodore BASIC is not constrained to
+ # the editor's 114-character limit. Commodore BASIC can parse
+ # lines up to 254 characters via the `LOAD "<file>"` command.
+ # Internally, Commodore BASIC can store a tokenized line up to
+ # 255 bytes long - impossible to enter from the BASIC console.
+ #
+ # Commodore BASIC has most commands abbreviated, so it's not too
+ # painful to type out. But BASIC is a verbose language without
+ # even binary operators. For any serious retro-programming on
+ # the Commodore I recommend using 6502 Assembly Language!
+ #
+## ============== Commodore BASIC keywords ==============
+ #
+ # Operators:
+ # AND       Logical conjunction
+ # NOT       Logical negation
+ # OR        Logical disjunction
+ #
+ # Math Functions:
+ # ABS       Returns the absolute value of a number
+ # TAN       Returns the tangent of a number
+ # ATN       Returns the arctangent of a number
+ # COS       Returns the cosine of a number
+ # EXP       Exponential function
+ # INT       Returns the floor of a number
+ # LEN       Returns the length of a string
+ # LOG       Returns the natural logarithm of a number
+ # RND       Returns a pseudorandom number
+ # SGN       Returns the signum of a number
+ # SIN       Returns the sine of a number
+ # SQR       Returns the square root of a number
+ # VAL       Returns the numeric value of a string
+ #
+ # Memory functions:
+ # FRE       Returns the amount of free memory in bytes
+ # PEEK      Returns the value at an address in memory
+ # USR       Call the pre-defined machine code routine with optional parameters
+ #           The address is not passed. Instead you pre-set the vector address.
+ # POKE      Sets a value at an address in memory
+ # SYS       Jump to a machine code routine with no parameters
+ #
+ # String functions:
+ # ASC       Returns the PETSCII value of a character
+ # CHR$      Returns a character given an PETSCII value
+ # STR$      Converts a number to string form
+ # LEFT$     Get the first part of a string
+ # RIGHT$    Get the last part of a string
+ # MID$      Get a string segment
+ # SPC(#)    Insert spaces in a PRINT statement
+ # TAB(#)    Insert tabs in a PRINT statement
+ # POS(#)    Get the column of the next PRINT
+ #
+ # I/O Commands:
+ # CLOSE     Terminates pending transfers (flush) and closes an I/O channel
+ # GET       Reads one byte from an I/O channel
+ # OPEN      Initialises an I/O channel
+ # INPUT     Retrieves a stream of text from keyboard/screen
+ # INPUT#    Retrieves a stream of text from an I/O channel
+ # PRINT     and ? Writes text to screen
+ # PRINT#    and ? Writes text to an I/O channel; usually to screen (default), printer, cassette tape or disk (see INPUT#)
+ #
+ # Program load and save:
+ # LIST [#][-[#]]  Lists (all or part of) the program to screen
+ # LOAD          Loads a tokenized program from an external device; usually a cassette tape or disk (see SAVE)
+ # SAVE          Writes a tokenized program to an external device; usually a cassette tape or disk (see LOAD)
+ # VERIFY        Verify that the program was written to media
+ #
+ # Looping:
+ # FOR       Starts a for loop
+ # TO        Indicates the limiting condition in a FOR statement
+ # NEXT      Continues the next iteration of a FOR loop
+ # STEP      Indicates the increment used in a FOR loop
+ #
+ # Flow Control:
+ # GOSUB     Jumps to a subroutine at a given line in the program, placing the return address on the stack (see RETURN)
+ # GOTO      and GO TO  Jumps to a given line in the program. GOTO can be omitted in "IF ... THEN GOTO ..."
+ # ON..GOTO  A computed goto - performs a jump based on the value of an expression
+ # ON..GOSUB A computed gosub - performs a subroutine based on the value of an expression
+ # RETURN    Ends a subroutine, effectively branching to the line immediately following the "calling" GOSUB (see GOSUB)
+ # RUN       Starts execution of a program, optionally loading it from an external device (see LOAD)
+ #
+ # IF .      Executes code depending on whether a condition is true or not
+ #     THEN  Indicates the statements to execute if the condition is true in an IF statement
+ #
+ # Meta control
+ # CONT      Resumes execution of a program after a STOP at the next line number (see STOP)
+ # END       Finishes execution of the program, closes open I/O channels and stops any sound
+ # STOP      Stops the program, allowing later resumption (see CONT)
+ # WAIT      Waits the program...
+ #
+ # Variable allocation
+ # CLR       Clears variables' memory and program stack
+ # DIM       Defines the size of a string or array (see COM)
+ # LET       Assigns a value to a variable. LET can be omitted
+ # NEW       Erases the program and all the variables from memory; automatically executed before a LOAD
+ #
+ # Functions
+ # DEF FN    Define a function that takes a parameter and returns a result
+ # FN        Evaluate a function
+ #
+ # Data statements
+ # DATA      Stores data in lists of numeric or string values
+ # READ      Reads data from a DATA statement
+ # RESTORE   Sets the position of where to read data from a DATA statement
+ #
+ # Code:
+ # REM       Marks a comment in a program
+ #
+## ============== Commodore BASIC entities ==============
+ #
+ # Values:
+ #   - Literal (float)          1.23
+ #   - Literal String           " hey "
+ #   - Variable (float)         MYVAL
+ #   - Variable (string)        MYSTR$
+ #   - Array Item (float)       MYARR(10,2)
+ #   - Substring (string)       MYSTR$(A,B)
+ #   - Operator (math)          +-*/
+ #   - Operator (logical)       AND
+ #   - Operator (modifier)      -,NOT
+ #   - Function (float/string)  SIN(X)
+ #   - Delimiters               ,;:
+ #
+ # Language constructs:
+ #   - Line number              10
+ #   - Command                  PRINT
+ #   - Expression               1+A+("A"="B")-ASC("0")
+ #   - Arg List                 POKE 33,33
+ #   - Data Literal             THIS , is, ALL,data, 12
+ #   - Printable Expressions    1;2;3+5,"A"="B"
+ #
+ # Composite Entities:
+ #   - Expression. A set of operators and operands.
+ #     Every operator must be followed by an operand
+ #     or else an error is thrown. Likewise, an operand
+ #     cannot be followed by anything other than an
+ #     operator, or an error is thrown.
+ #
+##
+name: Commodore BASIC
+file_extensions:
+  - [l64,p64,lst64]
+first_line_match: '\d+ (?i:\?|C(L(OSE|R)|MD|ONT)|D(ATA|IM)|END|FOR|G(ET|O(SUB|TO))|IF|INPUT#?|L(ET|IST|OAD)|NE(W|XT)|ON|OPEN|P(OKE|RINT)|RE(AD|M|STORE|TURN)|RUN|S(AVE|TOP)|VERIFY|WAIT)([ :]|$)'
+scope: source.c64basic
+variables:
+  var: '(?i)[A-Z][A-Z0-9]*'
+  num: '\d+\.\d*(E\d+)?|\.?\d+(E\d+)?'
+  flt: '[-+]?({{num}})'
+
+contexts:
+
+  prototype:
+    - match: \s+
+
+    - match: $
+      pop: true
+
+  # Immediate context to start with
+  main:
+    - meta_include_prototype: false
+    - meta_content_scope: ctx.main.c64basic
+
+    - match: $
+      pop: true
+
+    # Mark lines that are too long to import
+    - match: ^(.{254})(\S.+?)\s*$
+      captures:
+        1: invalid.warning.line-too-long.c64basic
+        2: invalid.error.line-too-long.c64basic
+
+    - match: \s+
+
+    # Line number can legally be a floating
+    # number but only the integer will be used
+    - match: \d+
+      scope: constant.numeric.line-number.c64basic
+      push: code_line
+
+    # Comment only within the Sublime editor
+    - match: (;|//|\#)
+      captures:
+        1: comment.delimiter.c64basic
+      push: comment
+
+    # Start of the line otherwise
+    - match: ''
+      push: code_line
+
+  # Look for a top-level command or variable
+  code_line:
+    - meta_content_scope: ctx.code_line.c64basic
+
+    # REM will pop back to the immediate context
+    - match: (?i)REM
+      scope: keyword.rem.c64basic
+      set: cmd_rem
+
+    # DATA makes the rest of the line a delimited list of strings
+    - match: ((?i)DATA)\s*
+      captures:
+        1: keyword.data.c64basic
+      push: cmd_data
+
+    # RESTORE [<nexpr>]
+    - match: (?i:RESTORE)|reS|resT|restO
+      scope: keyword.restore.c64basic
+      push: expr_start
+
+    # Commands taking no parameters
+    # Some of these should always end the line
+    - match: ((?i:CLR)|cL)|((?i:CONT)|cO|coN)
+      captures:
+        1: keyword.clr.c64basic
+        2: keyword.cont.c64basic
+      push: cmd_done
+
+    - match: ((?i:END)|eN)|((?i:NEW)|nE)|((?i:STOP)|sT|stO)|((?i:RETURN)|reT|retU|retuR)
+      captures:
+        1: keyword.end.c64basic
+        2: keyword.new.c64basic
+        3: keyword.stop.c64basic
+        4: keyword.return.c64basic
+      push: line_and_statement_should_end
+
+    # WAIT <nexpr>,<nexpr>[,<nexpr>]
+    - match: (?i:WAIT)|wA|waI
+      scope: keyword.wait.c64basic
+      push: two_exprs
+
+    # RUN [<string>]
+    - match: (?i:RUN)|rU
+      scope: keyword.run.c64basic
+      push: expr_start_last
+
+    # PRINT#<nexpr>[,;<expr-list>]
+    - match: (?i)PRINT#
+      scope: keyword.print.iocb.c64basic
+      push: cmd_print_dev
+
+    # PRINT <expr-list>
+    - match: (?i:PRINT)|\?|pR|prI|priN
+      scope: keyword.print.c64basic
+      push: cmd_print
+
+    # INPUT# <nexpr>[,;]<var-list> - Semicolon only on the first
+    - match: (?i)INPUT#
+      scope: keyword.input.iocb.c64basic
+      push: expr_device
+
+    # INPUT <var-list>
+    - match: (?i:INPUT)|iN|inP|inpU
+      scope: keyword.input.c64basic
+      push: expr_start
+
+    # CLOSE <nexpr>
+    - match: (?i:CLOSE)|cL|clO|cloS
+      scope: keyword.close.c64basic
+      push: expr_device
+
+    # OPEN #<nexpr>,<nexpr>,<nexpr>,<string>
+    - match: (?i:OPEN)|oP|opE
+      scope: keyword.open.c64basic
+      push: expr_device
+
+    # GET #<nexpr>, VAR
+    - match: (?i)(GET)\s*(#)
+      captures:
+        1: keyword.get.c64basic
+        2: support.token.iocb.c64basic
+      push: expr_device
+
+    # DIM - A list of variables. Float up to 2 dimensions.
+    - match: (?i:DIM)|dI
+      scope: keyword.dim.c64basic
+      push: cmd_dim_list
+
+    # FOR VAR = <nexpr> TO <nexpr>
+    - match: (?i:FOR)|fO
+      scope: keyword.for.c64basic
+      push: cmd_for
+
+    # NEXT [VAR]
+    - match: (?i:NEXT)|nE|neX
+      scope: keyword.next.c64basic
+      push: cmd_next
+
+    # CMD <nexpr>
+    - match: (?i:CMD)|cM
+      scope: keyword.cmd.c64basic
+      push: one_expr
+
+    # SYS <address>
+    - match: (?i:SYS)|sY
+      scope: keyword.sys.c64basic
+      push: one_expr
+
+    # POKE <nexpr>,<nexpr>
+    - match: (?i:POKE)|pO|poK
+      scope: keyword.poke.c64basic
+      push: two_exprs
+
+    #
+    # Graphics Commands
+    #
+
+    # READ <var-list>
+    - match: (?i:READ)|rE|reA
+      scope: keyword.read.c64basic
+      push: expr_start
+
+    # THREE <expr>,<expr>,<expr>
+    #- match: THREE
+    #  scope: keyword.three.c64basic
+    #  push: three_exprs
+
+    # LIST [<nexpr>][-[<nexpr>]]
+    - match: ((?i:LIST)|lI|liS)\s*(\d*)\s*((-)\s*(\d*))?
+      captures:
+        1: keyword.list.c64basic
+        2: value.range.start.c64basic
+        4: value.range.delimiter.c64basic
+        5: value.range.end.c64basic
+      push: cmd_done
+
+    # LOAD [<string>,<device>,<mode>]
+    # SAVE [<string>,<device>,<mode>]
+    # TODO: Tape versus Disk versions of these commands
+    #       String expr versus numeric expr
+    - match: ((?i:LOAD)|lO|loA)|((?i:SAVE)|sA|saV)
+      captures:
+        1: keyword.load.c64basic
+        2: keyword.save.c64basic
+      push: three_exprs
+
+    # VERIFY
+    - match: (?i:VERIFY)|vE|veR|verI|veriF
+      scope: keyword.verify.c64basic
+      push: cmd_done
+
+    # Control Statements
+
+
+    # GOTO <nexpr>
+    # A GOTO should be the last thing on the line
+    # so mark an error if any statement follows it
+    - match: (?i:GOTO)|gO|goT
+      scope: keyword.goto.c64basic
+      push: expr_start_last
+
+    - match: (?i)GO TO
+      scope: keyword.go_to.c64basic
+      push: expr_start_last
+
+    # GOSUB <nexpr>
+    - match: (?i:GOSUB)|goS|gosU
+      scope: keyword.gosub.c64basic
+      push: one_expr
+
+    # ON <nexpr> GOTO <nexpr>,...
+    - match: (?i)ON
+      scope: keyword.on.c64basic
+      push: cmd_on
+
+    # IF <nexpr> THEN <stmt>
+    - match: (?i)IF
+      scope: keyword.if.c64basic
+      push: cmd_if
+
+    #
+    # Variable Assignment
+    #
+    # In Commodore BASIC any statement starting with a var
+    # must be an assignment (followed by '=').
+    #
+    # In LET scope '=' means 'assign.'
+    # In all others it means 'compare.'
+    #
+
+    # LET is optional. Variable name items follow.
+
+    # VAR$( ... <nexpr>[,<nexpr>])
+    # VAR$ =
+    - match: ((?i:LET)|lE)?\s*({{var}}\$)
+      captures:
+        1: keyword.let.c64basic
+        2: variable.string.c64basic
+      push: cmd_let
+
+    # VAR( ... <nexpr>[,<nexpr>])
+    # VAR =
+    - match: ((?i:LET)|lE)?\s*({{var}})
+      captures:
+        1: keyword.let.c64basic
+        2: variable.float.c64basic
+      push: cmd_let
+
+    # Mark anything else as unknown
+    - match: ''
+      set: syntax_error
+
+  # ON...GO first makes sure there's something — anything before the end
+  cmd_on:
+    - meta_scope: ctx.cmd_on.c64basic
+
+    - match: \s*(:|$|((?i:GOTO)|gO|goT|(?i:GOSUB)|goS|gosU)\b)
+      set: syntax_error
+
+    - match: ''
+      set: cmd_on_expr
+
+  cmd_on_expr:
+    # ON...GOTO <float>[,<float>...]
+    - match: (?i:GOTO)|gO|goT
+      scope: keyword.on-goto.c64basic
+      set: on_line_list
+
+    # ON...GOSUB <float>[,<float>...]
+    - match: (?i:GOSUB)|goS|gosU
+      scope: keyword.on-gosub.c64basic
+      set: on_line_list
+
+    - include: mixin_some_exprs
+
+  # TODO: Line numbers can be expressions
+  on_line_list:
+    - include: mixin_statement_end
+
+    - match: ({{num}}|{{var}})\s*(\,)?
+      captures:
+        1: constant.numeric.line-number.c64basic
+        2: support.token.delimiter.list.c64basic
+
+    - match: '[^\d]'
+      set: syntax_error
+
+  # REM comment uses the rest of the line
+  cmd_rem:
+    - meta_content_scope: comment.c64basic
+    - match: $
+      pop: true
+
+  # Host-based comment uses the whole line
+  comment:
+    - meta_content_scope: comment.line.c64basic
+    - match: $
+      pop: true
+
+  # Data marks the rest of the line as data items:
+  # Simple literal strings delimited by commas
+  cmd_data:
+    - match: $
+      pop: true
+    - match: '([^,]+?)(\s*$)?'
+      scope: entity.literal.string.data.c64basic
+    - match: \,
+      scope: support.token.delimiter.data.c64basic
+
+  # A statement known to be completed is marked broken
+  # if any tokens follow before a new statement.
+  cmd_done:
+    - include: mixin_statement_end
+    - match: ''
+      set: syntax_error
+
+  #
+  # LET VAR       = <expr>
+  # LET VAR(X)    = <expr>
+  # LET VAR(X,X)  = <expr>
+  # LET VAR$      = <expr>
+  # LET VAR$(X)   = <expr>
+  # LET VAR$(X,X) = <expr>
+  #
+  cmd_let:
+    - meta_scope: ctx.cmd_let.c64basic
+
+    - match: \(
+      scope: support.paren.open.subscript.c64basic
+      push: expr_paren_open
+
+    - match: ''
+      set: cmd_let_equals
+
+  cmd_let_equals:
+    - meta_content_scope: ctx.cmd_let_equals.c64basic
+
+    - match: =
+      scope: keyword.operator.assignment.c64basic
+      set: one_expr
+
+    - match: ''
+      set: syntax_error
+
+  # IF <nexpr> THEN <stmt>
+  # Only look for THEN as a keyword within IF
+  # TODO: Smarter expression parsing will allow
+  #       testing for the end of <nexpr> so 'THEN'
+  #       can be required at that point.
+  #       Currently, this filters 'THEN' so it won't
+  #       be seen as part of the expression. But
+  #       'IF THEN=5 THEN THEN=4' is legal code,
+  #       so smart expressions will be better.
+
+  cmd_if:
+    - meta_content_scope: ctx.cmd_if.c64basic
+
+    # End before expression?
+    - match: \s*:|$
+      set: syntax_error
+
+    # - match: \s*(THEN)\s*({{flt}})
+    #   captures:
+    #     1: keyword.then.c64basic
+    #     2: constant.numeric.line-number.c64basic
+    #   set: line_and_statement_should_end
+
+    # - match: \s*(THEN)
+    #   captures:
+    #     1: keyword.then.c64basic
+    #   pop: true
+
+    # Pops on THEN/GOTO/GOSUB
+    - include: real_expr
+
+    # THEN followed by a line number, line over
+    - match: \s*(\d+)
+      captures:
+        1: constant.numeric.line-number.c64basic
+      set: line_and_statement_should_end
+
+    # THEN followed by a statement
+    - match: '.'
+      scope: support.test.c64basic
+      pop: true
+
+  # Within FOR, look for TO as a keyword
+  cmd_for:
+    - include: mixin_statement_end
+
+    # TO is followed by an expression, so stay
+    - match: (?i)TO
+      scope: keyword.to.c64basic
+
+    # STEP is followed by an expression
+    - match: STEP
+      scope: keyword.step.c64basic
+
+    - include: expr_start
+
+  # NEXT must have a float var, or nothing
+  cmd_next:
+    - match: '{{var}}|'
+      scope: variable.float.c64basic
+      set: cmd_done
+
+    # Return
+    - match: ''
+      pop: true
+
+  # DIM VAR(EXPR),...
+  cmd_dim_list:
+    - meta_content_scope: ctx.cmd_dim_list.c64basic
+
+    - include: mixin_statement_end
+
+    - match: \,
+      scope: punctuation.definition.delimiter.list.c64basic
+
+    # One subscript allowed
+    - match: '{{var}}\$'
+      scope: variable.string.c64basic
+      push: cmd_dim_subscript
+
+    # Up to 3 subscripts
+    - match: '{{var}}'
+      scope: variable.float.c64basic
+      push: cmd_dim_subscript
+
+  cmd_dim_subscript:
+    - match: \(
+      scope: support.paren.open.dim.c64basic
+      push: expr_paren_open
+
+    - match: ''
+      pop: true
+
+  # Rules to match a variable name
+  mixin_variable_name:
+    - match: '{{var}}\$'
+      scope: variable.string.c64basic
+      push: var_eat_subscript
+
+    - match: '{{var}}'
+      scope: variable.float.c64basic
+      push: var_eat_subscript
+
+  var_eat_subscript:
+    - meta_scope: ctx.var_eat_subscript.c64basic
+
+    - match: \(
+      scope: support.paren.open.subscript.c64basic
+      push: expr_paren_open
+
+    - match: ''
+      pop: true
+
+  # Rules to match all known value types
+  # Always use last so the last reject rule here works
+  mixin_values:
+
+    # Lower-case is forbidden
+    #- match: '[a-z\$\%]'
+    #  set: syntax_error
+
+      # TODO: Enter functions with \s*(\() push expr_paren_open
+    - match: '(?i)CHR\$'
+      scope: meta.function-call.chrS.c64basic
+      push: required_args
+    - match: '(?i)STR\$'
+      scope: meta.function-call.strS.c64basic
+      push: required_args
+    - match: '(?i)LEFT\$'
+      scope: meta.function-call.leftS.c64basic
+      push: required_args
+    - match: '(?i)RIGHT\$'
+      scope: meta.function-call.rightS.c64basic
+      push: required_args
+    - match: '(?i)MID\$'
+      scope: meta.function-call.midS.c64basic
+      push: required_args
+
+    # These all take a numerical expression
+    - match: (?i)(FRE)|(USR)|(ABS)|(ASC)|(ATN)|(COS)|(EXP)|(INT)|(LEN)|(LOG)|(PEEK)|(POS)|(RND)|(SGN)|(SIN)|(SPC)|(SQR)|(TAB)|(TAN)|(VAL)
+      captures:
+        1: meta.function-call.fre.c64basic
+        2: meta.function-call.usr.c64basic
+        3: meta.function-call.abs.c64basic
+        4: meta.function-call.asc.c64basic
+        5: meta.function-call.atn.c64basic
+        6: meta.function-call.cos.c64basic
+        7: meta.function-call.exp.c64basic
+        8: meta.function-call.int.c64basic
+        9: meta.function-call.len.c64basic
+        10: meta.function-call.log.c64basic
+        11: meta.function-call.peek.c64basic
+        12: meta.function-call.pos.c64basic
+        13: meta.function-call.rnd.c64basic
+        14: meta.function-call.sgn.c64basic
+        15: meta.function-call.sin.c64basic
+        16: meta.function-call.spc.c64basic
+        17: meta.function-call.sqr.c64basic
+        18: meta.function-call.tab.c64basic
+        19: meta.function-call.tan.c64basic
+        20: meta.function-call.val.c64basic
+      push: required_args
+
+    - match: '{{flt}}'
+      scope: constant.numeric.float.c64basic
+
+    - include: mixin_variable_name
+
+  # TODO: Function requires parentheses or the line breaks
+  required_args:
+    # Consume whitespace
+    - match: '\('
+      scope: support.paren.open.func.c64basic
+      set: expr_paren_open
+
+    - match: ''
+      set: syntax_error
+
+  # Grab bag of operators for the dumb expression
+  # parser
+  mixin_operators:
+    - match: \,
+      scope: support.token.delimiter.list.c64basic
+
+    - match: ([-+*/^])
+      scope: keyword.operator.math.c64basic
+
+    - match: (<>|[<>]=?|=|AND|NOT|OR)
+      scope: keyword.operator.logic.c64basic
+
+  # For the general case, mark the device id,
+  # then parse a series of expression items
+  expr_device:
+    - match: (\d+)?
+      scope: constant.numeric.device-id.c64basic
+      set: expr_start
+
+  # For top-level expressions a closing
+  # parenthesis breaks the rest of the line.
+  mixin_top_expr:
+    - include: mixin_string
+
+    - match: \(
+      scope: support.paren.open.expr.c64basic
+      push: expr_paren_open
+    - match: \)
+      set: syntax_error
+
+    # Consume separators and operators
+    - include: mixin_operators
+
+    # Consume values
+    - include: mixin_values
+
+  # Start a top-level expression.
+  expr_start:
+    - meta_content_scope: ctx.expr_start.c64basic
+
+    # Return if statement ends
+    - include: mixin_statement_end
+
+    # Handle as a top-level expression
+    - include: mixin_top_expr
+
+  # Start a top-level expression that must end the line
+  # TODO: Make smarter about parsing the expression so
+  #       it can use line_should_end. Currently this just
+  #       takes over the line and marks the next statement.
+  expr_start_last:
+    - meta_content_scope: ctx.expr_start_last.c64basic
+
+    # Handle as a top-level expression
+    - include: mixin_top_expr
+
+    # Statement end? Mark the line dead
+    - match: ':'
+      scope: support.token.delimiter.statement.c64basic
+      set: dead_code
+
+  # An expression already within at least one parenthesis
+  # so it has a rule to pop on closing ")".
+  expr_paren_open:
+    - meta_content_scope: ctx.expr_paren_open.c64basic
+
+    # Handle strings and parentheses
+    - include: mixin_containers
+
+    # Handle values
+    - include: mixin_values
+
+    # Handle operators
+    - include: mixin_operators
+
+    # No closing parenthesis before the statement ends?
+    - match: '[^)]*(;:|$)'
+      set: syntax_error
+
+  # PRINT #n - Mark the device id, if present.
+  # Always just go to cmd_print, even if missing
+  # so the expression can be tested
+  # TODO: Require a numeric expression
+  cmd_print_dev:
+    - match: (\d+)?
+      scope: constant.numeric.device-id.c64basic
+      set: cmd_print
+
+  # A string opener that pushes quoted_string
+  mixin_string:
+    - match: \"
+      scope: punctuation.definition.string.open.c64basic
+      push: quoted_string
+
+  # PRINT - Expressions separated by commas and semicolons
+  # Currently not very smart. Expression evaluation will
+  # make it smarter.
+  cmd_print_old:
+    - meta_content_scope: ctx.cmd_print_old.c64basic
+
+    # Return if the statement ends
+    - include: mixin_statement_end
+
+    # Consume a parenthesized expression
+    - match: \(
+      scope: support.paren.open.dim.c64basic
+      push: expr_paren_open
+    - match: \)
+      set: syntax_error
+
+    # Consume a string
+    - include: mixin_string
+
+    # Consume the concatenator
+    - match: ;
+      scope: support.token.delimiter.concat.c64basic
+
+    # Consume commas and other operators
+    - include: mixin_operators
+
+    # Consume values
+    - include: mixin_values
+
+  # PRINT - Expressions separated by commas and semicolons
+  # Currently not very smart. Expression evaluation will
+  # make it smarter.
+  cmd_print:
+    - meta_content_scope: ctx.cmd_print.c64basic
+
+    # Return if the statement ends
+    - include: mixin_statement_end
+
+    # Consume the concatenator
+    - match: ;
+      scope: support.token.delimiter.concat.c64basic
+
+    - match: \,
+      scope: support.token.delimiter.tab.c64basic
+
+    - include: real_expr
+
+  # On Commodore64 there's no escaping a string.
+  # Strings may legally be quite long, with
+  # escape characters in them, etc., by hacking
+  # the BASIC language.
+  quoted_string:
+    - meta_scope: string.quoted.c64basic
+    - match: '[^"]*$'
+      set: syntax_error
+    - match: \"
+      scope: punctuation.definition.string.close.c64basic
+      pop: true
+
+  # Everything after this point is broken by a syntax error
+  syntax_error:
+    - meta_scope: invalid.error.syntax.c64basic
+    - match: $
+      pop: true
+
+  # Not currently in use
+  line_should_end:
+    - match: $
+      pop: true
+
+    - match: (?i)\s*(:)\s*(RE[M.]|\.)
+      captures:
+        1: support.token.delimiter.statement.c64basic
+        2: keyword.rem.c64basic
+      set: cmd_rem
+
+    - match: \S.*
+      set: dead_code
+
+  # A statement should end after its last parameter
+  statement_should_end:
+    - match: ':'
+      pop: true
+
+    - match: ''
+      set: syntax_error
+
+  # A statement might also want to end the line
+  line_and_statement_should_end:
+    - match: ':'
+      scope: support.token.delimiter.statement.c64basic
+      set: dead_code
+
+    - match: ''
+      set: syntax_error
+
+  # Other than REM lines, mark the background with "warning" color.
+  dead_code:
+    - match: ':'
+      scope: support.token.delimiter.statement.c64basic
+
+    - match: (?i)RE[M.]|\.
+      scope: keyword.rem.c64basic marked.dead
+      set: cmd_rem
+
+    - match: ''
+      set: marked_dead
+
+  marked_dead:
+    - meta_scope: invalid.warning.dead-code.c64basic
+
+    - include: code_line
+
+  # real_expr Wants a proper expression or it throws syntax error
+  # So we start an expression, first we want a modifier or a value.
+  # If we don't find either of those then the expression is moot.
+  # However, if we do find them, then we must mark them here also,
+  # and change the context so that an operator is next required.
+  # (Later it will be possible to tell whether strings in a float
+  #  context are converting to float).
+  real_expr:
+
+    - include: mixin_statement_end
+
+    - match: ''
+      push: expr_eat_modifier
+
+  # Tag a modifier
+  expr_eat_modifier:
+    - meta_content_scope: ctx.expr_eat_modifier.c64basic
+
+    - match: '{{flt}}'
+      scope: constant.numeric.float.c64basic
+      set: expr_wants_operator
+
+    - match: (?i)(NOT)|(-)|(\+)
+      captures:
+        1: keyword.operator.logic.c64basic
+        2: keyword.operator.negative.c64basic
+        3: keyword.operator.positive.c64basic
+      set: expr_2nd_modifier
+
+    - match: ''
+      set: expr_wants_value
+
+  expr_2nd_modifier:
+    - meta_content_scope: ctx.expr_2nd_modifier.c64basic
+
+    - match: '{{flt}}'
+      scope: constant.numeric.float.c64basic
+      set: expr_wants_operator
+
+    - match: (?i)NOT|[-+]
+      set: syntax_error
+
+    - match: ''
+      set: expr_wants_value
+
+  # Expression wants a value
+  expr_wants_value:
+    - meta_content_scope: ctx.expr_wants_value.c64basic
+
+      # TODO: Enter functions with \s*(\() push expr_paren_open
+    - match: '(?i)CHR\$'
+      scope: meta.function-call.chrS.c64basic
+      set: [expr_wants_operator, required_args]
+    - match: '(?i)STR\$'
+      scope: meta.function-call.strS.c64basic
+      set: [expr_wants_operator, required_args]
+    - match: '(?i)LEFT\$'
+      scope: meta.function-call.leftS.c64basic
+      set: [expr_wants_operator, required_args]
+    - match: '(?i)RIGHT\$'
+      scope: meta.function-call.rightS.c64basic
+      set: [expr_wants_operator, required_args]
+    - match: '(?i)MID\$'
+      scope: meta.function-call.midS.c64basic
+      set: [expr_wants_operator, required_args]
+
+    # These all take a numerical expression
+    - match: (?i)(FRE)|(USR)|(ABS)|(ASC)|(ATN)|(COS)|(EXP)|(INT)|(LEN)|(LOG)|(PEEK)|(POS)|(RND)|(SGN)|(SIN)|(SPC)|(SQR)|(TAB)|(TAN)|(VAL)
+      captures:
+        1: meta.function-call.fre.c64basic
+        2: meta.function-call.usr.c64basic
+        3: meta.function-call.abs.c64basic
+        4: meta.function-call.asc.c64basic
+        5: meta.function-call.atn.c64basic
+        6: meta.function-call.cos.c64basic
+        7: meta.function-call.exp.c64basic
+        8: meta.function-call.int.c64basic
+        9: meta.function-call.len.c64basic
+        10: meta.function-call.log.c64basic
+        11: meta.function-call.peek.c64basic
+        12: meta.function-call.pos.c64basic
+        13: meta.function-call.rnd.c64basic
+        14: meta.function-call.sgn.c64basic
+        15: meta.function-call.sin.c64basic
+        16: meta.function-call.spc.c64basic
+        17: meta.function-call.sqr.c64basic
+        18: meta.function-call.tab.c64basic
+        19: meta.function-call.tan.c64basic
+        20: meta.function-call.val.c64basic
+      set: [expr_wants_operator, required_args]
+
+    - match: \(
+      scope: support.paren.open.c64basic
+      set: expr_till_close
+
+    - match: \"
+      scope: punctuation.definition.string.open.c64basic
+      set: expr_eat_string
+
+    # - match: '-+]?(\d+\.\d*|\.?\d+)'
+    #   set: marked_dead
+
+    - match: '{{flt}}'
+      scope: variable.float.c64basic
+      set: expr_wants_operator
+
+    # Flag these variable names as errors, as the
+    # BASIC parser also does so (in expression context)
+    - match: (?i:THEN)|tH|thE|(?i:GOTO)|gO|goT|(?i:GOSUB)|goS|gosU
+      scope: invalid.error.reserved-word.c64basic
+      set: syntax_error
+
+    - match: '{{var}}\$'
+      scope: variable.string.c64basic
+      set: expr_eat_subscript
+
+    - match: '{{var}}'
+      scope: variable.float.c64basic
+      set: expr_eat_subscript
+
+    - match: ''
+      set: syntax_error
+
+  # Expression wants an operator
+  # If one is not found the expression is done, so pop
+  expr_wants_operator:
+    - meta_content_scope: ctx.expr_wants_operator.c64basic
+
+    - match: (?i)((<>|[<>]=|[-+*/^<=>]|AND|OR)\s*(:|$))
+      set: syntax_error
+
+    - match: '[-+*/^]'
+      scope: keyword.operator.math.c64basic
+      set: expr_eat_modifier
+
+    - match: (?i)<>|[<>]=?|=|AND|OR
+      scope: keyword.operator.logic.c64basic
+      set: expr_eat_modifier
+
+    # Handle THEN <line> here, since pop will go
+    # back to cmd_if. Caveat: THEN will be treated
+    # as a keyword in every expression
+    - match: ((?i:THEN)|tH|thE)\s*(\d+})
+      captures:
+        1: keyword.then.c64basic
+        2: constant.numeric.line-number.c64basic
+      set: line_and_statement_should_end
+
+    - match: (?i:THEN)|tH|thE
+      scope: keyword.then.c64basic
+      set: code_line
+
+    # For the ON keyword, experimenting with
+    # pushing and popping. The goto/gosub pattern
+    # is very simple. In fact, in sum:
+    # ((GOTO)|(GOSUB))\s*(\d+)(\s*(,)\s*(\d+))*\s*(:|$)
+    - match: ((?i:GOTO)|gO|goT)|((?i:GOSUB)|goS|gosU)
+      captures:
+        1: keyword.goto.c64basic
+        2: keyword.gosub.c64basic
+      pop: true
+
+    - match: ({{var}})|(\d+)|\(
+      set: syntax_error
+
+    - match: ''
+      pop: true
+
+  # Expression wants a comparison operator
+  #
+  # Needed for a string in a numeric context. Consider:
+  #   A+""    :. is a syntax error, but
+  #   A+A$="" :. gives a numeric result
+  #
+  # If one is not found the expression is done, so pop
+  expr_wants_comparison:
+    - meta_content_scope: ctx.expr_wants_comparison.c64basic
+
+    - match: (<>|[<>]=?|=)\s*(:|$)
+      set: syntax_error
+
+    - match: <>|[<>]=?|=
+      scope: keyword.operator.logic.c64basic
+      set: expr_eat_modifier
+
+    # Handle THEN <line> here, since pop would go
+    # back to cmd_if. Caveat: THEN will be treated
+    # as a keyword in every expression.
+    # This syntax discourages the use of these
+    # keywords as variable names.
+    - match: ((?i:THEN)|tH|thE)\s*(\d+)
+      captures:
+        1: keyword.then.c64basic
+        2: constant.numeric.line-number.c64basic
+      set: line_and_statement_should_end
+
+    - match: (?i:THEN)|tH|thE
+      scope: keyword.then.c64basic
+      set: code_line
+
+    - match: ((?i:GOTO)|gO|goT)|((?i:GOSUB)|goS|gosU)
+      captures:
+        1: keyword.goto.c64basic
+        2: keyword.gosub.c64basic
+      pop: true
+
+    - match: ({{var}})|({{flt}})|\(
+      set: syntax_error
+
+    - match: ''
+      pop: true
+
+  # Consume the subscript on a variable
+  expr_eat_subscript:
+    - meta_content_scope: ctx.expr_eat_subscript.c64basic
+
+    - match: \s*(\()
+      captures:
+        1: support.paren.open.subscript.c64basic
+      set: expr_till_close
+
+    - match: ''
+      set: expr_wants_operator
+
+  # Consume the subscript on a variable
+  expr_eat_string:
+    - meta_scope: string.quoted.c64basic
+
+    - match: $
+      pop: true
+
+    - match: '[^"]*(")'
+      captures:
+        1: punctuation.definition.string.close.c64basic
+      set: expr_wants_operator
+
+    - match: ''
+      set: syntax_error
+
+  # An enclosed expression. Comma delimited. No items limit.
+  expr_till_close:
+    - meta_content_scope: ctx.expr_till_close.c64basic
+
+    - match: '[^)]*(;:|$)'
+      set: syntax_error
+
+    # Return if the statement ends
+    - include: mixin_statement_end
+
+    # Closing the group? Then an operator is next.
+    - match: \)
+      scope: support.paren.close.subscript.c64basic
+      set: expr_wants_operator
+
+    # Expression followed by a comma? Tag it.
+    - match: \,
+      scope: support.token.delimiter.subscripts.c64basic
+
+    # Push the expression chain so it pops back here.
+    - match: ''
+      push: expr_eat_modifier
+
+  # Consume a float variable
+  expr_wants_float:
+    - meta_content_scope: ctx.expr_wants_float.c64basic
+
+    - match: '{{var}}\$'
+      set: syntax_error
+
+    - match: '{{var}}'
+      scope: variable.float.c64basic
+      set: expr_eat_subscript
+
+    - match: '{{flt}}'
+      scope: constant.numeric.float.c64basic
+      set: expr_wants_operator
+
+    - match: ''
+      set: syntax_error
+
+  # Expression wants a string
+  expr_wants_string:
+    - match: '{{var}}\$'
+      scope: variable.string.c64basic
+      set: expr_wants_operator
+
+    - include: mixin_string
+
+    - match: ''
+      set: syntax_error
+
+  # String group and expression group
+  # to be used inside parentheses only
+  mixin_containers:
+    - include: mixin_string
+
+    - match: \(
+      scope: support.paren.open.expr.c64basic
+      push: expr_paren_open
+    - match: \)
+      scope: support.paren.close.c64basic
+      pop: true
+
+  mixin_some_exprs:
+    - include: mixin_statement_end
+
+    - include: mixin_string
+
+    - match: (?i)(<>|[<>]=?|=|AND|NOT|OR)
+      scope: keyword.operator.logic.c64basic
+
+    - include: mixin_values
+
+    - match: \(
+      scope: support.paren.open.expr.c64basic
+      push: expr_paren_open
+    - match: \)
+      set: syntax_error
+
+    - match: '[:$]'
+      set: syntax_error
+
+    - match: ([-+*/^])
+      scope: keyword.operator.math.c64basic
+
+  one_expr:
+    # Statement ends before... anything?
+    - match: '\s*([,;:]|$)'
+      set: syntax_error
+
+    - match: ''
+      set: real_expr
+
+  two_exprs:
+    - meta_content_scope: ctx.two_exprs.c64basic
+
+    # A comma must follow before statement end
+    - match: \s*:|$
+      set: syntax_error
+
+    - match: \s*(,)
+      captures:
+        1: support.token.delimiter.list.1.c64basic
+      set: one_expr
+
+    - include: real_expr
+
+  three_exprs:
+    - meta_content_scope: ctx.three_exprs.c64basic
+
+    # A comma must follow before statement end
+    - match: \s*:|$
+      set: syntax_error
+
+    - match: \s*(,)
+      captures:
+        1: support.token.delimiter.list.2.c64basic
+      set: two_exprs
+
+    - include: real_expr
+
+  four_exprs:
+    - meta_content_scope: ctx.four_exprs.c64basic
+
+    # A comma must follow before statement end
+    - match: \s*:|$
+      set: syntax_error
+
+    - match: \s*(,)
+      captures:
+        1: support.token.delimiter.list.3.c64basic
+      set: three_exprs
+
+    - include: real_expr
+
+  # Mix-in to pop the context if the statement ends.
+  mixin_statement_end:
+    # Stray statement delimiter is an error
+    - match: :\s*$
+      set: syntax_error
+
+    # Statement end? Return.
+    - match: :|$
+      scope: support.token.delimiter.statement.c64basic
+      pop: true
