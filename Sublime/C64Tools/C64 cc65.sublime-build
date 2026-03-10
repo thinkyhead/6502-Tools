@@ -1,0 +1,4 @@
+{
+  "cmd": ["cl65", "-tc64", "-Cc64.cfg", "$file", "-o", "$file_base_name.prg"],
+  "selector": "source.c"
+}

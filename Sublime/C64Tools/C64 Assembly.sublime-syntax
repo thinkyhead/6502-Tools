@@ -1,0 +1,591 @@
+%YAML 1.2
+---
+name: C64 Assembly
+#
+# 6502 is fairly straightforward, but there are many
+# variants, not all of which are easy to take together.
+#
+#   - Code lines have only a few fields, separated by whitespace:
+#     - Hexdump (e.g., "1234 5C 7F ")
+#     - Label
+#     - Mnemonic or directive
+#     - Operand(s)
+#     - Comment
+#   - All fields are optional.
+#   - Comments start with ';' and take the rest of the line.
+#   - Old-style comments have '*' in the first column.
+#
+# 6502 addressing modes:
+#   - Accumulator         PLA ; ROL ; ROR A
+#   - Immediate           LDX #3
+#   - Implied             CLC, SED
+#   - Relative            BRA _there
+#   - Absolute/Zero-Page  STA $CE44   ; LDA $12
+#   - Absolute/ZP Indexed LDA $0600,X ; STX $44,Y
+#   - Indirect            JMP ($0600)
+#   - Indirect Indexed    LDA ($86),Y
+#   - Indexed Indirect    STA ($20,X)
+#
+# This syntax is based on a couple of samples of code.
+#   - Atari 8-bit Assembly. Not yet supporting macro-assembler.
+#   - Apple ][ early DOS code. Very bare code with "inferred" comments.
+#
+# To help parse old-school code, mnemonics are grouped like so:
+#   - Mnemonics with no operands. All that follows is a comment.
+#   - Mnemonics with 0 or more operands. Apple's assembler requires ';'
+#     for comments on ambiguous mnemonics, so this syntax has a rule
+#     to capture expressions automatically:
+#       - Expression has its own context
+#       - Captures parentheses (first rule)
+#       - Non-operator where an operator should be? Set comment.
+#   - Unknown (3-letter) mnemonics are marked invalid.
+#   - Loose about other keywords rather than exhaustive.
+#
+# Notes on sublime-syntax:
+#   - Each character or group is scanned in order, individually,
+#     using the rules of the active context.
+#   - Matches are only within a single line (no CR/LF).
+#   - A successful match moves the scan-point after the match.
+#   - Only the active context applies, plus any includes.
+#
+# Rebuilt October 2025
+#  - Combined ksherlock/65816 (ca65) and dougmasten/sublime-assembly-6809 (Assembly-6809)
+#  - Initially provides highlighting for ca65 code and nested expressions.
+#  - Added a hook for "Apple ][" dump hinted by $ starting the line. Like DASM, labels have no colon.
+#
+# Planned improvements:
+#  - Better handling of labels without colons and comments without delimiters, like DASM.
+#  - The EDasm syntax by @ksherlock seems to work very well for DASM. Use that as guidance.
+#
+
+file_extensions:
+  [ dasm, asm, s, m65, a65, inc, '6502' ]
+
+scope: source.asm
+
+variables:
+  define:     '(?i)[a-z_][a-z0-9_]*\b'    # define name (no dot allowed)
+  dotdefine:  '(?i)\.[a-z0-9_]+\b'        # define name with dot
+  ext_define: '{{define}}(::{{define}})?'
+  locall:     '@{{define}}\b'             # named local label
+  locall2:    '@\d+\b'                    # numbered local label
+  label:      '{{define}}|{{dotdefine}}|{{locall}}|{{locall2}}'      # an unbroken name or label string
+  std_s:      as[lr]\s*a|brk|cl[cdiv]|dec\s*a|(de|in)[xy]|eor\s*a|inc\s*a|ls[lr]\s*a|nop|p[hl][ap]|ro[lr]\s*a|rt[is]|se[cdi]|t(a[xy]|(sx|xs)|[yx]a)
+  std_d:      a(dc|nd|s[lr])|bit|c(mp|p[xy])|dec|eor|inc|j(mp|sr)|ld[axy]|ls[lr]|ora|ro[lr]|sbc|st[axy]
+  std_b:      b(c[cs]|eq|mi|ne|pl|v[cs])
+  added_s:    p[hl][xy]|t[rs]b
+  added_d:    dcp|lax|sbx|stz
+  added_b:    bra
+  mos65C02_s: '[rs]mb|stp|wai'
+  mos65C02_b: bb[rs]
+  b_std_s:    (?i)\b({{std_s}})\b
+  b_std_d:    (?i)\b({{std_d}})\b
+  b_std_b:    (?i)\b({{std_b}})\b
+  b_added_s:  (?i)\b({{added_s}})\b
+  b_added_d:  (?i)\b({{added_d}})\b
+  b_added_b:  (?i)\b({{added_b}})\b
+  b_mos65C02_s: (?i)\b({{mos65C02_s}})\b
+  b_mos65C02_b: (?i)\b({{mos65C02_b}})\b
+  mnemonic: '[a-zA-Z]{3}'
+  dec: \d+
+  hex: \$\h+
+  bin: '%[01]+'
+
+  ident: '(?i)[a-z_][a-z0-9_]*'
+  cident: '[A-Z]+[a-z]+[a-zA-Z0-9]*|[a-z]+([A-Z0-9]+[a-z]*)+'
+
+  num_bin: (?:[01][01]*)
+  num_oct: (?:[0-7][0-7]*)
+  num_dec: (?:\d\d*)
+  num_hex: (?:\h\h*)
+  symbol_id: (?i)(?:[a-z\.\@\_!\?][a-z0-9\.\@\$\_\?]*)|([0-9](?!\S))
+  filename_id: (?:\S+(?!\S))
+  all_registers: (?i)cc|dp|pc|[0abdefsuvwxy]
+
+contexts:
+  prototype:
+    - include: comment
+    - match: $
+      pop: true
+
+  pop-on-eol:
+    - match: $
+      pop: true
+
+  skip-whitespace:
+    - match: \s*
+
+  main:
+    - meta_include_prototype: false
+
+    # Dollar Sign, shift into DUMP parsing
+    - match: (\$\h+)
+      scope: constant.disassembly.asm
+      push: appleii
+
+    # Assignment
+    - match: \b({{ident}})\s*(?i)(:?=|EQU\b)
+      push: operand
+      captures:
+        1: entity.name.constant.asm
+        2: keyword.operator.assignment.asm
+
+    # Var assignment
+    - match: \b({{ident}})\s*(?i)(:?\.?SET\b)
+      push: operand
+      captures:
+        1: entity.name.variable.asm
+        2: keyword.operator.assignment.asm
+
+    - match: '\b{{ident}}:'
+      scope: entity.name.label.asm
+      #push: opcode
+
+    - match: '@{{ident}}:'
+      scope: entity.name.label.local.asm
+      #push: opcode
+
+    # OP Code expected after colon
+    - match: ':'
+      scope: entity.name.label.anonymous.asm
+      #push: opcode
+
+    # Special comment
+    - match: ;;
+      scope: punctuation.definition.comment.asm
+      push: annotation
+
+    # Comment follows semicolon in this scope
+    - match: ;
+      scope: punctuation.definition.comment.asm
+      push:
+        - meta_include_prototype: false
+        - meta_scope: comment.line.asm
+        - match: \n
+          pop: true
+
+    - match: (\.(?i:proc))\s+({{ident}})\b
+      captures:
+        1: keyword.asm
+        2: entity.name.function.asm
+
+    - match: (\.(?i:scope))\s+({{ident}})\b
+      captures:
+        1: keyword.asm
+        2: entity.name.scope.asm
+
+
+    - match: (\.(?i:mac|macro))\s+({{ident}})\b
+      captures:
+        1: keyword.asm
+        2: entity.name.macro.asm
+      push: macro-parms
+
+    - include: unknown-fallback
+
+  annotation:
+    - meta_include_prototype: false
+    - meta_scope: entity.name.type.annotation.asm
+    - match: '#'
+      scope: comment.line.asm punctuation.definition.comment.asm
+      set: comments-eol
+    - match: \n
+      pop: true
+
+  macro-parms:
+    - match: '\b{{ident}}\b'
+      scope: variable.parameter.macro.asm
+
+  define-parms:
+    - match: \n
+      scope: invalid.illegal
+      pop: true
+    - match: \)
+      set: operand
+    - match: \b{{ident}}\b
+      scope: variable.parameter.define.asm
+    - match: \,
+    - match: \S
+      scope: invalid.illegal
+
+
+  # All opcodes get main scope meta.opcode
+  opcode:
+    - meta_content_scope: meta.opcode
+    - include: directives
+    - include: mnemonics-6502
+    - include: mnemonics-65c02
+    - include: mnemonics-65816
+    - include: mnemonics-65816-alt
+    - include: mnemonics-macpack-generic
+    - include: mnemonics-macpack-longbranch
+
+  # Assume a macro with arguments if nothing else matches
+  unknown-fallback:
+    - match: ({{ident}}:?)\s+({{cident}})\b
+      captures:
+        1: entity.name.label.asm
+        2: entity.name.function.macro-call.asm
+      set: opcode
+
+    - match: \s({{cident}})\b
+      captures:
+        1: entity.name.function.macro-call.asm
+      set: operand
+
+    # OP Code expected after white-space
+    - match: '(?=\S)'
+      push: opcode
+
+  # Most directives transition to the general 'operand' scope (which can be empty)
+  directives:
+
+    # define(...
+    - match: '(\.(?i:define))\s+({{ident}})\s*\('
+      captures:
+        1: meta.directive keyword.asm
+        2: entity.name.define.asm
+      set: define-parms
+
+    # define IDENT
+    - match: '(\.(?i:define))\s+({{ident}})\b'
+      captures:
+        1: meta.directive keyword.asm
+        2: entity.name.define.asm
+      set: operand
+
+    # enum IDENT
+    - match: '(\.(?i:enum))\s+({{ident}})\b'
+      captures:
+        1: meta.directive keyword.asm
+        2: entity.name.enum.asm
+      set: operand
+
+    # struct|union IDENT
+    - match: '(\.(?i:struct|union))\s+({{ident}})\b'
+      captures:
+        1: meta.directive keyword.asm
+        2: entity.name.struct.asm
+      set: operand
+
+
+    # if|end|else
+    - match: \.(?i:if|endif|else|elseif)\b
+      scope: meta.directive keyword.control.asm
+      set: operand
+
+    # include|incbin
+    - match: \.(?i:include|incbin)\b
+      scope: meta.directive keyword.control.import.asm
+      set: operand
+
+    # byte|word
+    - match: \.(?i:byte|word)\b
+      scope: meta.directive keyword.data.asm
+      set: operand
+
+    # More directive / keyword
+    - match: '\.(?i:A16|A8|ADDR|ALIGN|ASCIIZ|ASSERT|AUTOIMPORT|BANKBYTES|BSS|BYT|BYTE|CASE|CHARMAP|CODE|CONDES|CONSTRUCTOR)\b'
+      scope: meta.directive keyword.asm
+      set: operand
+    - match: '\.(?i:DATA|DBYT|DEBUGINFO|DEF|DEFINE|DEFINED|DESTRUCTOR|DWORD|ELSE|ELSE|END|ENDENUM|ENDIF|ENDMAC|ENDMACRO|ENDPROC|ENDREP|ENDREPEAT|ENDSCOPE|ENDSTRUCT|ENUM|ERROR|EXITMAC|EXITMACRO|EXPORT|EXPORTZP)\b'
+      scope: meta.directive keyword.asm
+      set: operand
+    - match: '\.(?i:FARADDR|FEATURE|FILEOPT|FOPT|FORCEIMPORT|GLOBAL|GLOBALZP|HIBYTES|I16|I8|IF|IFCONST|IFDEF|IFNBLANK|IFNDEF|IFP02|IFP816|IFPC02|IFPSC02|IFREF|IMPORT|IMPORTZP|INCBIN|INCLUDE|INTERRUPTOR)\b'
+      scope: meta.directive keyword.asm
+      set: operand
+    - match: '\.(?i:LINECONT|LIST|LISTBYTES|LOBYTES|LOCAL|LOCALCHAR|MACPACK|MAC|MACRO|R?ORG|OUT|PO2|P816|PAGELEN|PAGELENGTH|PC02|POPSEG|PROC|PSC02|PUSHSEG)\b'
+      scope: meta.directive keyword.asm
+      set: operand
+    - match: '\.(?i:RELOC|REPEAT|RES|RODATA|SCOPE|SEGMENT|SETCPU|SMART|STRUCT|SUNPLUS|TAG|WARNING|WORD|ZEROPAGE)\b'
+      scope: meta.directive keyword.asm
+      set: operand
+
+    - match: \.{{ident}}
+      scope: meta.directive
+
+  # Skip an address
+  appleii:
+    - match: \s*((\h{2})+)
+      captures:
+        1: constant.numeric.byte.asm
+
+    - match: '\b{{ident}}:?'
+      scope: entity.name.label.asm
+      push: opcode
+
+    - match: \s+
+      push: opcode
+
+    - match: $
+      set: main
+
+  operand:
+    - include: numbers
+    - include: strings
+    - include: match-char
+    - include: match-expr
+    - match: $
+      set: main
+
+    # Stray closing parenthesis marks the rest of the line as error
+    - match: \)
+      push:
+        - meta_include_prototype: false
+        - meta_scope: invalid.error.syntax.asm
+        - match: \n
+          pop: true
+
+    - match: \.(?i:CPU|PARAMCOUNT|TIME|VERSION)\b
+      scope: support.constant.asm
+    - match: \.(?i:BANKBYTE|BLANK|CONCAT|CONST|HIBYTE|HIWORD|IDENT|LEFT|LOBYTE|LOWORD|MATCH|MID|REF|REFERENCED|RIGHT|SIZEOF|STRAT|SPRINTF|STRING|STRLEN|TCOUNT|XMATCH)\b
+      scope: support.function.asm
+    - match: \.(?i:BITNOT|MOD|BITAND|BITXOR|SHL|SHR|BITOR|AND|XOR|OR|NOT)\b
+      scope: keyword.operator.asm
+    - match: '<<|>>|<>|<=|>=|\|\||&&'
+      scope: keyword.operator.asm
+    - match: '[-+~<>^*/&|=!]'
+      scope: keyword.operator.asm
+
+  numbers:
+    - match: \b\d+\b
+      scope: constant.numeric.asm
+    - match: \$[A-Fa-f0-9]+\b
+      scope: constant.numeric.hex.asm
+    - match: \b[A-Fa-f0-9]+h\b
+      scope: constant.numeric.hex.asm
+    - match: \%[01]+\b
+      scope: constant.numeric.binary.asm
+
+  # Comment after semicolon takes the rest of the line
+  comment:
+    - match: ;
+      scope: punctuation.definition.comment.asm
+      push:
+        - meta_include_prototype: false
+        - meta_scope: comment.line.asm
+        - match: \n
+          pop: true
+
+  # Double-quoted strings "..." with escaping
+  strings:
+    - match: '"'
+      scope: punctuation.definition.string.begin.asm
+      push:
+        - meta_include_prototype: false
+        - meta_scope: string.quoted.double.asm
+        - match: '\\\"|[^"\n]'
+        - match: '"'
+          scope: punctuation.definition.string.end.asm
+          pop: true
+        - match: \n
+          scope: invalid.illegal.newline.asm
+          pop: true
+
+
+  mnemonics-6502:
+    - match: \b(?i:ADC|AND|ASL|BCC|BCS|BEQ|BIT|BMI|BNE|BPL|BRK|BVC|BVS|CLC|CLD|CLI|CLV|CMP|CPX|CPY|DEC|DEX|DEY|EOR|INC|INX|INY|JMP|JSR|LDA|LDX|LDY|LSR|NOP|ORA|PHA|PHP|PLA|PLP|ROL|ROR|RTI|RTS|SBC|SEC|SED|SEI|STA|STX|STY|TAX|TAY|TSX|TXA|TXS|TYA)\b
+      scope: keyword.mnemonic.6502.asm
+      set: operand
+
+  mnemonics-65c02:
+    - match: \b(?i:BRA|PHX|PHY|PLX|PLY|STP|STZ|TRB|TSB|WAI)\b
+      scope: keyword.mnemonic.65c02.asm
+      set: operand
+
+  mnemonics-65c02s:
+    - match: \b(?i:BBR|BBS|RMB|SMB)[0-7]\b
+      scope: keyword.mnemonic.65c02s.asm
+      set: operand
+
+  mnemonics-65816:
+    - match: \b(?i:BRL|COP|JML|JSL|MVN|MVP|PEA|PEI|PER|PHB|PHD|PHK|PLB|PLD|REP|RTL|SEP|TCD|TCS|TDC|TSC|TXY|TYX|WDM|XBA|XCE)\b
+      scope: keyword.mnemonic.65816.asm
+      set: operand
+
+  mnemonics-65816-long:
+    - match: \b(?i:ADCL|ANDL|CMPL|EORL|LDAL|ORAL|SBCL|STAL)\b
+      scope: keyword.mnemonic.65816.long.asm
+      set: operand
+
+  mnemonics-65816-alt:
+    - match: \b(?i:BLT|BGE|CPA|DEA|INA|SWA|TAS|TSA)\b
+      scope: keyword.mnemonic.65816.alt.asm
+      set: operand
+
+  mnemonics-65c02-m740:
+    - match: \b(?i:CLT|COM|LDM|RRF|SET|TST)\b
+      scope: keyword.mnemonic.m740.asm
+      set: operand
+
+  mnemonics-sweet16:
+    - match: \b(?i:RTN|SET|LD|LDD|ST|STD|POP|POPD|STP|ADD|SUB|CPR|INR|DCR|BR|BNC|BC|BP|BM|BZ|BNZ|BM1|BNM1|BK|RS|BS)\b
+      scope: keyword.mnemonic.sweet16.asm
+      set: operand
+
+  mnemonics-macpack-generic:
+    - match: \b(?i:ADD|SUB|BGE|BLT|BGT|BLE|BNZ|BZE)\b
+      scope: keyword.mnemonic.macpack.generic.asm
+      set: operand
+
+  mnemonics-macpack-longbranch:
+    - match: \b(?i:JEQ|JNE|JMI|JPL|JCS|JCC|JVS|JVC)\b
+      scope: keyword.mnemonic.macpack.longbranch.asm
+      set: operand
+
+  #
+  # Expression matching originally from @dougmasten / sublime-assembly-6809
+  # - No "unquoted string" matching
+  #
+
+  match-expr:
+    - include: match-integers
+    - include: match-operators
+    - include: match-parens
+    - include: match-sizeof
+    - include: match-labels
+    - include: match-characters
+
+  match-integers:
+    - include: match-binary-integer
+    - include: match-octal-integer
+    - include: match-hex-integer
+    - include: match-decimal-integer
+
+  match-binary-integer:
+    - match: '(\%){{num_bin}}\b'
+      scope: constant.numeric.binary.asm
+      captures:
+        1: punctuation.definition.numeric.binary.asm
+    - match: '{{num_bin}}([bB])\b'
+      scope: constant.numeric.binary.asm
+      captures:
+        1: punctuation.definition.numeric.binary.asm
+
+  match-octal-integer:
+    - match: '(\@){{num_oct}}\b'
+      scope: constant.numeric.octal.asm
+      captures:
+        1: punctuation.definition.numeric.octal.asm
+    - match: '{{num_oct}}([oqOQ])\b'
+      scope: constant.numeric.octal.asm
+      captures:
+        1: punctuation.definition.numeric.octal.asm
+
+  match-hex-integer:
+    - match: '(\$|0[Xx]){{num_hex}}\b'
+      scope: constant.numeric.hexadecimal.asm
+      captures:
+        1: punctuation.definition.numeric.hexadecimal.asm
+    - match: '{{num_hex}}([hH])\b'
+      scope: constant.numeric.hexadecimal.asm
+      captures:
+        1: punctuation.definition.numeric.hexadecimal.asm
+
+  match-decimal-integer:
+    - match: '(\&)?{{num_dec}}\b'
+      scope: constant.numeric.decimal.asm
+      captures:
+        1: punctuation.definition.numeric.decimal.asm
+
+  match-operators:
+    - match: <<|>>|&&|\|\|
+      scope: keyword.operator.arithmetic.asm
+    - match: \*
+      scope: keyword.operator.arithmetic.asm
+    - match: \+|\-|/|%|\||\^|\~|!|\&
+      scope: keyword.operator.arithmetic.asm
+
+  match-parens:
+    - match: \(
+      scope: punctuation.section.parens.begin.asm
+      push:
+        - match: \)
+          scope: punctuation.section.parens.end.asm
+          pop: true
+        - include: pop-on-eol
+        - include: match-expr
+
+  match-comma:
+    - match: \,
+      scope: operator.separator.asm
+
+  # Match single-quoted character
+  match-char:
+    - match: \'
+      scope: punctuation.definition.char.begin.asm
+      push:
+        - meta_scope: string.quoted.single.asm
+        - match: \S(\'?)
+          captures:
+            1: punctuation.definition.char.end.asm
+          pop: true
+        - include: pop-on-eol
+
+  # Match single- or double-quoted character
+  match-characters:
+    - match: \'
+      scope: punctuation.definition.char.begin.asm
+      push:
+        - meta_scope: string.quoted.single.asm
+        - match: \S(\'?)
+          captures:
+            1: punctuation.definition.char.end.asm
+          pop: true
+        - include: pop-on-eol
+    - match: \"
+      scope: punctuation.definition.char.begin.asm
+      push:
+        - meta_scope: string.quoted.double.asm
+        - match: \S\S(\"?)
+          captures:
+            1: punctuation.definition.char.end.asm
+          pop: true
+        - include: pop-on-eol
+
+  match-labels:
+    - match: '{{symbol_id}}'
+      scope: constant.other.label.asm
+
+  match-sizeof:
+    - match: (?i)sizeof(\b)
+      scope: support.function.directive.structure.asm
+      push:
+        - match: \{
+          scope: punctuation.section.parens.begin.asm
+          set:
+            - match: \}
+              scope: punctuation.section.parens.end.asm
+              pop: true
+            - include: match-expr
+            - include: pop-on-eol
+        - include: pop-on-eol
+
+  match-strings:
+    - match: \"
+      scope: punctuation.definition.string.begin.asm
+      set:
+        - meta_scope: string.quoted.double.asm
+        - match: \"
+          scope: punctuation.definition.string.end.asm
+          set: comments-eol
+        - include: pop-on-eol
+    - match: \'
+      scope: punctuation.definition.string.begin.asm
+      set:
+        - meta_scope: string.quoted.single.asm
+        - match: \'
+          scope: punctuation.definition.string.end.asm
+          set: comments-eol
+        - include: pop-on-eol
+    #- match: .*$
+    #  scope: string.unquoted.asm
+    #  pop: true
+    - include: pop-on-eol
+
+  comments-eol:
+    - match: (\s*)(([*;]?).*)$
+      captures:
+        2: comment.line.asm
+        3: punctuation.definition.comment.asm
+      pop: true

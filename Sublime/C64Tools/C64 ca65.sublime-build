@@ -1,0 +1,4 @@
+{
+  "cmd": ["ca65", "-tc64", "-Cc64-asm.cfg", "-o", "$file_base_name.prg", "$file" ],
+  "selector": "source.asm"
+}

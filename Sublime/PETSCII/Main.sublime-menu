@@ -1,0 +1,30 @@
+[
+  { "id": "preferences",
+    "children": [
+      { "caption": "Package Settings",
+        "id": "package-settings",
+        "children": [
+          { "caption": "PETSCII",
+            "children": [
+              { "caption": "Settings",
+                "command": "edit_settings",
+                "args": {
+                  "base_file": "${packages}/PETSCII/PETSCII.sublime-settings",
+                  "default": "{\n\t$0\n}\n"
+                }
+              },
+              { "caption": "Key Bindings",
+                "command": "edit_settings",
+                "args": {
+                  "base_file": "${packages}/PETSCII/Default.sublime-keymap",
+                  "user_file": "${packages}/PETSCII/Default ($platform).sublime-keymap",
+                  "default": "[\n\t${0}\n]\n"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

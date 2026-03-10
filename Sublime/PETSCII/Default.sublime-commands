@@ -1,0 +1,9 @@
+[
+    { "caption": "PETSCII: Insert Inverted", "command": "petscii_insert_inv" },
+    { "caption": "PETSCII: Insert Unshifted", "command": "petscii_insert_unshifted" },
+    { "caption": "PETSCII: Insert Shifted", "command": "petscii_insert_shifted" },
+    { "caption": "PETSCII: Insert Special", "command": "petscii_insert_special" },
+    { "caption": "PETSCII: Insert Drawing", "command": "petscii_insert_draw" },
+    { "caption": "PETSCII: Invert Selected Text", "command": "petscii_invert_text" },
+    { "caption": "PETSCII: Encode Selected Text", "command": "petscii_encode_text" }
+]

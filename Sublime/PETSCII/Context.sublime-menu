@@ -1,0 +1,29 @@
+[
+  { "caption": "PETSCII",
+    "id": "petscii",
+    "children":
+    [
+      { "command": "petscii_invert_text",
+        "caption": "Invert Selected Text"
+      },
+      { "command": "petscii_insert_inv_pop",
+        "caption": "Insert Inverted"
+      },
+      { "command": "petscii_insert_unshifted_pop",
+        "caption": "Insert Unshifted"
+      },
+      { "command": "petscii_insert_shifted_pop",
+        "caption": "Insert Shifted"
+      },
+      { "command": "petscii_insert_special_pop",
+        "caption": "Insert Special"
+      },
+      { "command": "petscii_insert_draw_pop",
+        "caption": "Insert Drawing"
+      }
+    ]
+  },
+  { "caption": "-",
+    "id": "separator"
+  }
+]

@@ -1,0 +1,10 @@
+[
+    { "keys": [ "ctrl+shift+c", "ctrl+shift+1" ], "command": "petscii_insert_unshifted" },
+    { "keys": [ "ctrl+shift+c", "ctrl+shift+2" ], "command": "petscii_insert_shifted" },
+    { "keys": [ "ctrl+shift+c", "ctrl+shift+c" ], "command": "petscii_insert_inv" },
+    { "keys": [ "ctrl+shift+c", "ctrl+shift+s" ], "command": "petscii_insert_special" },
+    { "keys": [ "ctrl+shift+c", "ctrl+shift+d" ], "command": "petscii_insert_draw" },
+    { "keys": [ "ctrl+shift+c", "ctrl+shift+i" ], "command": "petscii_invert_text" },
+    { "keys": [ "command+k", "command+l" ], "command": "petscii_lower" },
+    { "keys": [ "command+k", "command+u" ], "command": "petscii_upper" }
+]

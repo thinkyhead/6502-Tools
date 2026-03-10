@@ -1,0 +1,29 @@
+[
+  { "id": "preferences",
+    "children": [
+      { "caption": "Package Settings",
+        "id": "package-settings",
+        "children": [
+          { "caption": "C64 Tools",
+            "children": [
+              { "caption": "C64 Assembly Settings",
+                "command": "edit_settings",
+                "args": {
+                  "base_file": "${packages}/C64Tools/C64 Assembly.sublime-settings",
+                  "default": "{\n\t$0\n}\n"
+                }
+              },
+              { "caption": "Commodore BASIC Settings",
+                "command": "edit_settings",
+                "args": {
+                  "base_file": "${packages}/C64Tools/CommodoreBASIC.sublime-settings",
+                  "default": "{\n\t$0\n}\n"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
