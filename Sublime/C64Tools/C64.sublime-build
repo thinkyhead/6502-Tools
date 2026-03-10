@@ -1,0 +1,4 @@
+{
+  "cmd": ["$packages/C64Tools/helper/C64-build.sh", "$file" ],
+  "selector": "source.asm"
+}

@@ -1,0 +1,17 @@
+{ "extensions": [ "asm", "inc", "s" ],
+  "color_scheme": "Packages/Commodore64/Commodore64.sublime-color-scheme",
+  "font_face": "PetMe64",
+  //"font_face": "PetMe128",
+  //"font_size": 12,
+  //"font_options": ["no_antialias"],
+  "rulers": [40,80,120,200,240],
+  "block_caret": true,
+  "caret_style": "blink",
+  "word_wrap": false,
+  "wrap_width": 40,
+  "indent_subsequent_lines": false,
+  "auto_indent": false,
+  "tab_size": 8,
+  "translate_tabs_to_spaces": true,
+  "detect_indentation": false
+}

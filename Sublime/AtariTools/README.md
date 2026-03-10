@@ -1,7 +1,6 @@
 # AtariTools for Sublime Text
 
 This plugin adds enhancements to improve the coding experience for Atari 8-bit computers and the Atari 2600 VCS.
-- Atari Computer color scheme, both light and dark
 - 6502 Assembly and ld65 syntax highlighting
 - AtariBASIC Syntax and Build System
 - bAtariBASIC Syntax and Build System
