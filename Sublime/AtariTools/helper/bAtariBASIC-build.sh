@@ -9,7 +9,7 @@
 # Get 'helper' path and user environment
 SELF="$0" ; ORIG=$(readlink "$SELF")
 [ "$ORIG" == "" ] || SELF=$ORIG
-HERE=$(dirname "$SELF")
+HERE=${SELF%/*}
 source "$HERE/AtariTools.sh"
 
 PATH="$bB/source:$PATH"

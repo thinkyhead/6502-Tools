@@ -7,7 +7,7 @@
  # =================>------------<==================
  #
  # A complete AtariBASIC syntax that catches most syntax errors.
- # Best with "Atari800.tmTheme" + "EightBit Atari" font.
+ # Best with "Atari800.tmTheme" + "Atari Classic" font.
  #
  # AtariBASIC is a flat language with no blocks.
  #
@@ -830,6 +830,12 @@ contexts:
 
     - match: (<>|[<>]=?|=|AND|NOT|OR)
       scope: keyword.operator.logic.ataribasic
+
+  # Device followed by N expressions
+  expr_device_plus_two:
+    - match: \#\s*({{flt}})
+      scope: constant.numeric.device-id.ataribasic
+      set: expr_start
 
   # For the general case, mark the device id,
   # then parse a series of expression items

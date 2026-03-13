@@ -14,7 +14,7 @@
 			<key>settings</key>
 			<dict>
 				<key>background</key>
-				<string>#0F497D</string>
+				<string>#065286</string>
 				<key>foreground</key>
 				<string>#6EA6D9</string>
 				<key>invisibles</key>
@@ -105,7 +105,7 @@
 			<key>settings</key>
 			<dict>
 				<key>foreground</key>
-				<string>#003560</string>
+				<string>#002543</string>
 			</dict>
 		</dict>
 		<dict>

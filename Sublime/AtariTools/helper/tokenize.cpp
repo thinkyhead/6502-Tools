@@ -180,7 +180,7 @@ BCD Tokenizing notes:
  */
 
 // Statements
-// All statements 
+// All statements and their abbreviations
 const char * statement_str[] = {
   "R.EM",      //  0 (also ".")
   "D.ATA",     //  1
@@ -225,7 +225,7 @@ const char * statement_str[] = {
   "?",         // 40
   "GET",       // 41
   "PUT",       // 42
-  "GR.APHIC",  // 43
+  "GR.APHICS", // 43
   "PL.OT",     // 44
   "POS.ITION", // 45
   "DOS",       // 46
@@ -249,14 +249,14 @@ const char * cont_str[] = {
   "",          // 17 UNUSED
   ",",         // 18 , in PRINT statement
   "$",         // 19 ???
-  "(eos)",     // 20 End of expr / statement 
+  "(eos)",     // 20 End of expr / statement
   ";",         // 21 ; in PRINT statement
   "(eol)",     // 22 End of expr / line
   "GOTO",      // 23 ON...GOTO
   "GOSUB",     // 24 ON...GOSUB
   "TO",        // 25 FOR A=X TO
   "STEP",      // 26 FOR A=X TO STEP
-  "THEN"       // 27 IF...THEN
+  "THEN",      // 27 IF...THEN
   "#",         // 20 OPEN #
   "<=",        // 29 IF A<=B
   "<>",        // 30 IF A<>B

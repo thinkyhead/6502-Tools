@@ -311,7 +311,9 @@ def atascii_to_unicode_str(bindata:bytes, pflag=False, iflag=False, aflag=False,
             if c == ATEOL:
                 out.append(LF)
             else:
-                utf_bytes = naive[c]
+                if c >= len(naive):
+                    print(f"Character {c} not mapped!")
+                utf_bytes = naive[c] if c < len(naive) else None
                 if utf_bytes is None:
                     out.append(c)
                 else:

@@ -3,17 +3,17 @@
     "id": "atascii",
     "children":
     [
-      { "command": "atascii_inv_insert",
+      { "command": "atascii_invert_text",
+        "caption": "Invert Selected Text"
+      },
+      { "command": "atascii_insert_inv",
         "caption": "Insert Inverted"
       },
-      { "command": "atascii_insert",
+      { "command": "atascii_insert_special",
         "caption": "Insert Special"
       },
-      { "command": "atascii_draw_insert",
+      { "command": "atascii_insert_draw",
         "caption": "Insert Drawing"
-      },
-      { "command": "atascii_invert_text",
-        "caption": "Invert Text"
       }
     ]
   },

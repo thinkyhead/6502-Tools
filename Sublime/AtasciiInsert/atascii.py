@@ -3,9 +3,15 @@ import sublime_plugin
 
 # Show a palette and insert the clicked choice
 class _AtasciiCommand(sublime_plugin.TextCommand):
+    def is_visible(self):
+        return sublime.score_selector(self.view.syntax().scope, "source.ataribasic") > 0
+
     def run(self, edit, fn):
+        ps = sublime.load_settings("AtasciiInsert.sublime-settings")
         content = self.get_characters_html(fn)
-        self.view.show_popup(content, sublime.HTML, location=-1, max_height=640, on_navigate=self.on_choice_symbol)
+        flags = sublime.HTML + sublime.HIDE_ON_CHARACTER_EVENT
+        if not ps.get("hide_on_select"): flags += sublime.HIDE_ON_MOUSE_MOVE_AWAY
+        self.view.show_popup(content, flags, location=-1, max_width=600, max_height=640, on_navigate=self.on_choice_symbol)
 
     def get_characters_html(self, fn):
         resources = sublime.find_resources(fn)
@@ -13,20 +19,24 @@ class _AtasciiCommand(sublime_plugin.TextCommand):
         return content
 
     def on_choice_symbol(self, symbol):
+        ps = sublime.load_settings("AtasciiInsert.sublime-settings")
         self.view.run_command("insert", {"characters": symbol})
-        self.view.hide_popup()
+        if ps.get("hide_on_select"): self.view.hide_popup()
 
-class AtasciiInsertCommand(_AtasciiCommand):
+class AtasciiInsertSpecialCommand(_AtasciiCommand):
     def run(self, edit): super().run(edit, 'atascii-special.html')
 
-class AtasciiInvInsertCommand(_AtasciiCommand):
+class AtasciiInsertInvCommand(_AtasciiCommand):
     def run(self, edit): super().run(edit, 'atascii-inverted.html')
 
-class AtasciiDrawInsertCommand(_AtasciiCommand):
+class AtasciiInsertDrawCommand(_AtasciiCommand):
     def run(self, edit): super().run(edit, 'atascii-drawing.html')
 
 # Replace selected characters with their inverted counterparts
 class AtasciiInvertTextCommand(sublime_plugin.TextCommand):
+    def is_visible(self):
+        return sublime.score_selector(self.view.syntax().scope, "source.ataribasic") > 0
+
     def run(self, edit):
         tr1 = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz"
         tr2 = ""

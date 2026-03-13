@@ -51,4 +51,4 @@ STELLA="${EmuDir}/Stella.app"
 #
 # Get the shell environment
 #
-[ -f ~/.profile ] && source ~/.profile
+#[ -f ~/.profile ] && source ~/.profile

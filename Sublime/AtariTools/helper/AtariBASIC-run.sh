@@ -12,7 +12,7 @@
 # Get 'helper' path and user environment
 SELF="$0" ; ORIG=$(readlink "$SELF")
 [ "$ORIG" == "" ] || SELF=$ORIG
-HERE=$(dirname "$SELF")
+HERE=${SELF%/*}
 source "$HERE/AtariTools.sh"
 
 # echo "ARGS is $@" ; exit 1
@@ -29,9 +29,10 @@ set -e
 HDD=${HDD:-"/tmp/HardDrive1"}
 mkdir -p "$HDD"
 
-# Running a LST file with this script overwrites prior LST file on H:
-# but a standard single filename can be configured with SUBLFILE.
-RUNFILE=${HDD}/${SUBLFILE:-${LSTFILE##*/}}
+# Opening a LST file with this script will overwrite the old file on H:
+# but a safe filename can be configured with SUBLFILE.
+LSTBASE=${LSTFILE##*/}
+RUNFILE=${HDD}/${SUBLFILE:-$LSTBASE}
 RUNFILE=${RUNFILE/.ATARIBAS*/.LST}
 
 if [[ ! $RUNFILE =~ ".LST" ]]; then
@@ -44,10 +45,10 @@ fi
 "$HERE/atascii.py" -s -u "$LSTFILE" >"$RUNFILE"
 
 # SAVE or RUN?
-if [ "$EXTRA" == "save" ]; then
-  OUTBAS="${LSTFILE##*/}"        # name part only (no directories)
-  OUTBAS="${OUTBAS%.*}.BAS"      # replace extension
-  ACTION="S.\"H:$OUTBAS\""
+if [[ $EXTRA == "save" ]]; then
+  OUTBAS=$LSTBASE           # name part only (no directories)
+  OUTBAS=${OUTBAS%.*}.BAS   # replace extension
+  ACTION='S."H:$OUTBAS"'
 else
   ACTION=RUN
 fi
@@ -69,6 +70,7 @@ if [[ $EXTRA == "macx" ]]; then
 
     ATARIEXE="${ATARI800MACX}/Contents/MacOS/Atari800MacX"
 
+    #echo "${ATARIEXE} \"$RUNFILE\" \"$FLOPPY1\" &"
     ${ATARIEXE} "$RUNFILE" "$FLOPPY1" &
 
     sleep 1
@@ -136,23 +138,36 @@ else
   # The atari800 package can be installed from MacPorts, Homebrew, etc.
   #
   echo "atari800: Creating a new 'atari800' instance."
-  echo "          Running ${LSTFILE##*/} (as $RUNFILE)"
-  echo "          Press F12 to toggle Turbo."
 
   # [ $JOY ] || ATARIOPTS="-nojoystick $ATARIOPTS"
-  [ "$EXTRA" == "turbo" ] && { ATARIOPTS="-turbo $ATARIOPTS" ; echo "          (Running TURBO SPEED)" ; }
+  [[ $EXTRA == "turbo" || $EXTRA == "save" ]] && { ATARIOPTS="-turbo $ATARIOPTS" ; echo "          (Running TURBO SPEED)" ; }
+
+  echo "          Press F12 to toggle Turbo."
+
+  if [[ $EXTRA == "save" ]]; then
+    echo "          Tokenizing ${LSTFILE##*/} to H:$OUTBAS"
+  else
+    echo "          Running ${LSTFILE##*/} (as $RUNFILE)"
+  fi
 
   # Run the LST file from Sublime that was converted to ATASCII
 
   echo
 
-  # Print "Import Done" and either save to BAS or run the code
-  printf '\233?"Import Complete.":?"F12 to toggle Turbo.":%s\233' $ACTION >>"$RUNFILE"
+  # Add "Import Complete" code to save to BAS or to RUN the program
+  printf '\233?"Import Complete.":' >>"$RUNFILE"
+  if [[ $EXTRA == "save" ]]; then
+    printf '?"Saving to H:${RUNFILE}.":%s\233' $ACTION >>"$RUNFILE"
+  else
+    printf '?"F12 to toggle Turbo.":%s\233' $ACTION >>"$RUNFILE"
+  fi
 
   # If atari800 points at Atari800MacX use a simpler command
   if [[ ${ATARI800##*/} == "Atari800MacX" ]]; then
+    #echo "${ATARI800} \"$RUNFILE\" \"$FLOPPY1\" &"
     ${ATARI800} "$RUNFILE" "$FLOPPY1" &
   else
+    #echo "${ATARI800} $ATARIOPTS -basic -run \"$RUNFILE\" \"$FLOPPY1\" \"$FLOPPY2\""
     ${ATARI800} $ATARIOPTS -basic -run "$RUNFILE" "$FLOPPY1" "$FLOPPY2"
   fi
 

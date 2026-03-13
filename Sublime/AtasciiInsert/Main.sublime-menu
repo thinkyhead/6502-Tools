@@ -6,6 +6,13 @@
         "children": [
           { "caption": "ATASCII",
             "children": [
+              { "caption": "Settings",
+                "command": "edit_settings",
+                "args": {
+                  "base_file": "${packages}/AtasciiInsert/AtasciiInsert.sublime-settings",
+                  "default": "{\n\t$0\n}\n"
+                }
+              },
               { "caption": "Key Bindings",
                 "command": "edit_settings",
                 "args": {

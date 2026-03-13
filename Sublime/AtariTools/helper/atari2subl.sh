@@ -7,7 +7,7 @@
 # Determine this script's real location
 SELF="$0"
 [[ $(readlink "$SELF") == "" ]] || SELF=$( readlink "$SELF" )
-HERE=$(dirname "$SELF")
+HERE=${SELF%/*}
 
 # Get user tools environment
 source "$HERE/AtariTools.sh"
@@ -17,7 +17,7 @@ UTF="$HDD/$PRINTFILE"
 BINF="$HDD/$PRINTBIN"
 
 # Make the HD folder if it doesn't exist
-mkdir -p $(dirname "$UTF")
+mkdir -p "${UTF%/*}"
 
 # Convert the "printed" output to UTF-8
 "$HERE/atascii.py" -p "$1" >"$UTF"
