@@ -1,10 +1,15 @@
 # Makefile for 2600 Dragonfire "DFIRE.ASM" DASM code
 
 GAME=DFIRE
+
+VCS := /opt/homebrew/opt/dasm/machines/atari2600
+#VCS := $(HOME)/bin/vcs
 #VCS := /usr/local/include/vcs
 #VCS := $(HOME)/.vscode/extensions/zehfernando.vscode-dasm-4.0.0/assets
-VCS := $(HOME)/bin/vcs
-STELLA := /Applications/_Applications/Emulation/Consoles/Atari\ 2600/Stella/Stella.app/Contents/MacOS/Stella
+#VCS := $(HOME)/.vscode/extensions/chunkypixel.atari-dev-studio-0.11.9/out/bin/compilers/bB/includes
+
+STELLA_APP := /Applications/_Applications/Emulation/Consoles/Atari\ 2600/Stella/Stella.app
+STELLA := $STELLA_APP/Contents/MacOS/Stella
 
 .PHONY : default clean
 
