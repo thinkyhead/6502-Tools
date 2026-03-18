@@ -10,7 +10,7 @@
 SELF="$0" ; ORIG=$(readlink "$SELF")
 [ "$ORIG" == "" ] || SELF=$ORIG
 HERE=${SELF%/*}
-source "$HERE/AtariTools.sh"
+source "$HERE/AtariTools-settings.sh"
 
 PATH="$bB/source:$PATH"
 which preprocess || { echo "Building bAtariBasic..." ;  cd $bB/source ; make ; echo ; }

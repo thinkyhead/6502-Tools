@@ -18,9 +18,9 @@ For the best experience you'll also need these fonts:
 
 ### AtariTools Settings
 
-You'll need to edit `AtariTools.sh` to use the included Build Systems. This is where you'll set the path to `atari800` (default is MacPorts `/opt/local/bin`), the path to your `HardDrive1` folder, preferred Atari 800 emulator, emulation settings, etc. For the Atari 800, you can mount up to 2 floppy disk images. (At least one floppy is required to get a DOS loaded.)
+You'll need to edit `AtariTools-settings.sh` to use the included Build Systems. This is where you'll set the path to `atari800` (default is MacPorts `/opt/local/bin`), the path to your `HardDrive1` folder, preferred Atari 800 emulator, emulation settings, etc. For the Atari 800, you can mount up to 2 floppy disk images. (At least one floppy is required to get a DOS loaded.)
 
-For bAtariBASIC, the `$bB` environment variable should already exist, but it can be set or overridden in `AtariTools.sh` if needed.
+For bAtariBASIC, the `$bB` environment variable should already exist, but it can be set or overridden in `AtariTools-settings.sh` if needed.
 
 ### Atari Look-and-Feel
 
@@ -76,8 +76,8 @@ Syntax coloring for `.lnk` files (used with `ld65 -C`). Syntax test included.
 
 ## Helper Scripts
 
-### `AtariTools.sh`
-**_Edit this file!_** The `AtariTools.sh` file contains the configuration values and file paths that will be used by the helper scripts. Provide paths to your emulators and your "H1:" hard drive folder.
+### `AtariTools-settings.sh`
+**_Edit this file!_** The `AtariTools-settings.sh` file contains the configuration values and file paths that will be used by the helper scripts. Provide paths to your emulators and your "H1:" hard drive folder.
 
 ### `bAtariBASIC-build.sh`
 Used by the **Build** command to convert bAtariBASIC code to Assembly and compile it with `dasm`.
@@ -86,7 +86,7 @@ Used by the **Build** command to convert bAtariBASIC code to Assembly and compil
 Used by the **Build** command to do a standard build for the Atari 2600 using `dasm`.
 
 ### `AtariBASIC-run.sh`
-Used by the **Build** command to run AtariBASIC code in the emulator you have configured in the `AtariTools.sh` script.
+Used by the **Build** command to run AtariBASIC code in the emulator you have configured in the `AtariTools-settings.sh` script.
 
 ### `Atari800-build.sh`
 Build and run Atari Assembly Language code with `ca65` / `cl65`.

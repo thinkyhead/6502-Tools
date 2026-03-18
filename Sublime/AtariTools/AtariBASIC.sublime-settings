@@ -10,6 +10,8 @@
   //"word_separators": "~|{}` !\"#%&'()*+,-./:;<=>?@[\\]^", // Not: $
   "rulers": [38,40,76,80,114,120,254],
   "color_scheme": "Packages/AtariTools/Atari800.tmTheme",
-  "font_face": "Atari Classic",     // Best choice
-  //"font_face": "EightBit Atari",  // Wider spacing
+  //"font_face": "Atari Classic",      // Best font choice
+  "font_face": "AtariClassic-Regular", // Postscript name may activate sooner
+  //"font_face": "AtariClassicChunky",
+  //"font_face": "EightBit Atari",     // Wider spacing
 }

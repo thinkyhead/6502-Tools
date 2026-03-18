@@ -10,7 +10,7 @@ SELF="$0"
 HERE=${SELF%/*}
 
 # Get user tools environment
-source "$HERE/AtariTools.sh"
+source "$HERE/AtariTools-settings.sh"
 
 # Printed output goes to...
 UTF="$HDD/$PRINTFILE"

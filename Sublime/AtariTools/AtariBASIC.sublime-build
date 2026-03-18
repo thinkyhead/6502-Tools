@@ -2,6 +2,7 @@
   "selector": "source.ataribasic",
   "cmd": ["$packages/AtariTools/helper/AtariBASIC-run.sh", "$file"],
   "variants": [
+    { "name":"Build in atari800",          "cmd":["$packages/AtariTools/helper/AtariBASIC-run.sh",  "save",  "$file"] },
     { "name":"Run in atari800",            "cmd":["$packages/AtariTools/helper/AtariBASIC-run.sh",           "$file"] },
     { "name":"Run in atari800 (joystick)", "cmd":["$packages/AtariTools/helper/AtariBASIC-run.sh",  "joy",   "$file"] },
     { "name":"Run in atari800 (turbo)",    "cmd":["$packages/AtariTools/helper/AtariBASIC-run.sh",  "turbo", "$file"] },

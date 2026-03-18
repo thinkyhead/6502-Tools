@@ -11,17 +11,21 @@
 SELF="$0" ; ORIG=$(readlink "$SELF")
 [ "$ORIG" == "" ] || SELF=$ORIG
 HERE=${SELF%/*}
-source "$HERE/AtariTools.sh"
+source "$HERE/AtariTools-settings.sh"
 
-echo -n "Starting build of ${1##*/} ..."
+case "$#" in
+  1 ) INSRC=$1 ;;
+  2 ) EXTRA=$1 ; INSRC=$2 ;;
+  * ) echo "Usage: ${0##*/} [run] filename" 1>&2 ; exit 1 ;;
+esac
+
+# Validate the input file type
+[[ $INSRC =~ \.(s|asm|inc|a65|6502)$ ]] || { echo "Not Valid source file" ;  exit 1 ; }
 
 # Output filename for atari800 executable
-INSRC="$1"
-INBASE="${INSRC/.s/}"
-INBASE="${INBASE/.asm/}"
-INBASE="${INBASE/.inc/}"
-INBASE="${INBASE/.a65/}"
-INBASE="${INBASE/.6502/}"
+# The output file has the base name with .bin
+INBASE=${INSRC%.*}
+OUTFILE="$INBASE.bin"
 
 IN_LNK="$INBASE.lnk"
 [[ -f "$IN_LNK" ]] || IN_LNK="$INBASE.cfg"
@@ -32,6 +36,7 @@ OUT_O="$INBASE.o"
 OUT_BIN="$INBASE.bin"
 
 # Build the project
+echo -n "Starting build of ${1##*/} ..."
 ca65 "$INSRC" -l "$OUT_LISTING" -o "$OUT_O" \
   && ld65 -o "$OUT_BIN" -C "$IN_LNK" "$OUT_O"
 
@@ -45,6 +50,7 @@ ca65 "$INSRC" -l "$OUT_LISTING" -o "$OUT_O" \
 if [[ -f $ATARI800 ]]; then
   echo -n "Starting emulator..."
   "$ATARI800" -atari -nobasic -run "$OUTFILE"
+  #open -a "Retro Debugger" --args -atari -xex $OUTFILE
   echo
 else
   echo "No Atari 800 emulator found!"
