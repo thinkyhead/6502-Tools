@@ -1,0 +1,437 @@
+;
+; Atari Cartridge $A000-$BFFF
+; Assemble with DASM (see Makefile)
+;
+; Currently using some 8-bit sample code
+; Written by Daniel Boris (danlb_2000@yahoo.com)
+; Modified by Steven Hugg @8bitworkshop
+; Modified by Thinkyhead 2026
+;
+        processor 6502
+	include "atari.inc"
+
+;=========== Defines ===========
+line	equ 	$20                  ;Current DLI line
+pm0pos	equ	$21                  ;Current pos of P0
+
+PTR1    = $80
+CTR1    = $82
+
+STRG    = $CB
+DLIN    = $CD
+DLOUT   = $CF
+FONT    = FR0
+DDST    = FR0+2
+YOFF    = FR0+4
+DSRC    = FR0+6
+BMASK   = FR0+7
+
+DLRAM   = SCREEN - dlist_size           ; $1100
+SCREEN  = $1200                         ; $1200
+SCREEN2 = SCREEN + 94 * 40 		; $0EB0 + $1200 = $1FB0
+SSIZE   = 192*40 			; $1E00 + $1200 = $3000
+
+PMRAM   = $3000
+PM0     = PMRAM + $400
+
+FONTROM = $E000
+OURFONT = $BC00
+
+;======== Start of Code ========
+
+	org     $A000           ;Start of cartridge area
+Start
+
+;===== Set up Display List =====
+
+	lda     #<dlist
+        sta     DLIN
+        lda     #>dlist
+        sta     DLIN+1
+        lda     #<DLRAM
+        sta     DLOUT
+        lda     #>DLRAM
+        sta     DLOUT+1
+        ;ldx     #>dlist_size    ;Number of bytes in list
+	ldy     #0
+dlloop                          ;Copy display list to RAM
+        lda     (DLIN),y        ;Get byte
+        sta     (DLOUT),y       ;Copy to RAM
+        iny                     ;Next byte index
+        ;bne 	nxt1            ;Rolled around?
+        ;inc     DLIN+1
+        ;inc     DLOUT+1
+        ;dex                    ;Count down pages
+nxt1    cpy 	#<dlist_size    ;Index matching last LO?
+        bne 	dlloop          ;No, keep looping
+        ;cpx 	#0              ;Last page?
+        ;bne 	dlloop          ;No, keep looping
+
+;======== Clear Display ========
+
+        lda     #<SCREEN
+        sta     PTR1
+        lda     #>SCREEN        ;Screen memory starts at $1800
+        sta     PTR1+1
+        lda     #$b0
+        ldy    	#0
+        ldx     #>SSIZE
+crloop5 sta     (PTR1),y        ;Store data
+        iny
+        bne 	nxt2
+        inc     PTR1+1
+        dex
+nxt2    cpy     #<SSIZE
+        bne 	crloop5
+        cpx 	#0
+        bne 	crloop5
+
+;=== Setup Hardware Registers ==
+
+        lda     #$22            ;Set color PF0
+        sta     COLOR0
+        lda     #$98            ;Set color PF1
+        sta     COLOR1
+        lda     #$84            ;Set color PF2
+        sta     COLOR2
+carryclear
+        lda     #<DLRAM         ;Set Display list pointer
+        sta     SDLSTL
+        lda     #>DLRAM
+        sta     SDLSTH
+        ;lda     #$F8            ;Set Character Set Base
+        ;sta     CHBAS
+        lda     #$22            ;Enable DMA
+        sta     SDMCTL
+	; load display list interrupt address
+	lda	#<dli
+	sta	VDSLST
+	lda	#>dli
+	sta	VDSLST+1
+	; activate display list interrupt and vertical blank interrupt
+	lda	#$C0
+	sta	NMIEN
+
+;== Setup Player/Missile Regs ==
+
+        lda     #$3A           ;Enable DMA (single line resolution/
+        sta     SDMCTL         ;normal background)
+        lda     #>PMRAM        ;Set PM base address
+        sta     PMBASE
+        lda     #$03           ;Enable players and missiles
+        sta     GRACTL
+        lda     #$16           ;Color of player 0
+        sta     PCOLR0
+        lda     #$02           ;Size of player 0
+        sta     SIZEP0
+        lda     #$01           ;Give players priority over playfield
+        sta     GPRIOR
+
+
+;=== Copy Player data to RAM ===
+
+	ldy     #7
+pmloop1 lda     pm1,y           ;Get data
+        sta     PM0+$30,y       ;Write it into RAM
+        sta     PM0+$C0,y
+        dey
+        bpl     pmloop1
+
+	jsr DrawString
+
+;========= Move player =========
+
+        ldx     #$20            ;Starting position of player
+mvloop0
+        lda     #$04            ;Give playfield priority player
+mvloop1
+        jsr     waitvb          ;Wait for a vertical bank
+        ;lda     #$00            ;Reset line counter
+        ;sta     line
+        stx     HPOSP0          ;Set position of player
+        stx     pm0pos          ;Save position for DLI
+        inx
+        cpx     #$70            ;Check for end of move
+        bne     mvloop1         ;If not keep moving right
+        sta     GPRIOR
+
+        lda     #$01            ;Give player priority over playfield
+mvloop2
+        jsr     waitvb          ;Wait for a vertical blank
+        ;lda     #$00            ;Reset line counter
+        ;sta     line
+        stx     HPOSP0          ;Set position of player
+        stx     pm0pos          ;Save position for DLI
+        dex
+        cpx     #$30            ;Check for end of move
+        bne     mvloop2         ;If not keep moving left
+        sta     GPRIOR
+        jmp     mvloop0         ;Continue looping
+
+;=== Wait for vertical blank ===
+
+waitvb
+        ldy     RTCLOK+2    ;Read timer (this is incremented during VB)
+waitvb2
+        cpy     RTCLOK+2    ;Did it change?
+        beq     waitvb2     ;If not keep waiting
+        rts
+
+;==== Display list interrupt ===
+
+dli
+        pha             ;Save A
+        lda pm0pos      ;Get player 0 position
+        eor #$FF        ;Invert it
+        sta HPOSP0      ;Set player 0 position
+        lda #$0F        ;Change player color
+        sta COLPM0      ;
+        ; Note: Player color is changed in hardware register not the shadow
+        ; register so it takes effect immediately.
+done
+        pla             ;Restore A
+        rti             ;Done
+
+
+;=== Draw String (Narrow) ==
+;
+; by Thinkyhead for Snorky!
+;
+; Draw a string using the ROM font
+; TODO: Draw a string with narrow color font
+;
+; X=USR(SAY, X, Y, COLOR, STRING)
+;
+
+TEXTY = 42
+TEXTX = 17
+TEXTCOLOR = 1
+
+hellostring .byte 0, " Like. Share. SUBSCRIBE!|"
+
+DrawString:
+        ;pla            ; ARGC from USR()
+        ;cmp #3
+        ;bne _exit
+
+        ; Get Screen Address
+
+        lda #<SCREEN    ; Screen LO
+        sta DDST
+        lda #>SCREEN    ; Screen HI
+        sta DDST+1
+
+        ; Apply X Position
+
+	lda #TEXTX
+        ;pla
+        ;pla             ; Get X
+        lsr             ; Divide by 4
+        lsr
+        clc
+        adc DDST
+        sta DDST
+        lda #0
+        adc DDST+1
+        sta DDST+1
+
+        ; Apply Y Position
+
+        lda #>TEXTY
+        sta YOFF+1      ; 0
+        lda #<TEXTY
+
+        ; TODO: Sanity check Y for safety here
+
+        asl
+        sta YOFF        ; x 2 = 0-382
+        rol YOFF+1
+
+        ldy #2
+_times4:
+        lda YOFF
+        asl             ; x 4 ... x 16
+        rol YOFF+1
+        asl             ; x 8 ... x 32
+        rol YOFF+1
+        sta YOFF
+
+        ;clc
+        adc DDST        ; 8x + 32x = 40x
+        sta DDST
+        lda YOFF+1
+        adc DDST+1
+        sta DDST+1
+
+        dey
+        bne _times4
+
+        sta YOFF+1
+        lda DDST
+        sta YOFF
+
+	; Get Color and clone low bits 3 times
+
+	lda #TEXTCOLOR
+        ;pla
+        ;pla
+        and #%11
+        sta BMASK ; x 1
+        ldy #3
+_clone2:
+        asl
+        asl
+        ora BMASK
+        sta BMASK
+        dey
+        bne _clone2
+
+        ; Y is now 0, assumed below...
+
+        ; Get String Address
+        lda #>hellostring
+        ;pla
+        sta STRG+1
+        lda #<hellostring
+        ;pla
+        sta STRG
+
+        ; Character Set address
+        lda #<FONTROM
+        sta FONT
+        lda #>FONTROM
+        sta FONT+1
+
+        ;
+        ; Loop through all the chars in the string
+        ; Convert 00-31  ... +64
+        ;         32-95  ... -32
+        ;
+
+        ldy #0
+_charloop:
+        lda (STRG),y    ; String character
+        cmp #"|"
+        beq _exit
+
+        ; Convert ATASCII to internal mapping
+        ;tax            ; Save for later
+        and #$7F        ; 128 unique characters
+        cmp #$20
+        bcs _no40       ; bgt
+        ora #$40
+        bne _gotc
+_no40:  cmp #$60
+        bcs _gotc       ; bgt
+        sbc #$1F
+
+_gotc:  ldx #0
+        stx DSRC+1
+        asl
+        asl
+        rol DSRC+1
+        asl             ; 8 bytes per character
+        rol DSRC+1
+
+        adc FONT
+        sta DSRC
+        lda DSRC+1
+        adc FONT+1
+        sta DSRC+1
+
+        ;txa ; Was it over 128 ?
+        ;and #$80
+
+;
+; Draw the character
+;
+_draw_char:
+        ldx #8
+_dc1:
+        lda (DSRC),y    ; Character glyph bits
+        inc DSRC
+        bne _dc2
+        inc DSRC+1
+_dc2:   sta (DDST),y
+        lda #40
+        adc DDST
+        sta DDST
+        lda #0
+        adc DDST+1
+        sta DDST+1
+        dex
+        bne _dc1
+
+;
+; Next character in the string
+;
+        inc STRG
+        bne _dc3
+        inc STRG+1
+_dc3:
+        ; Next dest address
+        inc YOFF
+        bne _dc4
+        inc YOFF+1
+_dc4:
+        lda YOFF
+        sta DDST
+        lda YOFF+1
+        sta DDST+1
+
+        bne _charloop
+_exit:
+        rts
+
+;====== Display list data ======
+; starts at $1000
+
+dlist   .byte     $70,$70,$70      ;24 blank scanlines
+        .byte     $4E,<SCREEN,>SCREEN      ;Mode 14 and Load memory scan
+                  ;93 more lines of mode 14
+        .byte     $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
+        .byte     $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
+        .byte     $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
+        .byte     $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
+        .byte     $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
+        .byte     $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
+        .byte     $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
+        .byte     $0E,$0E
+        .byte     $4E,<SCREEN2,>SCREEN2    ;Mode 14 and Load memory scan
+                  ;97 more lines of mode 14 - interrupt
+        .byte     $8E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
+        .byte     $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
+        .byte     $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
+        .byte     $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
+        .byte     $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
+        .byte     $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
+        .byte     $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
+        .byte     $0E,$0E,$0E,$0E,$0E,$0E
+        .byte     $41,<DLRAM,>DLRAM       ;Jump back to DL start in RAM
+dlist_size = *-dlist
+
+;========= Player shape ========
+
+pm1     .byte     %11000110
+        .byte     %01101100
+        .byte     %11111110
+        .byte     %10111010
+        .byte     %11111110
+        .byte     %11010110
+        .byte     %10101010
+        .byte     %01111100
+
+;======== 3-color Font =========
+;This will be used for drawing but mono fonts are best for text mode.
+
+        org     OURFONT
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+
+
+;====== Cart reset vector ======
+
+        org     CARTCS
+        .word   Start   ; cold start address
+        .byte   $00     ; 0 == cart exists
+        .byte   $04     ; boot cartridge
+        .word   Start   ; start
