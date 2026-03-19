@@ -13,7 +13,7 @@
 SELF="$0" ; ORIG=$(readlink "$SELF")
 [ "$ORIG" == "" ] || SELF=$ORIG
 HERE=${SELF%/*}
-source "$HERE/AtariTools.sh"
+source "$HERE/AtariTools-settings.sh"
 
 # echo "ARGS is $@" ; exit 1
 

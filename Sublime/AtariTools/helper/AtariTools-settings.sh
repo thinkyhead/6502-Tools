@@ -1,5 +1,5 @@
 #
-# AtariTools.sh - Atari Tools user environment
+# AtariTools-settings.sh - Atari Tools user environment
 #
 
 # Emulation apps folder, if any
@@ -13,8 +13,8 @@ EmuDir=/Applications
 ATARI800MACX="${EmuDir}/Atari800MacX/Atari800MacX.app"
 
 # Installed 'atari800' binary
-ATARI800=/usr/local/bin/atari800
-#ATARI800=/opt/local/bin/atari800
+#ATARI800=/usr/local/bin/atari800
+ATARI800=/opt/local/bin/atari800
 #ATARI800="${ATARI800MACX}/Contents/MacOS/Atari800MacX"
 
 # Runtime atari800 preferences
@@ -23,7 +23,8 @@ ATARIOPTS="-xl -win-width 1200 -win-height 900 -colors-preset deep-black"
 # Common atari800 files location
 ATARI_HOME="${EmuDir}/Atari800"
 
-# A folder to act as virtual H1 drive
+# A folder to act as virtual H1 drive, for faster loading
+# Leave undefined to use /tmp/HardDrive1.
 #HDD="${ATARI_HOME}/HardDrive1"
 
 # Optional floppy drives to mount
@@ -45,10 +46,6 @@ PRINTBIN="ATARIOUT.BIN"
 VCS_DIR=/usr/local/include/vcs
 
 # Atari 2600 Emulator app. Choose only one.
+# Leave undefined to run using `open -a Stella --args`
 # z26="${EmuDir}/z26.app"
 STELLA="${EmuDir}/Stella.app"
-
-#
-# Get the shell environment
-#
-#[ -f ~/.profile ] && source ~/.profile

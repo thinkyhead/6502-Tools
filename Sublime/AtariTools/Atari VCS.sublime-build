@@ -1,4 +1,7 @@
 {
-  "cmd": ["$packages/AtariTools/helper/AtariVCS-build.sh", "$file"],
-  "selector": "source.asm"
+  "selector": "source.asm",
+  "variants": [
+    { "name":"Atari VCS Build",         "cmd": ["$packages/AtariTools/helper/AtariVCS-build.sh",        "$file"], },
+    { "name":"Atari VCS Build and Run", "cmd": ["$packages/AtariTools/helper/AtariVCS-build.sh", "run", "$file"], }
+  ]
 }

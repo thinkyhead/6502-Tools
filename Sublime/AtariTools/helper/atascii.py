@@ -2,7 +2,7 @@
 """
 atascii.py - Convert to ATASCII or UTF-8, send to stdout.
 
-Usage: atascii [-a|-i|-n|-u] [-p] [-s] filename >outname
+Usage: atascii.py [-a|-i|-n|-u] [-p] [-s] filename >outname
     By default, ATASCII to UTF-8 E000-E0FF, E100-E1FF
  -a ATASCII to plain ASCII
  -i International set UTF-8 mapping
@@ -137,7 +137,7 @@ naive = [
 ]
 
 def usage():
-    print("Usage: atascii [-a|-i|-n|-u] [-p] [-s] filename >outname")
+    print("Usage: atascii.py [-a|-i|-n|-u] [-p] [-s] filename >outname")
     print(" -a ATASCII to plain ASCII")
     print(" -i International set UTF-8 output")
     print(" -n ATASCII to naive UTF-8")
