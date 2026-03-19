@@ -26,4 +26,8 @@ mkdir -p "${UTF%/*}"
 cp "$1" "$BINF"
 
 # Open the UTF-8 file in Sublime Text
-subl "$UTF"
+if which subl >/dev/null; then
+  subl "$UTF"
+else
+  open -a "Sublime Text" "$UTF"
+fi
