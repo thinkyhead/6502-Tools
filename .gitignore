@@ -1,4 +1,5 @@
 *.bin
+*.car
 *.xex
 *.set
 *.o
