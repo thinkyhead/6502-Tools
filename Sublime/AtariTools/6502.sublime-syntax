@@ -1,6 +1,6 @@
 %YAML 1.2
 ---
-name: 6502 Assembly
+name: Atari 6502 Assembly
 #
 # 6502 is fairly straightforward, but there are many
 # variants, not all of which are easy to take together.
