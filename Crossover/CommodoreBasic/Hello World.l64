@@ -1,0 +1,47 @@
+;
+; Test file for CommodoreBASIC.sublime-build
+;  ...which runs CommodoreBASIC-run.sh
+;  ...which runs petunia.py
+;  ...and x64sc
+; Build With… > Save to P64 + PRG
+; Build With… > Save to P64 + PRG and List
+; Build With… > Save to P64 + PRG and Run
+;
+101 print "ABCDEFGHIJKLMNOPQRSTUVWXYZ":rem asci upper
+102 print "abcdefghijklmnopqrstuvwxyz":rem asci lower
+103 print "":rem unsh upper
+104 print "":rem shft lower
+105 print "":rem shft upper
+
+200 rem    c64 full set, unshifted
+201 print "00-40 ":rem $1f
+203 print "20-20  ":rem $3f
+205 print "40-60 ":rem $5f
+207 print "60-a0 ":rem $7f
+209 rem   c64 full set, shifted
+210 print "00-40 ":rem $1f
+212 print "20-20  ":rem $3f
+214 print "40-60 ":rem $5f
+216 print "60-a0 ":rem $7f
+
+300 rem   c64 full set, unshifted
+301 print "00-40 ":rem $1f
+303 print "20-20":rem $3f
+305 print "40-60 ":rem $5f
+307 print "60-a0 ":rem $7f
+309 rem   c64 full set, shifted
+310 print "00-40 ":rem $1f
+312 print "20-20 ":rem $3f
+314 print "40-60 ":rem $5f
+316 print "60-a0 ":rem $7f
+
+300 rem   petscii keymap order
+302 print "20 -"
+304 print "40 "
+306 print "60 "
+309 print "a0 "
+310 rem   petscii keymap order
+312 print "20 -"
+314 print "40 "
+316 print "60 "
+319 print "a0 "

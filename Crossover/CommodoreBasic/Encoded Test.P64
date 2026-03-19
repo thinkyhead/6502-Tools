@@ -1,0 +1,74 @@
+;
+; Notes about VICE and C64:
+; - C64 BASIC's own editor interprets special chars, including
+;   uppercase letters in shifted chars mode, as tokens.
+; Rules for P64 Files:
+; - VICE decodes the char codes it receives (e.g., {123} or {$2a})
+;    before BASIC sees them. They are effectively input keystrokes.
+; - Optional: If nothing is LOWERCASE then LOWERCASE the whole thing.
+; - If the code is mixed-case at all, then all chars not inside quotes
+;   should still be lowercased, which maps to the simple UPPERCASE
+;   (ONLYCASE?) in PETSCII. (Treat the target as "shifted" mode chars.)
+; - Uppercase are always mapped to $61-$7A and should be left as-is,
+;   except as optionally noted for all-uppercase files.
+; - Brace encoded text can be left alone, for developer convenience.
+; Conversion from our mixed ASCII / Unicode:
+; 1. Pre-strip comments (even though VICE ignores them).
+; 2. Optional: Convert some custom shortcuts, such as "." for REM.
+; 3. Convert Inverted characters to Normal. (We can edit them but C64 cannot.)
+; 4a.Re-map standard chars to ASCII where possible (as expected).
+; 4b.Re-map PETSCII screen codes to PETSCII ordinal codes.
+; 5. Do case conversion as described here:
+;    - If no lowercase letters exist then lowercase the whole thing.
+;    - Otherwise all letters outside of quotes should be lowercased.
+;    - Consider doing special handling for "mixedcA" strings
+;      outside of quotes (or REM/DATA), leaving them as-is.
+;      Maybe only for known BASIC commands.
+; 6. Convert special Unicode chars that map to $61-$7A to
+;    uppercase letters.
+; 7. Convert remaining special chars to lowercase hex codes
+;
+
+; $20-$3F are mapped to ASCII
+50 rem " !"#$%&'()*+,-/
+51 print "0123456789:;<=>?"
+
+; $40-$5F are always letters
+60 print "@abcdefghijklmno"
+61 print "pqrstuvwxyz[\]^_"
+
+; $60-$7F some can just be uppercase letters
+70 print "{$60}ABCDEFGHIJKLMNO"
+71 print "PQRSTUVWXYZ{$7b}{$7c}{$7d}{$7e}{$7f}"
+
+; $A1
+80 print "{$a1}"
+81 rem
+
+; $60-$7F
+90 print "$60 {$60}{$61}{$62}{$63}{$64}{$65}{$66}{$67}{$68}{$69}{$6a}{$6b}{$6c}{$6d}{$6e}{$6f}"
+91 print "$70 {$70}{$71}{$72}{$73}{$74}{$75}{$76}{$77}{$78}{$79}{$7a}{$7b}{$7c}{$7d}{$7e}{$7f}"
+; $A0-$BF
+92 print "$a0 {$a0}{$a1}{$a2}{$a3}{$a4}{$a5}{$a6}{$a7}{$a8}{$a9}{$aa}{$ab}{$ac}{$ad}{$ae}{$af}"
+93 print "$b0 {$b0}{$b1}{$b2}{$b3}{$b4}{$b5}{$b6}{$b7}{$b8}{$b9}{$ba}{$bb}{$bc}{$bd}{$be}{$bf}"
+; $C0-$DF
+94 print "$c0 {$c0}{$c1}{$c2}{$c3}{$c4}{$c5}{$c6}{$c7}{$c8}{$c9}{$ca}{$cb}{$cc}{$cd}{$ce}{$cf}"
+95 print "$d0 {$d0}{$d1}{$d2}{$d3}{$d4}{$d5}{$d6}{$d7}{$d8}{$d9}{$da}{$db}{$dc}{$dd}{$de}{$df}"
+; $E0-$FF
+96 print "$e0 {$e0}{$e1}{$e2}{$e3}{$e4}{$e5}{$e6}{$e7}{$e8}{$e9}{$ea}{$eb}{$ec}{$ed}{$ee}{$ef}"
+97 print "$f0 {$f0}{$f1}{$f2}{$f3}{$f4}{$f5}{$f6}{$f7}{$f8}{$f9}{$fa}{$fb}{$fc}{$fd}{$fe}{$ff}"
+99 rem
+
+100 dIb(15):b(2)=5
+
+; PRINT shortcut
+200 pR"hello"
+
+; Upper ASCII with the same glyphs is preserved
+400 pR asc("{$61}");"-";asc("{$7f}"):rem petscii
+401 pR asc("{$a1}");"-";asc("{$bf}"):rem petscii
+402 pR asc("{$c1}");"-";asc("{$df}"):rem petscii
+403 pR asc("{$e1}");"-";asc("{$ff}"):rem petscii
+
+500 end:rem prevent bad poking
+501 a=pos(a$):poke 1234,11:rem hello there

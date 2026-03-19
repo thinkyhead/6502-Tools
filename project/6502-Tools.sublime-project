@@ -2,8 +2,20 @@
 	"folders":
 	[
 		{
-			"path": "..",
-			"folder_exclude_patterns": [ "*.app" ]
-		}
+			"path": "/Users/thinkyhead/Projects/Retro/6502-Tools",
+			"folder_exclude_patterns": [ "*.app"],
+		},
+		{
+			"path": "/Users/thinkyhead/Library/Application Support/Sublime Text 3/Packages/C64Tools",
+		},
+		{
+			"path": "/Users/thinkyhead/Library/Application Support/Sublime Text 3/Packages/PETSCII",
+		},
+		{
+			"path": "/Users/thinkyhead/Library/Application Support/Sublime Text 3/Packages/AtariTools"
+		},
+		{
+			"path": "/Users/thinkyhead/Library/Application Support/Sublime Text 3/Packages/AtasciiInsert",
+		},
 	],
 }

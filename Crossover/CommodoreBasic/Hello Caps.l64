@@ -1,0 +1,25 @@
+;
+; Test file for CommodoreBASIC.sublime-build
+;  which runs CommodoreBASIC-run.sh
+; Build With… > Save to PRG
+; Build With… > Save to PRG and List
+;
+; Test detection and correct handling of all-caps code
+; - It appears that petcat handles this based on our
+;   own naive conversion.
+;
+101 rem "ABCDEFGHIJKLMNOPQRSTUVWXYZ":REM ASC UPPER
+103 REM "":REM UNSH UPPER
+105 REM "":REM SHFT UPPER
+
+200 REM"   C64 FULL SET, UNSHIFTED
+201 REM" $00 $40 " $1F
+203 REM" $20 $20   $3F
+205 REM" $40 $60 " $5F
+207 REM" $60 $A0 " $7F
+
+300 REM"   C64 FULL SET, UNSHIFTED
+301 REM" $00 $40 " $1F
+303 REM" $20 $20  $3F
+305 REM" $40 $60 " $5F
+307 REM" $60 $A0 " $7F

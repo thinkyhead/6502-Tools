@@ -1,0 +1,10 @@
+;
+; Currently this does not convert to Unicode properly
+; Somewhere in petunia.py there is a `c & 0x7F` stepping on $A0-$BF
+; which needs to be re-mapped to 60-7F.
+;
+100rem  c64 full set, shifted
+101rem" $00 $40 @abcdefghijklmnopqrstuvwxyz[\]^_" $1f
+103rem" $20 $20  !"#$%&'()*+,-./0123456789:;<=>?  $3f
+105rem" $40 $60 {$60}ABCDEFGHIJKLMNOPQRSTUVWXYZ{$7b}{$7c}{$7d}{$7e}{$7f}" $5f
+107rem" $60 $A0 {$a0}{$a1}{$a2}{$a3}{$a4}{$a5}{$a6}{$a7}{$a8}{$a9}{$aa}{$ab}{$ac}{$ad}{$ae}{$af}{$b0}{$b1}{$b2}{$b3}{$b4}{$b5}{$b6}{$b7}{$b8}{$b9}{$ba}{$bb}{$bc}{$bd}{$be}{$bf}" $7f
