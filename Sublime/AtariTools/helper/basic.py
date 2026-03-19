@@ -278,7 +278,7 @@ def decode_bcd(bcd_bytes: bytearray) -> float:
     # Exponent
     exp = bcd_bytes[0]
     sign = 1
-    if exp > 127:              # sign bit set → negative
+    if exp > 127:              # sign bit set -> negative
         sign, exp = -1, 128
 
     # Integer part
@@ -858,7 +858,7 @@ def ingest_variable_name_table(vnt_data):
     name_bytes = bytearray()            # Temporary holder
 
     for b in vnt_data:
-        if b & 0x80:                    # High bit set → end of name
+        if b & 0x80:                    # High bit set -> end of name
             name_bytes.append(b & 0x7F) # Clear high bit
             vnt.append(name_bytes.decode('ascii'))
             name_bytes.clear()          # Start a new name
