@@ -6162,7 +6162,7 @@ FTWO:		.byte	$40,$02,$00,$00,$00,$00    ; 2.0
 		EntryPoint(MAXEND)
 		; BFF0-BFF8 : Expected (filler) data for checksum
 		.byte	$00,$00,$00,$00,$CC,$B8,$A4,$90,$A0
-BASICEXIT:	RTS						; BFF9
+STARTVECTOR:	RTS						; BFF9
 		.endif
 
 		.if	BASIC_REVISION = 2
@@ -6172,8 +6172,8 @@ BASICEXIT:	RTS						; BFF9
 
 SUFFIX		EQU	$C000-6
 		;
-		; BFFA/B - BFFC/D - BFFE/F
-		; Run address, stack address, final address
+		; BFFA/B - BFFC - BFFD - BFFE/F
+		; Run address, Present, DOS Flag, start vector
 		;
 
 		; Fill in any remaining space before suffix
@@ -6183,6 +6183,6 @@ SUFFIX		EQU	$C000-6
 		.word	COLDSTART
 		.byte	$00			; INSERTED : YES
 		.byte	$05			; LOAD DOS : YES
-		.word	BASICEXIT
+		.word	STARTVECTOR
 
 		.end
