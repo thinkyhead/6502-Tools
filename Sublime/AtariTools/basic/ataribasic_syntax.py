@@ -249,44 +249,51 @@ kCHNG = 0x0F # Change Last Token to X. e.g., to rectify '=' as assign or compare
 # When converting to code use 'f_RULE()' and 'f_EXP()',
 #   'OR' => 'or', 'RTN' => 'return False'. Empty rule 'OR RTN' permits NADA.
 
-# As we go through the ABML we need to be able to manage state without making the
-# handlers more ugly and complicated.
-# In the syntaxer the main state is just the input index and the working buffer.
-# The working buffer will be inserted into the program if all its statements are valid.
-# When all rules for a statement fail the whole thing is flagged as an ERROR -.
 #
-# Unlike the original syntaxer we don't have to track the ABML position.
-#
-# When calling sub-rules we need to save cix and cox in a stack.
-# On success the new cix, cox are left as they are. On fail the stack values replace them.
-# To implement the stack behavior for rules we'll use a decorator.
-# First time using a decorator? Don't be shy. A decorator converts a function into a
-# callback within the decorator.
-def abml_rule(func):
-    @functools.wraps(func)
-    def wrapper(self, *args, **kwargs):
-        # 1. Save current input index and output buffer
-        current_state = (self.index, self.tokenized)
-        self.state_stack.append(current_state)
-
-        # 1. Just returning True/False. Does that trigger these?
-        try:
-            result = func(self, *args, **kwargs)
-            if not result:
-                self.index, self.tokenized = self.state_stack[-1]
-        finally:
-            self.index, self.tokenized = self.state_stack[-1]
-
-        self.state_stack.pop()
-        return result
+# As parts of rules are tested we move cix and cox forward.
+# So we need to save cix and cox in a stack. To do this we'll use a wrapper.
+# On success the new cix, cox will be left as they are. On fail they will be restored.
+def rule(fn):
+    def wrapper(*args, **kwargs):
+        return lambda: fn(*args, **kwargs)
+    return wrapper
 
 class Syntaxer:
+
+
+    # Best idea seems to be to use callables
+    # and automatically turn them into lambdas
+    #return (
+    #    p.attempt(
+    #        f_CHNG(cLPRN, cALPRN),
+    #        f_EXP,
+    #        f_SRCONT(cRPRN),
+    #        f_NOP
+    #    )
+    #    or
+    #    p.attempt(
+    #        f_UNARY,
+    #        f_EXP
+    #    )
+    #    or
+    #    p.attempt(
+    #        f_NV,
+    #        f_NOP
+    #    )
+    #)
+    def attempt(self, *funcs):
+        state = self.snapshot()
+        for f in funcs:
+            if not f():
+                self.restore(state)
+                return False
+        return True
 
     def util_SKIPBLANK(self):
         while self.lbuff[self.index] in (' ', '\t'):
             self.index += 1
 
-    # Search ONT
+    # Search ONT Operator Name Table
     # SRCONT: Check if the current symbol matches the terminal symbol represented by the current operator token (according to the Operator Name Table).
     #         For example, if the rule specifies cCHR this checks whether the input matches "CHR$".
     #         On match, add the token to OUTBUFF and return 'pass'. Else return 'fail'.
@@ -294,7 +301,7 @@ class Syntaxer:
     #         the test logic before the "or" that follows.
     #         The original syntaxer would have had logic to skip ahead to next rule following _OR,
     #         whereas we let Python go there. So each rule that could be tested must do the same.
-    #@abml_rule
+    @rule
     def f_SRCONT(self, ltoken, rtoken=None):
         self.util_SKIPBLANK()
         token, next_index = search_operator_name_table(self.lbuff, self.index)
@@ -307,6 +314,7 @@ class Syntaxer:
         return False
 
     # CHNG: Match a token, change it to the one that fits the context
+    @rule
     def f_CHNG(self, ltoken, rtoken):
         print(f"CHNG({ltoken}, {rtoken})")
         return self.f_SRCONT(ltoken, rtoken)
@@ -1234,6 +1242,7 @@ class Syntaxer:
         return ((self.f_CHNG(cCOM, cACOM) and self.f_PUSR())
             or self.f_NADA()     )
 
+    # This object is initialized once. It restarts on each call to tokenize_statement
     def __init__(self) -> None:
         # Statement Syntax Table : Pointers to the syntax rules from the "Statement Name Table"
         self.statement_syntax_table = (
@@ -1252,17 +1261,19 @@ class Syntaxer:
 
         self.rule_index_out = 0
 
-    # command_id - Token for the identified command
-    # lbuff - Text Buffer containting the input line
-    # index - Index in the buffer to tokenize from
-    # tokenized - Output buffer to append onto
+    # command_id - Token for the identified command we will be validating
+    # lbuff - Text Buffer containing the input line we will be testing
+    # index - Index in the buffer to tokenize from. Starts at the first command argument.
+    # tokenized - Output buffer to append onto.
     # state_stack - Rules need to save and restore position during tokenization
     def tokenize_statement(self, command_id:int, lbuff:bytes, index:int, tokenized:bytearray):
         self.lbuff = lbuff
         self.index = index
         self.tokenized = tokenized
-        self.statement_syntax_table[command_id]()
+        self.old_length = len(tokenized)
         self.state_stack = []
+        if self.statement_syntax_table[command_id]():
+            print("Validated and tokenized ", command_id)
 
     def result(self) -> (int, bytearray):
         self.tokenized += b'test123:'
