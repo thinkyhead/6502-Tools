@@ -70,6 +70,7 @@ COMPILE_VERSION         = NTSC      ; change this to compile for different
 ; Apply patches from David Richardson, et.al.
 COMPILE_BUGFIXES        = 0         ; 0 Original         : 9e34f9ca51 / 54828526fc
                                     ; 1 Fixed (2023)     : 3f122db752 / b3bffcfec3 http://www.neocomputer.org/projects/et/
+                                    ; 2 Fix Typos (2026) : 79ee8c21a6 / e2f9271349 https://github.com/thinkyhead/6502-Tools
    ENDIF
 
 ;============================================================================
@@ -4013,10 +4014,18 @@ StartNewGame
       STA collectedCandyPieces
       STA etPitStatus
       STA etNeckExtensionValues
-      LDA RESMP1
+      IF COMPILE_BUGFIXES >= 2
+         LDA #$29                   ; Thinkyhead - Repair typo in "fixed"
+      ELSE
+         LDA RESMP1                 ; Froggeret missed this one
+      ENDIF
       CMP extraCandyPieces
       BCS .branchC48A
-      LDA extraCandyPieces
+      IF COMPILE_BUGFIXES >= 2
+         STA extraCandyPieces       ; Thinkyhead - Repair typo in "fixed"
+      ELSE
+         LDA extraCandyPieces
+      ENDIF
 .branchC48A
       LDA candyUpper                ; Easter Egg - Ninja E.T.
       CMP candyCollected2
