@@ -12,10 +12,10 @@ EmuDir=/Applications
 # Location of Atari800MacX.app
 ATARI800MACX="${EmuDir}/Atari800MacX/Atari800MacX.app"
 
-# Installed 'atari800' binary
+# Installed 'atari800' path or "Atari800MacX"
 #ATARI800=/usr/local/bin/atari800
 ATARI800=/opt/local/bin/atari800
-#ATARI800="${ATARI800MACX}/Contents/MacOS/Atari800MacX"
+#ATARI800=Atari800MacX
 
 # Runtime atari800 preferences
 ATARIOPTS="-xl -win-width 1200 -win-height 900 -colors-preset deep-black"

@@ -10,6 +10,9 @@ SELF="$0" ; ORIG=$(readlink "$SELF")
 HERE=${SELF%/*}
 source "$HERE/AtariTools-settings.sh"
 
+set -e
+shopt -s nocasematch
+
 case "$#" in
   1 ) INSRC=$1 ;;
   2 ) EXTRA=$1 ; INSRC=$2 ;;
@@ -33,12 +36,15 @@ dasm "$INSRC" -f3 -o"$OUTFILE" -I"$VCS_DIR" -E2 | sed '/(.+\\..+):(\\d+): ()(err
 if [[ $EXTRA == "run" ]]; then
 
   # On success, run the binary in an emulator
-  echo -n "Starting emulator..."
+  echo -n "Starting "
   if [ -d "$z26" ]; then
+    echo -n "z26 emulator..."
     "$z26/Contents/MacOS/z26" "$OUTFILE"
   elif [ -d "$STELLA" ]; then
+    echo -n "Stella emulator direct launch..."
     "$STELLA/Contents/MacOS/Stella" "$OUTFILE"
   else
+    echo -n "Stella application..."
     open -a Stella "$OUTFILE" --args -tv.phosblend 20 -tv.filter 1 -tv.scanlines 40 || \
       echo "No Atari 2600 emulator found!"
   fi
