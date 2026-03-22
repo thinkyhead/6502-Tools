@@ -2471,7 +2471,7 @@ PositionETInPit
    sta currentObjectHorizPos
    rts
 
-   BOUNDARY 0
+   ALIGN 256
 
 HMOVETable
    .byte HMOVE_R1,HMOVE_R2,HMOVE_R3,HMOVE_R4,HMOVE_R5,HMOVE_R6,HMOVE_R7
@@ -2859,7 +2859,7 @@ ThemeMusicFrequencyTable
    .byte LEAD_C4_SHARP,LEAD_A3,LEAD_E3_2,LEAD_E3_2,LEAD_E3_2,LEAD_E3_2
    .byte LEAD_E3_2
 
-   BOUNDARY 0
+   ALIGN 256
 
 PowerZoneMap
    .byte ID_WARP_UP_ZONE << 4 | ID_RETURN_HOME_ZONE
@@ -4205,7 +4205,7 @@ CheckForYarIndyOrHSWEasterEgg
 .doneEasterEggCheck
    rts
 
-   BOUNDARY 0
+   ALIGN 256
 
 TitleETGraphics
 TitleETGraphics_0
@@ -4717,7 +4717,7 @@ KernelJumpTable
 PsuedoRandomValueIncTable
    .byte 115,13,91,213
 
-   BOUNDARY 0
+   ALIGN 256
 
 ETSprites
 ETWalkSprite_A0
@@ -5013,7 +5013,7 @@ FlowerColors
 EasterEggSpriteValues
    .byte SHOW_YAR_SPRITE, SHOW_INDY_SPRITE
 
-   BOUNDARY 0
+   ALIGN 256
 
 NumberFonts
 zero
@@ -5553,7 +5553,7 @@ Yar_1
    .byte $18 ; |...XX...|
    .byte $3C ; |..XXXX..|
 
-   BOUNDARY 0
+   ALIGN 256
 
 GameIcons
 BlankIcon
@@ -5832,7 +5832,7 @@ DetermineToShowArtistInitials
    stx artistInitialFlag
    rts
 
-   BOUNDARY 0
+   ALIGN 256
 
 PitGraphics
 PitPF1Graphics
@@ -6083,7 +6083,7 @@ CheckToFlyYarSprite
 .doneYarFlight
    rts
 
-   BOUNDARY 0
+   ALIGN 256
 
 ScientistSprites
 Scientist_0
@@ -6321,7 +6321,7 @@ IndyColors
 
    ENDIF
 
-   BOUNDARY 0
+   ALIGN 256
 
 ETHomePFGraphics
 ETHomePF2Graphics

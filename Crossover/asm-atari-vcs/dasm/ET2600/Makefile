@@ -1,25 +1,33 @@
 # Makefile for 2600 E.T. "ET.asm" DASM code
 
-GAME=ET
-
-VCS := /opt/homebrew/opt/dasm/machines/atari2600
+VCS := /usr/local/include
 #VCS := $(HOME)/bin/vcs
-#VCS := /usr/local/include/vcs
+#VCS := /opt/homebrew/opt/dasm/machines/atari2600
 #VCS := $(HOME)/.vscode/extensions/zehfernando.vscode-dasm-4.0.0/assets
 #VCS := $(HOME)/.vscode/extensions/chunkypixel.atari-dev-studio-0.11.9/out/bin/compilers/bB/includes
 
-STELLA_APP := /Applications/_Applications/Emulation/Consoles/Atari\ 2600/Stella/Stella.app
-STELLA := $STELLA_APP/Contents/MacOS/Stella
+.PHONY : default clean all pal run runpal
 
-.PHONY : default clean
+default : ET.bin
 
-default : $(GAME).bin
+# NTSC Versions
 
-$(GAME).bin : $(GAME).asm
-	dasm $(GAME).asm -f3 -o$(GAME).bin -I$(VCS) -E2
+ET.bin : ET.asm
+	dasm ET.asm -f3 -oET.bin -I$(VCS) -E2
 
-run : $(GAME).bin
-	$(STELLA) -uselauncher 0 -tv_phos 1 $(GAME).bin
+# PAL Versions
+
+ET-pal.bin : ET.asm
+	dasm ET.asm -f3 -oET-pal.bin -I$(VCS) -E2 -DCOMPILE_VERSION=1
+
+pal: ET-pal.bin
+all: ET.bin ET-pal.bin
+
+run : ET.bin
+	open -a Stella ET.bin
+
+runpal : ET-pal.bin
+	open -a Stella ET-pal.bin
 
 clean :
-	$(RM) $(GAME).bin
+	$(RM) ET*.bin
