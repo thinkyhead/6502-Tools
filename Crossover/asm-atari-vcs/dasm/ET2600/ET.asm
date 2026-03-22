@@ -71,6 +71,7 @@ COMPILE_VERSION         = NTSC      ; change this to compile for different
 COMPILE_BUGFIXES        = 0         ; 0 Original         : 9e34f9ca51 / 54828526fc
                                     ; 1 Fixed (2023)     : 3f122db752 / b3bffcfec3 http://www.neocomputer.org/projects/et/
                                     ; 2 Fix Typos (2026) : 79ee8c21a6 / e2f9271349 https://github.com/thinkyhead/6502-Tools
+                                    ; 3 Froggeret (2018) : 93b343ad9a / 53296b9d65 https://forums.atariage.com/topic/207249-fixing-et-the-extra-terrestrial/page/6/#findComment-4164467
    ENDIF
 
 ;============================================================================
@@ -2430,7 +2431,11 @@ Lose32xEnergy
       LSR
       LSR
       LSR
-      EOR #1
+      IF COMPILE_BUGFIXES >= 3
+         AND #1                     ; Patch: Froggeret
+      ELSE
+         EOR #1
+      ENDIF
       STA energyLoss
    ELSE
       lda #51
@@ -2558,7 +2563,11 @@ PositionETInPit
    IF COMPILE_BUGFIXES >= 1
 JumpToDisplayKernelPatch
       LDA etVertPos                 ; Patch: Falling Fix
-      ADC #$07
+      IF COMPILE_BUGFIXES >= 3
+         ADC #$06                   ; Patch: Froggeret
+      ELSE
+         ADC #$07
+      ENDIF
       STA etVertTemp
       JMP JumpToDisplayKernel
    ENDIF
@@ -4698,8 +4707,14 @@ compareC7E9
       CMP #$1F
       BCC .branchC7F7
       TXA
-      ORA #$AA
-      STA $D3A5,Y
+      IF COMPILE_BUGFIXES >= 3
+         ORA #$10                   ; Patch: Froggeret
+         TAX
+         LDA etEnergy
+      ELSE
+         ORA #$AA
+         STA $D3A5,Y
+      ENDIF
       SBC #$07
       STA etEnergy
 .branchC7F7
@@ -5036,12 +5051,17 @@ ETExtensionSprite_A3
    .byte $03 ; |......XX|
    .byte $03 ; |......XX|
    .byte $03 ; |......XX|
+   IF COMPILE_BUGFIXES >= 3
+      .byte $03 ; |......XX|        ; Froggeret modification
+   ENDIF
    .byte $0F ; |....XXXX|
    .byte $FF ; |XXXXXXXX|
    .byte $3F ; |..XXXXXX|
    .byte $2B ; |..X.X.XX|
    .byte $E7 ; |XXX..XXX|
-   .byte $00 ; |........|
+   IF COMPILE_BUGFIXES < 3
+      .byte $00 ; |........|
+   ENDIF
 
 ETWalkSprite_B0
    .byte $BF ; |X.XXXXXX|
@@ -5099,12 +5119,17 @@ ETExtensionSprite_B3
    .byte $03 ; |......XX|
    .byte $03 ; |......XX|
    .byte $03 ; |......XX|
+   IF COMPILE_BUGFIXES >= 3
+      .byte $03 ; |......XX|        ; Froggeret modification
+   ENDIF
    .byte $1F ; |...XXXXX|
    .byte $BF ; |X.XXXXXX|
    .byte $3F ; |..XXXXXX|
    .byte $63 ; |.XX...XX|
    .byte $00 ; |........|
-   .byte $00 ; |........|
+   IF COMPILE_BUGFIXES < 3
+      .byte $00 ; |........|
+   ENDIF
 
 ETDead_0
    .byte $E0 ; |XXX.....|
