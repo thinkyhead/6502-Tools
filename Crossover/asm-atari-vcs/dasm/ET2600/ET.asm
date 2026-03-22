@@ -61,8 +61,16 @@ TIA_BASE_READ_ADDRESS = $30         ; set the read address base so this runs on
 NTSC                    = 0
 PAL                     = 1
 
+   IFNCONST COMPILE_VERSION
 COMPILE_VERSION         = NTSC      ; change this to compile for different
                                     ; regions
+   ENDIF
+
+   IFNCONST COMPILE_BUGFIXES
+; Apply patches from David Richardson, et.al.
+COMPILE_BUGFIXES        = 0         ; 0 Original         : 9e34f9ca51 / 54828526fc
+                                    ; 1 Fixed (2023)     : 3f122db752 / b3bffcfec3 http://www.neocomputer.org/projects/et/
+   ENDIF
 
 ;============================================================================
 ; T I A - M U S I C  C O N S T A N T S
@@ -485,7 +493,7 @@ bankSwitchABSJmp        = bankSwitchStrobe+2
 bankSwitchRoutinePtr    = bankSwitchABSJmp+1
 fireResetStatus         = $89       ; hold when fire button and RESET held
 soundDataChannel0       = $8A
-unknown                 = $8B
+tempVal8B               = $8B
 currentSpriteHeight     = $8C
 etHeight                = $8D
 powerZoneColor          = $8E
@@ -588,6 +596,11 @@ programmerInitialFlag   = $F1
 easterEggSpriteFlag     = $F2
 artistInitialFlag       = $F3
 
+candyUpper              = $F4
+candyCollected2         = $F5
+etVertTemp              = $F6
+energyLoss              = $F8
+
 ;============================================================================
 ; R O M - C O D E  (BANK 0)
 ;============================================================================
@@ -622,7 +635,11 @@ HorizPositionObjects
    tax
    lda HMOVETable,x
    sta etHMOVEValue                 ; set E.T. horizontal move value
-   jmp JumpToDisplayKernel
+   IF COMPILE_BUGFIXES >= 1
+     JMP JumpToDisplayKernelPatch   ; Patch: Falling Fix
+   ELSE
+     jmp JumpToDisplayKernel
+   ENDIF
 
 SetScreenIdFromStartingScreen
    lda startingScreenId             ; get starting screen id
@@ -832,7 +849,7 @@ PlaceETInPit
    sta holdETVertPos                ; save for when E.T. emerges from pit
    lda etHorizPos                   ; get E.T.'s horizontal position
    sta holdETHorizPos               ; save for when E.T. emerges from pit
-   ldy #07
+   ldy #0
    ldx currentScreenId              ; get the current screen id
    stx holdETScreenId               ; save for when E.T. emerges from pit
    beq SetPitNumberForDiamondPits   ; branch if FOUR_DIAMOND_PITS
@@ -1064,8 +1081,13 @@ ETNeckExtendedToMax
    lda PowerZoneJumpTable,x
    pha
    lda gameSelection                ; get the current game selection
-   cmp #2
-   bcs .jumpToPowerZone
+   IF COMPILE_BUGFIXES >= 1
+      AND #1
+      BEQ .jumpToPowerZone
+   ELSE
+      cmp #2
+      bcs .jumpToPowerZone
+   ENDIF
    lda scientistScreenId            ; get the Scientist's screen id
    bpl .jumpToPowerZone             ; branch if Scientist not at home
    rol scientistAttributes          ; rotate Scientist attribute left and
@@ -1317,7 +1339,11 @@ StartNewFrame
    bne .secondLineOfVerticalSync    ; branch if SELECT not pressed
    ldx gameSelection                ; get the current game selection
    inx                              ; increment game selection
-   cpx #MAX_GAME_SELECTION + 1      ; see if game selection should wrap
+   IF COMPILE_BUGFIXES >= 1
+      CPX #MAX_GAME_SELECTION + 2   ; Patch: Add Extra Game Option - Scientist Only
+   ELSE
+      cpx #MAX_GAME_SELECTION + 1   ; see if game selection should wrap
+   ENDIF
    bcc .setGameSelection
    ldx #1                           ; set game selection to 1
 .setGameSelection
@@ -1393,8 +1419,13 @@ CheckToPlayETFallingSound
 
 CheckToPlayETLevitationSound
    bvc CheckToPlayNeckExtensionSound; branch if E.T. not levitating
-   lda etEnergy+1
-   and #$0F
+   IF COMPILE_BUGFIXES >= 1
+      LDA frameCount                ; Patch: Hovering Sound Fix
+      AND #$1E
+   ELSE
+      lda etEnergy+1
+      and #$0F
+   ENDIF
    bne .turnOffETWalkingSound
    lda #4
    sta AUDV1
@@ -1494,14 +1525,25 @@ CheckForTimeToLandMothership
    lsr
    lsr
    clc
-   adc collectedCandyPieces         ; add in number of candy held by Elliott
-   sta totalCandyCollected          ; save total candy pieces collected
-   lsr                              ; divide value by 2
-   clc                              ; add collected candy value back in so
-   adc totalCandyCollected          ; value is multiplied by 1.5
-   cmp #16
-   bcs .setExtraCandyPiecesValue
-   lda #16
+   IF COMPILE_BUGFIXES >= 1
+      STA candyUpper                ; Patch: FIX SCORING TO MATCH MANUAL
+      LDA collectedCandyPieces
+      STA candyCollected2
+      ADC candyUpper
+      STA collectedCandyPieces
+      ADC #$10
+      NOP
+      NOP
+   ELSE
+      adc collectedCandyPieces      ; add in number of candy held by Elliott
+      sta totalCandyCollected       ; save total candy pieces collected
+      lsr                           ; divide value by 2
+      clc                           ; add collected candy value back in so
+      adc totalCandyCollected       ; value is multiplied by 1.5
+      cmp #16
+      bcs .setExtraCandyPiecesValue
+      lda #16
+   ENDIF
 .setExtraCandyPiecesValue
    sta extraCandyPieces
    ldx #ID_MOTHERSHIP
@@ -1648,7 +1690,11 @@ CheckForETLevitatingInPit
    and #7
    bne .skipEnergyDecrement
    ldx #$00
-   ldy #$01
+   IF COMPILE_BUGFIXES >= 1
+      LDY energyLoss                ; Patch: Difficulty Fix (Walk, Run, Hover)
+   ELSE
+      ldy #$01
+   ENDIF
    jsr DecrementETEnergy            ; decrement energy by 1 unit
 .skipEnergyDecrement
    lda currentScreenId              ; get the current screen id
@@ -1726,7 +1772,11 @@ CheckIfOkayToMoveET
    ldx #1                           ; move E.T.
    jsr ObjectDirectionCheck
    ldx #0
-   ldy #1
+   IF COMPILE_BUGFIXES >= 1
+      LDY energyLoss                ; Patch: Difficulty Fix (Walk, Run, Hover)
+   ELSE
+      ldy #1
+   ENDIF
    jsr DecrementETEnergy            ; reduce energy by 1 unit
    lda etPitStatus                  ; get E.T. pit value flags
    bne DetermineObjectToMove        ; branch if E.T. is in a pit
@@ -1735,7 +1785,11 @@ CheckIfOkayToMoveET
    ldx #1                           ; move E.T. again because he's running
    jsr ObjectDirectionCheck
    ldx #0
-   ldy #1
+   IF COMPILE_BUGFIXES >= 1
+      LDY energyLoss                ; Patch: Difficulty Fix (Walk, Run, Hover)
+   ELSE
+      ldy #1
+   ENDIF
    jsr DecrementETEnergy            ; reduce energy by 1 unit
 CheckToWrapETToAdjacentScreen
    ldx currentScreenId              ; get the current screen id
@@ -1830,8 +1884,11 @@ CheckToLandMothership
 .setMothershipColorPointer
    stx objectColorPtrs_0
 .doneLandMothership
-   jmp SetCurrentObjectXYCoordinates
-
+   IF COMPILE_BUGFIXES >= 1
+      JMP SetObjectsHorizPosition   ; Patch: Ship Shouldn't Crush Elliott
+   ELSE
+      jmp SetCurrentObjectXYCoordinates
+   ENDIF
 .mothershipLeavingWithoutET
    dec currentObjectVertPos         ; move current object up 1 pixel
    lda currentObjectVertPos         ; get current object vertical position
@@ -1860,7 +1917,11 @@ CheckToLandMothership
    sta currentSpriteHeight
    lda etVertPos                    ; get E.T.'s vertical position
    clc                              ; carry clear so SBC is A = A - M ~C
-   sbc #4 - 1                       ; A = A - 4
+   IF COMPILE_BUGFIXES >= 1
+     SBC #5 - 1                     ; A = A - 4
+   ELSE
+     sbc #4 - 1                     ; A = A - 3
+   ENDIF
    cmp currentObjectVertPos
    bne .playMothershipSound
    ror mothershipStatus             ; rotate Mothership status right
@@ -2287,14 +2348,14 @@ DetermineObjectAnimationPtrs
 SetCurrentObjectXYCoordinates
    lda currentScreenId              ; get the current screen id
    cmp #ID_ET_HOME
-   beq .setObjectsHorizPosition
+   beq SetObjectsHorizPosition
    ldx currentObjectId              ; get the current object id
-   bmi .setObjectsHorizPosition
+   bmi SetObjectsHorizPosition
    lda objectVertPos,x
    sta currentObjectVertPos
    lda objectHorizPos,x
    sta currentObjectHorizPos
-.setObjectsHorizPosition
+SetObjectsHorizPosition
    lda etHorizPos                   ; get E.T.'s horizontal position
    pha                              ; push value on to stack
    lda #30
@@ -2348,7 +2409,11 @@ SetCurrentScreenData
    jsr SetCurrentObjectData
    lda #56
    sta currentObjectHorizPos
-   lda #240
+   IF COMPILE_BUGFIXES >= 1
+      LDA #239
+   ELSE
+      lda #240
+   ENDIF
    sta currentObjectVertPos
    rts
 
@@ -2357,10 +2422,22 @@ CheckToEnableETHeart
    bne .checkForETInPit             ; branch if E.T. not on HOME screen
    bit playerState                  ; check player state
    bpl .doneCheckForETHeart         ; branch if E.T. is not dead
-   lda #51
-   sta etHeartVertPos
-   lda #64
-   sta etHeartHorizPos
+
+   IF COMPILE_BUGFIXES >= 1
+      RTS                           ; Patch: Difficulty Fix (Walk, Run, Hover)
+Lose32xEnergy
+      LSR
+      LSR
+      LSR
+      EOR #1
+      STA energyLoss
+   ELSE
+      lda #51
+      sta etHeartVertPos
+      lda #64
+      sta etHeartHorizPos
+   ENDIF
+
 .doneCheckForETHeart
    rts
 
@@ -2417,7 +2494,13 @@ CalculatePowerZonePointer
    rts
 
 CandyVertPositionTable
-   .byte 32,32,32,32
+   .byte 32,32
+   IF COMPILE_BUGFIXES >= 1
+      .byte 34                      ; Patch: Move Candy on V Screen To Prevent Falls
+   ELSE
+      .byte 32
+   ENDIF
+   .byte 32
 
 CandyHorizPositionTable
    .byte 60,60,38,38
@@ -2470,6 +2553,14 @@ PositionETInPit
    lda #OBJECT_IN_PIT_X
    sta currentObjectHorizPos
    rts
+
+   IF COMPILE_BUGFIXES >= 1
+JumpToDisplayKernelPatch
+      LDA etVertPos                 ; Patch: Falling Fix
+      ADC #$07
+      STA etVertTemp
+      JMP JumpToDisplayKernel
+   ENDIF
 
    ALIGN 256
 
@@ -2615,7 +2706,13 @@ LeftScreenIdHorizPosTable
    .byte 119,119,119,119,68,68
 
 RightScreenIdHorizPosTable
-   .byte 1,1,1,1,58,58
+   .byte 1,1,1,1
+   IF COMPILE_BUGFIXES >= 1
+      .byte 74                      ; Patch: Don't Fall Leaving Forest on Right
+   ELSE
+      .byte 58
+   ENDIF
+   .byte 58
 
 UpperScreenIdHorizPosTable
    .byte 0,117,0,4,0,0
@@ -2627,7 +2724,13 @@ LeftScreenIdVertPosTable
    .byte 0,0,0,0,4,53
 
 RightScreenIdVertPosTable
-   .byte 0,0,0,0,4,53
+   .byte 0,0,0,0
+   IF COMPILE_BUGFIXES >= 1
+      .byte 1                       ; Patch: Don't Fall Leaving Forest on Right
+   ELSE
+      .byte 4
+   ENDIF
+   .byte 53
 
 UpperScreenIdVertPosTable
    .byte 8,36,57,36,8,57
@@ -3076,7 +3179,14 @@ DecrementETEnergy
    ror playerState                  ; rotate right to set E.T. death flag
 .doneEnergyDecrement
    cld
-   rts
+
+   IF COMPILE_BUGFIXES >= 1
+      LDA SWCHB                     ; Patch: Difficulty Fix (Walk, Run, Hover)
+      AND #$08
+      JMP Lose32xEnergy
+   ELSE
+      rts
+   ENDIF
 
    IF COMPILE_VERSION = NTSC
 
@@ -3114,31 +3224,64 @@ BANK1Start
    lda #0                     ; 2
    sta GRP0                   ; 3 = @13
    sta nextObjectGraphicData  ; 3
-   lda frameCount             ; 3         get the current frame count
-   lsr                        ; 2
-   and #$1F                   ; 2
-   ora #$40                   ; 2
-   sta COLUP0                 ; 3
-   lda temp                   ; 3         waste 3 cycles
-   nop                        ; 2
-   jmp .checkToDrawET         ; 3
+
+   IF COMPILE_BUGFIXES >= 1
+      ORA etPitStatus               ; Patch: Falling Fix
+      ADC playerState
+      ADC etVertTemp
+      STA tempVal8B
+      JMP .checkToDrawET
+      PHP
+GameKernel
+      CPX tempVal8B
+      BNE .nextItem
+      BIT RESM1
+      BVS .nextItem
+      STA CXCLR
+.nextItem
+      CPX phonePieceMapVertPos
+      PHP
+      INX
+      LDY nextETGraphicData
+JumpIntoGameKernel                  ; Patch: Change Kernel Entry Point
+      TXA
+
+   ELSE
+      lda frameCount          ; 3         get the current frame count
+      lsr                     ; 2
+      and #$1F                ; 2
+      ora #$40                ; 2
+      sta COLUP0              ; 3
+      lda temp                ; 3         waste 3 cycles
+      nop                     ; 2
+      jmp .checkToDrawET      ; 3
 
 GameKernel
-   cpx candyVertPos           ; 3
-   php                        ; 3 = @41   enable/disable BALL
-   cpx phonePieceMapVertPos   ; 3
-   php                        ; 3 = @47   enable/disable M1
-   cpx etHeartVertPos         ; 3
-   php                        ; 3 = @53   enable/disable M0
-   inx                        ; 2         increment scan line count
-   ldy nextETGraphicData      ; 3
+      cpx candyVertPos        ; 3
+      php                     ; 3 = @41   enable/disable BALL
+      cpx phonePieceMapVertPos; 3
+      php                     ; 3 = @47   enable/disable M1
+      cpx etHeartVertPos      ; 3
+      php                     ; 3 = @53   enable/disable M0
+      inx                     ; 2         increment scan line count
+      ldy nextETGraphicData   ; 3
 JumpIntoGameKernel
-   txa                        ; 2         move scan line count to accumulator
-   sec                        ; 2
+      txa                     ; 2         move scan line count to accumulator
+      sec                     ; 2
+
+   ENDIF
+
    sbc currentObjectVertPos   ; 3         subtract object vertical position
    cmp currentSpriteHeight    ; 3         compare with sprite height
-   sty GRP1                   ; 3         draw ET graphic data
-   sta WSYNC
+
+   IF COMPILE_BUGFIXES >= 1
+      STA WSYNC                     ; Patch: Falling Fix
+      STY GRP1                ; 3         draw ET graphic data
+   ELSE
+      sty GRP1
+      sta WSYNC
+   ENDIF
+
 ;--------------------------------------
    bcs .checkForEndGameKernel ; 2≥        skip object draw if greater
    tay                        ; 2
@@ -3165,19 +3308,34 @@ JumpIntoGameKernel
    lda (etGraphicPointers0),y ; 5
    sta GRP1                   ; 3
 .drawNextObjectData
-   sta WSYNC
 ;--------------------------------------
-   lda nextObjectGraphicData  ; 3
-   sta GRP0                   ; 3 = @06
-   lda nextObjectColorData    ; 3
-   sta COLUP0                 ; 3 = @12
-   txa                        ; 2
-   tay                        ; 2
-   lda (pf1GraphicPtrs),y     ; 5
-   sta PF1                    ; 3 = @24
-   lda (pf2GraphicPtrs),y     ; 5
-   sta PF2                    ; 3 = @32
-   jmp GameKernel             ; 3
+   IF COMPILE_BUGFIXES >= 1
+      LDA nextObjectGraphicData     ; Patch: Falling Fix
+      STA GRP0
+      LDA nextObjectColorData
+      STA COLUP0
+      TXA
+      TAY
+      LDA (pf1GraphicPtrs),Y
+      STA PF1
+      LDA (pf2GraphicPtrs),Y
+      STA PF2
+      CPX candyVertPos
+      JMP $F01E
+   ELSE
+      sta WSYNC
+      lda nextObjectGraphicData  ; 3
+      sta GRP0                ; 3 = @06
+      lda nextObjectColorData ; 3
+      sta COLUP0              ; 3 = @12
+      txa                     ; 2
+      tay                     ; 2
+      lda (pf1GraphicPtrs),y  ; 5
+      sta PF1                 ; 3 = @24
+      lda (pf2GraphicPtrs),y  ; 5
+      sta PF2                 ; 3 = @32
+      jmp GameKernel          ; 3
+   ENDIF
 
 .skipETDraw
    lda #0                     ; 2
@@ -3537,6 +3695,7 @@ Overscan
    jsr DetermineToShowArtistInitials
    lda soundDataChannel0            ; get sound data for channel 0
    bmi CheckToPlaySoundForChannel0  ; branch if playing sound for channel 0
+.branchC2C4
    ldx currentObjectId              ; get the current object id
    bmi .turnOffSoundChannel0        ; branch if not human or human not present
    lda currentScreenId              ; get the current screen id
@@ -3623,11 +3782,25 @@ CheckToPlaySoundForChannel0
 .jmpCheckForElliottToReviveET
    jmp CheckForElliottToReviveET
 
+   IF COMPILE_BUGFIXES >= 1
+checkTenPieces
+      LDA heldCandyPieces
+      CMP #10
+      BEQ tenPieces
+      SBC #16
+      STA heldCandyPieces
+      LDX #>$0490
+      LDY #<$0490
+tenPieces
+      LDA collectedCandyPieces
+      SED
+      JMP compareC7E9
+   ELSE
 HeldCandyScoreLSB
-   .byte $00,$90,$80,$70,$60,$50,$40,$30,$20,$10
-
+      .byte $00,$90,$80,$70,$60,$50,$40,$30,$20,$10
 HeldCandyScoreMSB
-   .byte $00,$04,$09,$14,$19,$24,$29,$34,$39,$44
+      .byte $00,$04,$09,$14,$19,$24,$29,$34,$39,$44
+   ENDIF
 
 DoETHomeProcessing
    lda #3
@@ -3657,7 +3830,11 @@ DoETHomeProcessing
    bne .checkToIncreaseScoreForHeldCandy
    ldy etEnergy+1
    ldx etEnergy
-   jmp .incrementScore
+   IF COMPILE_BUGFIXES >= 1
+      JMP .incrementScore3
+   ELSE
+      jmp .incrementScore
+   ENDIF
 
 .checkToIncreaseScoreForHeldCandy
    cmp #192
@@ -3670,17 +3847,29 @@ DoETHomeProcessing
    bne .jmpToBranchToBANK0          ; unconditional branch
 
 IncrementScoreForHeldCandy
-   lda heldCandyPieces              ; get number of candy pieces held by E.T.
-   lsr                              ; move upper nybbles to lower nybbles
-   lsr
-   lsr
-   lsr
-   tay
-   ldx HeldCandyScoreMSB,y
-   lda HeldCandyScoreLSB,y
+   IF COMPILE_BUGFIXES >= 1
+      LDA #$99                      ; Patch: FIX SCORING TO MATCH MANUAL
+      STA etEnergy
+      STA etEnergy+1
+      BNE .incrementScore2
+.incrementScore3
+      LDA energyLoss
+      BNE .incrementScore
+      TAX
+   ELSE
+      lda heldCandyPieces           ; get number of candy pieces held by E.T.
+      lsr                           ; move upper nybbles to lower nybbles
+      lsr
+      lsr
+      lsr
+      tay
+      ldx HeldCandyScoreMSB,y
+      lda HeldCandyScoreLSB,y
+   ENDIF
    tay
 .incrementScore
    jsr IncrementScore
+.incrementScore2
    lda #PLAY_SOUND_CHANNEL0 | $0C
    sta soundDataChannel0
    bne .jmpToBranchToBANK0          ; unconditional branch
@@ -3695,13 +3884,25 @@ IncrementScoreForCollectedCandy
    sty collectedCandyPieces
    lda #PLAY_SOUND_CHANNEL0 | $0F
    sta soundDataChannel0
-   lda #6
-   sta unknown                      ; this not used in the game
-   lda #CLOSED_EATING_CANDY_ICON    ; set collected candy scoring flag to
-   ora collectedCandyScoring        ; show closed eating candy animation
-   sta collectedCandyScoring
-   ldx #$07
-   ldy #$70
+
+   IF COMPILE_BUGFIXES >= 1
+      LDA #1
+      ORA collectedCandyScoring
+      STA collectedCandyScoring
+      LDX #$07
+      LDY #$70
+      JSR checkTenPieces
+      NOP
+   ELSE
+      lda #6
+      sta tempVal8B                 ; this not used in the game
+      lda #CLOSED_EATING_CANDY_ICON ; set collected candy scoring flag to
+      ora collectedCandyScoring     ; show closed eating candy animation
+      sta collectedCandyScoring
+      ldx #$07
+      ldy #$70
+   ENDIF
+
    jsr IncrementScore               ; increment score by 770 points
 .jmpToBranchToBANK0
    jmp .branchToBANK0
@@ -3734,12 +3935,21 @@ StartNewGame
    sta gameState
    lda #INIT_NUM_TRIES - 1
    sta numberOfTries
-   lda #0
-   sta playerState                  ; reset player state
-   sta collectedCandyPieces         ; initialize number of collected candy
-   sta mothershipStatus             ; clear Mothership status flags
-   sta etPitStatus                  ; clear E.T. pit status flags
-   sta etNeckExtensionValues        ; clear neck extension values
+   IF COMPILE_BUGFIXES >= 1
+      LDA #$99
+      STA etEnergy
+      STA etEnergy+1
+      LDA #0
+      STA candyUpper
+      STA playerState
+   ELSE
+      lda #0
+      sta playerState               ; reset player state
+      sta collectedCandyPieces      ; initialize number of collected candy
+      sta mothershipStatus          ; clear Mothership status flags
+      sta etPitStatus               ; clear E.T. pit status flags
+      sta etNeckExtensionValues     ; clear neck extension values
+   ENDIF
    sta etMotionValues               ; clear E.T. motion value
    sta easterEggStatus              ; clear Easter Egg status flags
    sta playerScore
@@ -3798,28 +4008,54 @@ StartNewGame
    sta powerZoneLSBValue_02
    adc PsuedoRandomValueIncTable,x
    sta powerZoneLSBValue_03
-   lda extraCandyPieces             ; get number of extra candy pieces
-   cmp #31
-   bcc .setStartingEnergyToMax
-   sbc #31
-   lsr                              ; divide value by 2
-   tax
-   lda NextRoundEnergyValues,x
-   sta etEnergy
-   sta etEnergy+1
-   lda NextRoundScoreMSB,x
-   tax
-   ldy #$00
-   jsr IncrementScore
-   lda #31
-   sta extraCandyPieces
-   bne CheckForElliottToReviveET    ; unconditional branch
+   IF COMPILE_BUGFIXES >= 1
+      LDA #0                        ; Patch: Score no points for remaining energy with the difficulty fix enabled (6 bytes)
+      STA collectedCandyPieces
+      STA etPitStatus
+      STA etNeckExtensionValues
+      LDA RESMP1
+      CMP extraCandyPieces
+      BCS .branchC48A
+      LDA extraCandyPieces
+.branchC48A
+      LDA candyUpper                ; Easter Egg - Ninja E.T.
+      CMP candyCollected2
+      BNE .branchC49C
+      CMP #3
+      BNE .branchC49C
+      LDA #$AA
+      STA heldCandyPieces
+      STA etEnergy
+      STA etEnergy+1
+.branchC49C
+      JMP CheckForElliottToReviveET
+      NOP
+      NOP
+      NOP
+   ELSE
+      lda extraCandyPieces          ; get number of extra candy pieces
+      cmp #31
+      bcc .setStartingEnergyToMax
+      sbc #31
+      lsr                           ; divide value by 2
+      tax
+      lda NextRoundEnergyValues,x
+      sta etEnergy
+      sta etEnergy+1
+      lda NextRoundScoreMSB,x
+      tax
+      ldy #0
+      jsr IncrementScore
+      lda #31
+      sta extraCandyPieces
+      bne CheckForElliottToReviveET ; unconditional branch
 
 .setStartingEnergyToMax
-   lda #MAX_ENERGY
-   sta etEnergy
-   sta etEnergy+1
-   bne CheckForElliottToReviveET    ; unconditional branch
+      lda #MAX_ENERGY
+      sta etEnergy
+      sta etEnergy+1
+      bne CheckForElliottToReviveET ; unconditional branch
+   ENDIF
 
 .branchToBANK0
    jmp JumpToBank0
@@ -4448,15 +4684,30 @@ TitleETGraphics_5
    .byte $00 ; |........|
    .byte $00 ; |........|
 
-NextRoundScoreMSB
-   .byte $00,$10,$22,$34,$45,$63,$78,$99
-
-NextRoundEnergyValues
-   .byte $99,$92,$84,$76,$68,$59,$51,$42
-
+   IF COMPILE_BUGFIXES >= 1
+compareC7E9
+      CMP #$1F
+      BCC .branchC7F7
+      TXA
+      ORA #$AA
+      STA $D3A5,Y
+      SBC #$07
+      STA etEnergy
+.branchC7F7
+      CLD
+      RTS
 ETColors
-   .byte WHITE,DK_GREEN+14,DK_GREEN+12,DK_GREEN+10
-   .byte DK_GREEN+10,DK_GREEN+10,BLACK
+      .byte WHITE,BROWN+14,BROWN+12,BROWN+8  ; Patch: E.T. is Not Green
+      .byte BROWN+8,BROWN+8,BLACK
+   ELSE
+NextRoundScoreMSB
+      .byte $00,$10,$22,$34,$45,$63,$78,$99
+NextRoundEnergyValues
+      .byte $99,$92,$84,$76,$68,$59,$51,$42
+ETColors
+      .byte WHITE,DK_GREEN+14,DK_GREEN+12,DK_GREEN+10
+      .byte DK_GREEN+10,DK_GREEN+10,BLACK
+   ENDIF
 
 WideDiamondPitGraphics
 WideDiamondPitPF1Graphics
@@ -6068,7 +6319,13 @@ PlayfieldColors
 
 BackgroundColors
    .byte DK_GREEN+4,DK_GREEN+4,DK_GREEN+4,DK_GREEN+4
-   .byte DK_GREEN+4,BLUE+4,BLACK+6,LT_BLUE,BLUE
+   .byte DK_GREEN+4,BLUE+4
+   IF COMPILE_BUGFIXES >= 1
+      .byte BLACK+4                 ; Patch: Well BG
+   ELSE
+      .byte BLACK+6
+   ENDIF
+   .byte LT_BLUE,BLUE
 
 CheckToFlyYarSprite
    bit easterEggSpriteFlag          ; check Easter Egg sprite flags
