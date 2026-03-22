@@ -3360,7 +3360,11 @@ TitleScreenKernel
    inx                        ; 2
    cpx #16                    ; 2
    bcc .waitLoop              ; 2≥
-   lda #LT_RED+4              ; 2
+   IF COMPILE_BUGFIXES >= 4
+      LDA #LT_BROWN+10        ; 2
+   ELSE
+      lda #LT_RED+4           ; 2
+   ENDIF
    sta COLUP0                 ; 3 = @11
    sta COLUP1                 ; 3 = @14
    lda #MSBL_SIZE2 | QUAD_SIZE; 2
