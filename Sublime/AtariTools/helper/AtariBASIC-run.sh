@@ -17,13 +17,14 @@ source "$HERE/AtariTools-settings.sh"
 
 # echo "ARGS is $@" ; exit 1
 
+set -e
+shopt -s nocasematch
+
 case "$#" in
   1 ) LSTFILE=$1 ;;
   2 ) EXTRA=$1 ; LSTFILE=$2 ;;
   * ) echo "Usage: ${0##*/} [macx|turbo|save] filename" 1>&2 ; exit 1 ;;
 esac
-
-set -e
 
 # Make the HD folder if it doesn't exist
 HDD=${HDD:-"/tmp/HardDrive1"}

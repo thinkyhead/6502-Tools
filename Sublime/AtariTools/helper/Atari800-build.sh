@@ -13,6 +13,9 @@ SELF="$0" ; ORIG=$(readlink "$SELF")
 HERE=${SELF%/*}
 source "$HERE/AtariTools-settings.sh"
 
+set -e
+shopt -s nocasematch
+
 case "$#" in
   1 ) INSRC=$1 ;;
   2 ) EXTRA=$1 ; INSRC=$2 ;;
