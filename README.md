@@ -10,17 +10,8 @@ Two plugins are currently provided:
 - [*ATASCII Insert*](Sublime/AtasciiInsert) adds commands to insert ATASCII text and to invert characters.
 - [*AtariTools*](Sublime/AtariTools) provides two perfect themes, support for AtariBASIC and Batari BASIC, and a variety of useful capabilities to enhance your classic Atari 8-bit coding experience.
 
-## Atari BASIC Source Book
-In celebration of the 50th birthday of the 6502 I cleaned up and repaired the [Atari BASIC Source Code](//raw.githubusercontent.com/thinkyhead/6502-Tools/refs/heads/master/AtariBasic-Source-Book/BASIC/ataribas.asm) based on the original "Atari BASIC Source Book" by Bill Wilkinson, Kathleen O'Brien, and Paul Laughton. I started with a very good cleaned up dump [Atari BASIC Rev.A/B/C](//forums.atariage.com/applications/core/interface/file/attachment.php?id=84877) from AtariAge that builds with `ca65` and made the following improvements:
-
-- **BNF Macros**: BNF elements are now neatly defined inline with `.byte`. Much easier to modify and extend.
-- Added `sourcebook.inc` header with aliases for older / original symbol names for better alignment with the Source Book.
-- Applied original comments throughout the code — including almost all original typos!
-- Applied uppercase to all the Rev.1 mnemonics, leaving Rev.2/3 lowercase and un-documented.
-
-This language can be improved by a mile. To modify the language you should add new `BASIC_REVISION` conditionals, then modify the link size and headers as-needed to get it to build and run. The `Makefile` is set up to build the historical cartridge ROMs, but it shouldn't be too hard to make runnable XEX files.
-
-Watch this space as I'm working on implementing an AtariBASIC tokenizer and runner in Python and Javascript. This source code is going to be a very helpful guide in that project.
+## Atari BASIC
+See my [Atari BASIC Source Book](//github.com/thinkyhead/AtariBASIC) repository for a nicely-curated canonical version of the source code for Atari BASIC. And keep an eye on this space because I'm working on implementing an AtariBASIC tokenizer (and runner?) in Python and Javascript. The cleaned up source code (and the _Atari BASIC Source Book_ itself) will be very helpful in completing this challenging project.
 
 ## For Atom (obsolete)
 ### `.atom-build.js`
