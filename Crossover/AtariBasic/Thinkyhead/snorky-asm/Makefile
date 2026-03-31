@@ -4,7 +4,7 @@
 
 default : all-bin
 
-all-bin : snorky-init.bin snorky-move.bin snorky-guy.bin snorky-cube.bin snorky-text.bin snorky-gfx
+all-bin : snorky-init.bin snorky-move.bin snorky-guy.bin snorky-cube.bin snorky-text.bin snorky-wide-text.bin snorky-gfx
 
 # Snorky Init Code
 
@@ -53,13 +53,22 @@ view-cube : snorky-cube.o
 # Snorky String Code
 
 snorky-text.o : snorky-text.asm
-	ca65 --target atarixl --cpu 6502 snorky-text.asm -l snorky-text.s -o snorky-text.o
+	ca65 --target atarixl --cpu 6502 -DWIDE -DWIDEFLAG snorky-text.asm -l snorky-text.s -o snorky-text.o
 
 snorky-text.bin : snorky-text.o
 	ld65 -o snorky-text.bin -C snorky.cfg snorky-text.o
 
 view-text : snorky-text.o
 	nano snorky-text.s
+
+snorky-wide-text.o : snorky-text.asm
+	ca65 --target atarixl --cpu 6502 -DWIDE snorky-text.asm -l snorky-wide-text.s -o snorky-wide-text.o
+
+snorky-wide-text.bin : snorky-wide-text.o
+	ld65 -o snorky-wide-text.bin -C snorky.cfg snorky-wide-text.o
+
+view-wide-text : snorky-wide-text.o
+	nano snorky-wide-text.s
 
 # Snorky Graphics Data
 
@@ -108,21 +117,24 @@ TEST.LST : all-bin
 	@guy_bin=$$( $(ATASCII) -p snorky-guy.bin ); echo "22 SGUY=ADR(\"$$guy_bin\")" >>$(OUT)
 	@cube_bin=$$( $(ATASCII) -p snorky-cube.bin ); echo "23 CUBE=ADR(\"$$cube_bin\")" >>$(OUT)
 	@text_bin=$$( $(ATASCII) -p snorky-text.bin ); echo "24 TEXT=ADR(\"$$text_bin\")" >>$(OUT)
-	@gfx1_bin=$$( $(ATASCII) -p snorky-gfx1.bin ); echo "25 GGUY=ADR(\"$$gfx1_bin\")" >>$(OUT)
-	@gfx2_bin=$$( $(ATASCII) -p snorky-gfx2.bin ); echo "26 GFX2=ADR(\"$$gfx2_bin\")" >>$(OUT)
+	@wide_bin=$$( $(ATASCII) -p snorky-wide-text.bin ); echo "25 WIDE=ADR(\"$$wide_bin\")" >>$(OUT)
+	@gfx1_bin=$$( $(ATASCII) -p snorky-gfx1.bin ); echo "26 GGUY=ADR(\"$$gfx1_bin\")" >>$(OUT)
+	@gfx2_bin=$$( $(ATASCII) -p snorky-gfx2.bin ); echo "27 GFX2=ADR(\"$$gfx2_bin\")" >>$(OUT)
 
 	@printf '%s\n' \
-		'30 RAMTOP=PEEK(106):PMB=RAMTOP-16:POK.106,PMB:GR.15+16' \
-		'31 PMBASE=PMB*256:P0=PMBASE+1024:P1=P0+256:E=USR(INIT,PMBASE)' \
-		'32 X=128:Y=100:OY=Y:POK.704,168:POK.705,104' \
-		'33 POK.P1+Y,8:POK.P1+Y+N1,28:POK.P1+Y+2,62:POK.P1+Y+3,28:POK.P1+Y+4,8:POK.53249,X-4' \
-		'40 M1=80:M2=M1:F.CY=N10 TO170STEPN10:F.CX=M1 TOM2 STEP8:E=USR(CUBE,CX,CY):N.CX:M1=M1-4:M2=M2+4:N.CY' \
-		'41 E=USR(CUBE,80,N10,85):E=USR(CUBE,72,30,170):E=USR(CUBE,88,30,255)' \
-		'50 E=USR(SGUY,GGUY,N0,N0,P0,88,30)' \
-		'60 E=USR(TEXT,4,0,1,ADR("Hello|")):E=USR(TEXT,8,10,2,ADR("Atari|")):E=USR(TEXT,12,20,3,ADR("World!|"))' \
+		'40 RAMTOP=PEEK(106):PMB=RAMTOP-16:POK.106,PMB:GR.15' \
+		'41 PMBASE=PMB*256:P0=PMBASE+1024:P1=P0+256:E=USR(INIT,PMBASE)' \
+		'42 X=128:Y=100:OY=Y:POK.704,168:POK.705,104' \
+		'43 POK.P1+Y,8:POK.P1+Y+N1,28:POK.P1+Y+2,62:POK.P1+Y+3,28:POK.P1+Y+4,8:POK.53249,X-4' \
+		'50 M1=80:M2=M1:F.CY=N10 TO170STEPN10:F.CX=M1 TOM2 STEP8:E=USR(CUBE,CX,CY):N.CX:M1=M1-4:M2=M2+4:N.CY' \
+		'51 ?WIDE;:END' \
+		'60 E=USR(CUBE,80,N10,85):E=USR(CUBE,72,30,170):E=USR(CUBE,88,30,255)' \
+		'61 E=USR(SGUY,GGUY,N0,N0,P0,88,30)' \
+		'62 E=USR(TEXT,1,4,0,85,ADR("Hello|")):E=USR(TEXT,8,10,170,ADR("Atari|")):E=USR(TEXT,12,20,255,ADR("World!|"))' \
+		'63 E=USR(WIDE,0,35,3,ADR("Hello|")):E=USR(WIDE,4,45,3,ADR("Atari|")):E=USR(WIDE,8,55,3,ADR("WXYZ!|"))' \
 		'70 RET.' >>$(OUT)
 
 test: TEST.LST mclean
 	@$(ATASCII) -s -u $(OUT) >"~run~"
-	@atari800 -win-width 1200 -win-height 900 -colors-preset deep-black -basic -run "~run~"
+	@atari800 -xl -win-width 1200 -win-height 900 -colors-preset deep-black -basic -run "~run~"
 	@rm "~run~"
