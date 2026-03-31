@@ -1,6 +1,6 @@
 ;
-; Helper functions for Snorky, to adapt into a proper EXE.
-; Build this with ca65 / ld65 using the 'make' command.
+; Text drawing function for Snorky
+; Use `make` to build with ca65 / ld65.
 ; The ld65 linker requires snorky.cfg.
 ;
 
@@ -11,14 +11,19 @@
         ; 9 bytes in front of FR0
         .ORG $CB
         .segment "BSS"
-STRG:   .res 2
-DSRC:   .res 2
-DDST:   .res 2
-YOFF:   .res 2
-FONT:   .res 2
-CBITS:  .res 2
-BMASK:  .res 1
-TMP1:   .res 1
+STRG:   .res 2 ; $CB
+DSRC:   .res 2 ; $CD
+DDST:   .res 2 ; $CF
+YOFF:   .res 2 ; $D1
+FONT:   .res 2 ; $D3
+BMASK:  .res 1 ; $D5
+
+        .ifdef WIDE
+        .ifdef WIDEFLAG
+FLWIDE: .res 1 ; $D6
+        .endif
+CBITS:  .res 2 ; $D7
+        .endif
 
         .ORG $0600
         .segment "CODE"
@@ -30,21 +35,28 @@ TMP1:   .res 1
 ; Draw a string using the ROM font
 ; TODO: Draw a string with narrow color font
 ;
-; X=USR(SAY, X, Y, COLOR, STRING)
+; X=USR(SAY, [wide], X, Y, COLOR, STRING)
 ;
 DrawString:
         pla             ; ARGC from USR()
-        ;cmp #3
-        ;bne _exit
 
-        ; Get Screen Address
+        .ifdef WIDEFLAG
+        cmp #5          ; A 6th arg indicates wide
+        bne _noflag
+        pla
+        pla
+        sta FLWIDE
+_noflag:
+        .endif
+
+        ; DDST = SAVMSC - Get Screen Address
 
         lda SAVMSC      ; Screen LO
         sta DDST
         lda SAVMSC+1    ; Screen HI
         sta DDST+1
 
-        ; Apply X Position
+        ; DDST += X / 4 - Apply X Position
 
         pla
         pla             ; Get X
@@ -52,7 +64,7 @@ DrawString:
         lsr
         AddWord DDST
 
-        ; Apply Y Position
+        ; DDST = YOFF * 40 - Apply Y Position
 
         pla
         sta YOFF+1      ; 0
@@ -83,15 +95,22 @@ _times4:
         dey
         bne _times4
 
-        ; Use YOFF to track top scanline
+        ; YOFF = DDST - Use YOFF to track top scanline
         sta YOFF+1
         lda DDST
         sta YOFF
 
-        ; Get Color and clone low bits 3 times
+        ; BMASK = (C | C<<2 | C<<4 | C<<6) - Get Color and clone low bits 3 times
 
         pla
         pla
+
+        .ifdef WIDEFLAG
+
+        sta BMASK ; provide mask (color * $55)
+
+        .else
+
         and #%11
         sta BMASK ; x 1
         ldy #3
@@ -103,15 +122,17 @@ _clone2:
         dey
         bne _clone2
 
+        .endif
+
         ; Y is now 0, assumed below...
 
-        ; Get String Address
+        ; STRG - Get String Address
         pla
         sta STRG+1
         pla
         sta STRG
 
-        ; Character Set address
+        ; FONT = CHBAS * 256 - Character Set address
         lda #0
         sta FONT
         lda CHBAS
@@ -125,11 +146,13 @@ _clone2:
 
         ldy #0
 _charloop:
-        lda (STRG),y    ; String character
+        lda (STRG),y    ; A = *STRG - String character
         cmp #'|'
         beq _exit
 
         ; Convert ATASCII to internal mapping
+        ; DSRC = FONT + 8 * internalize(A)
+
         ;tax            ; Save for later
         and #$7F        ; 128 unique characters
         cmp #$20
@@ -163,58 +186,110 @@ _gotc:
 _draw_char:
         ldx #8
 _dcloop:
-        lda (DSRC),y    ; Character glyph bits
+        lda (DSRC),y    ; A = DSRC[0] - Character glyph bits
 
-        inc DSRC
+        inc DSRC        ; DSRC++
         bne _dc2
         inc DSRC+1
 _dc2:
 
+        .ifdef WIDE
+
+        .ifdef WIDEFLAG
+        ldy FLWIDE
+        bne _wide
+        sta (DDST),y
+        beq _nextline
+        .endif
+
+_wide:
         ldy #8          ; 8 bits wide
 _loop8:
-        sta TMP1        ; Save A before shift
         asl             ; Shift out HI
-        rol CBITS+1     ; Shift into CBITS
-        rol CBITS
-        lda TMP1        ; Restore A
-        asl             ; Shift again
-        rol CBITS+1     ; Shift into CBITS again
-        rol CBITS
+        php             ; Save Carry
+        rol CBITS+1     ; Shift into CBITS LO
+        rol CBITS       ; and HI
+        plp             ; Restore Carry
+        rol CBITS+1     ; Shift into CBITS LO
+        rol CBITS       ; and HI
         dey
         bne _loop8
 
-        lda CBITS,y
+        lda CBITS
         and BMASK
-        sta (DDST),y
-        iny             ; ldy #1
-        lda CBITS,y
+        sta (DDST),y    ; DDST = CBITS[0] & BMASK
+        lda CBITS+1
         and BMASK
-        sta (DDST),y
+        iny
+        sta (DDST),y    ; DDST + 1 = CBITS[1] & BMASK
         dey
 
+        .else   ; !WIDE
+
+        sta (DDST),y
+
+        .endif
+
+_nextline:
         lda #40
         AddWord DDST
         dex
         bne _dcloop
 
+        .ifdef WIDEFLAG
+        beq _nextchar   ; bra _nextchar
+_charleap:
+        bne _charloop   ; bra _charloop
+_exit:  rts             ; closer _exit
+        .endif
+
 ;
 ; Next string character
 ;
+_nextchar:
         inc STRG        ; Increment source
         bne _dc3
         inc STRG+1
 _dc3:
-        lda YOFF
-        adc #2
+        .ifdef WIDE
+
+        .ifdef WIDEFLAG
+
+        ;clc
+        lda FLWIDE
+        adc #1          ; dest += 1 or 2
+
+        .else
+
+        lda #2          ; dest += 2
+
+        .endif
+
+        adc YOFF
         sta YOFF
         sta DDST
         lda YOFF+1
         adc #0
         sta YOFF+1
+
+        .else
+
+        inc YOFF        ; Increment dest top
+        bne _dc4
+        inc YOFF+1
+_dc4:   lda YOFF        ; Top of char for next loop
+        sta DDST
+        lda YOFF+1
+
+        .endif
+
         sta DDST+1
 
+        .ifdef WIDEFLAG
+        bne _charleap
+        .else
         bne _charloop
-
 _exit:  rts
+        .endif
 
         .endproc
