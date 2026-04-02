@@ -1,6 +1,0 @@
-[
-    { "keys": [ "ctrl+shift+a", "ctrl+shift+a" ], "command": "atascii_insert_inv" },
-    { "keys": [ "ctrl+shift+a", "ctrl+shift+s" ], "command": "atascii_insert_special" },
-    { "keys": [ "ctrl+shift+a", "ctrl+shift+d" ], "command": "atascii_insert_draw" },
-    { "keys": [ "ctrl+shift+a", "ctrl+shift+i" ], "command": "atascii_invert_text" }
-]
