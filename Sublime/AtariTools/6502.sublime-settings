@@ -1,4 +1,4 @@
-{ "color_scheme": "Packages/AtariTools/Atari800.tmTheme",
+{ "color_scheme": "Packages/Atari800/Atari800.sublime-color-scheme",
   "extensions": [
     "asm",
     "inc",
