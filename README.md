@@ -6,9 +6,13 @@ Tools and enhancements to make working with 6502 Assembly Language on macOS more
 ## For Sublime Text 3
 Open the `Sublime` folder and copy the two plugin folders to your `Packages` folder (`~/Library/Application Support/Sublime Text 3/Packages`). Then, copy all the `.sublime-settings` files to the `User` subfolder. For the BASIC theme you'll need the font linked below.
 
-Two plugins are currently provided:
-- [*ATASCII Insert*](Sublime/AtasciiInsert) adds commands to insert ATASCII text and to invert characters.
+Two plugins are currently provided as part of this project:
 - [*AtariTools*](Sublime/AtariTools) provides two perfect themes, support for AtariBASIC and Batari BASIC, and a variety of useful capabilities to enhance your classic Atari 8-bit coding experience.
+- [*C64Tools*](//github.com/thinkyhead/6502-Tools/tree/work-commodore-64/Sublime/C64Tools) provides two perfect themes, support for C64 BASIC, and a variety of useful capabilities to enhance your classic Commodore 64 coding experience.
+
+Two external plugins that you should install:
+- [*ATASCII*](//github.com/thinkyhead/ATASCII) adds popup palettes to insert ATASCII Unicode characters, and commands to invert ATASCII text.
+- [*PETSCII*](//github.com/thinkyhead/PETSCII) adds popup palettes to insert PETSCII Unicode characters, and commands to invert PETSCII text.
 
 ## Atari BASIC
 See my [Atari BASIC Source Book](//github.com/thinkyhead/AtariBASIC) repository for a nicely-curated canonical version of the source code for Atari BASIC. And keep an eye on this space because I'm working on implementing an AtariBASIC tokenizer (and runner?) in Python and Javascript. The cleaned up source code (and the _Atari BASIC Source Book_ itself) will be very helpful in completing this challenging project.
