@@ -13,8 +13,8 @@ In Sublime, from the menu bar select *Sublime Text* > *Settings* > *Browse Packa
 
 ### Atari Classic Fonts
 For the best experience you'll also need these fonts:
-  - [Atari Classic Fonts](http://members.bitstream.net/marksim/atarimac/fonts.html) - Regular, Chunky, Smooth, and ExtraSmooth - especially for use with `Atari800.tmTheme`. Use the newest all-in-one font for full ATASCII support. This is the preferred font for editing AtariBASIC.
-  - [Eightbit-Atari-Fonts](https://github.com/TheRobotFactory/EightBit-Atari-Fonts) - A collection of custom Atari fonts with added kerning for use with `Atari800.tmTheme`.
+  - [Atari Classic Fonts](http://members.bitstream.net/marksim/atarimac/fonts.html) - Regular, Chunky, Smooth, and ExtraSmooth - especially for use with `Atari800.sublime-color-scheme`. Use the newest all-in-one font for full ATASCII support. This is the preferred font for editing AtariBASIC.
+  - [Eightbit-Atari-Fonts](https://github.com/TheRobotFactory/EightBit-Atari-Fonts) - A collection of custom Atari fonts with added kerning for use with `Atari800.sublime-color-scheme`.
 
 ### AtariTools Settings
 
@@ -24,12 +24,11 @@ For bAtariBASIC, the `$bB` environment variable should already exist, but it can
 
 ### Atari Look-and-Feel
 
-#### `Atari800.tmTheme`
-The Atari800 theme provides the classic Atari blue-colored background and bluish-white text, plus extra color-coding used by the syntaxes for AtariBASIC and bAtariBASIC.
+Install the [Atari800 Color Schemes](//github.com/thinkyhead/Atari800) for a perfect classic Atari blue-colored background and bluish-white text, plus extra color-coding used by the syntaxes for AtariBASIC and bAtariBASIC. Both light and dark themes are provided.
 
-In order to edit Atari BASIC (`.LST`) files you'll need to install the free Atari Classic fonts (see below). These provide full ATASCII support by mapping the special characters to the Unicode user-defined area. Special ATASCII characters are automatically translated when passing code to and from the emulator.
+In order to edit the included Atari BASIC (`.LST`) Unicode files you'll need to install the free Atari Classic fonts (see below). These provide full ATASCII support by mapping the special characters to the Unicode user-defined area. Special ATASCII characters are automatically translated when passing code to and from the emulator.
 
-![Atari800.tmTheme](../../_img/atari-code-theme.png)
+![Atari800.sublime-color-scheme](../../_img/atari-code-theme.png)
 
 ### AtariBASIC Support
 AtariTools includes AtariBASIC syntax parsing/coloring and a build command to run AtariBASIC in your preferred Atari 800 emulator.
@@ -38,7 +37,7 @@ AtariTools includes AtariBASIC syntax parsing/coloring and a build command to ru
 This file provides the hook for Sublime to use the `Atari800` theme for `.LST` files, defines rulers at multiples of 38/40 characters, and a max length ruler at 254 characters. If the **Atari Classic (Regular)** font is installed, it will be used. (This font is needed for proper ATASCII support in Sublime.)
 
 #### `AtariBASIC.sublime-syntax`
-This syntax provides context-aware syntax coloring of AtariBASIC with built-in error-checking. It makes the code much more readable with standard code fonts, but of course it looks best with `Atari800.tmTheme`. A work in progress, it needs better expression handling. Syntax test included.
+This syntax provides context-aware syntax coloring of AtariBASIC with built-in error-checking. It makes the code much more readable with standard code fonts, but of course it looks best with `Atari800.sublime-color-scheme`. A work in progress, it needs better expression handling. Syntax test included.
 
 #### `AtariBASIC.sublime-build`
 This adds `Tools` > `Build System` > `AtariBASIC` to the menu so you can use **Build** `Command-B` to load and run the active LST file in your favorite Atari 800 emulator.
