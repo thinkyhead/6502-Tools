@@ -39,18 +39,18 @@ This syntax provides context-aware syntax coloring of Commodore BASIC with built
 #### `CommodoreBASIC.sublime-build`
 This adds `Tools` > `Build System` > `Commodore BASIC` to the menu so you can use **Build** `Command-B` to load and run the active L64 file in your favorite Commodore 800 emulator.
 
-The **Build** command will run the current BASIC file in **VICE**, depending on what you last selected under **Build With…**. Make sure your **VICE** default settings have BASIC enabled. It can also be useful to have a local folder exposed as hard drive H:, and up to two floppies mounted for development purposes.
+The **Build** command will run the current BASIC file in **VICE**, depending on what you last selected under **Build With…**. Make sure your **VICE** default settings have BASIC enabled. It can also be useful for development purposes to have a local folder exposed as a Hard Drive device and a floppy image mounted.
 
 **Build** saves a copy of the current file with PETSCII encoding and pastes it into the emulator. It may help to enable Turbo in the emulator to speed things up.
 
 ### C64 6502 Assembly Support
+By default this plugin identifies file extensions `.asm`, `.s`, `.dasm`, `.m65`, `.a65`, `.inc`, `.6502` files as C64 6502 Assembly code.
 
 #### `C64 Assembly.sublime-settings`
-Settings suitable for 6502 code. Applies to `.asm` and `.s` files.
+Settings suitable for 6502 code.
 
 #### `C64 Assembly.sublime-syntax`
-This syntax parser for 6502 code needs more work to support modern formats. I'll continue to enhance this whenever I do 6502 coding.
-- For best results with `ca65` code use the **ca65 Syntax** included with ["65816" Package](//github.com/ksherlock/65816.tmbundle).
+This 6502 syntax is based on a decent starting point, but will needs more work to support modern formats. I'll continue to enhance this whenever I do 6502 coding.
 - Includes `syntax_test_C64.asm` to test the markup with Sublime [PackageDev](https://packagecontrol.io/packages/PackageDev) (Cmd-B).
 
 ## Helper Scripts
