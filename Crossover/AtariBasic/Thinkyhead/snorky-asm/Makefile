@@ -130,8 +130,8 @@ TEST.LST : all-bin
 		'51 ?WIDE;:END' \
 		'60 E=USR(CUBE,80,N10,85):E=USR(CUBE,72,30,170):E=USR(CUBE,88,30,255)' \
 		'61 E=USR(SGUY,GGUY,N0,N0,P0,88,30)' \
-		'62 E=USR(TEXT,1,4,0,85,ADR("Hello|")):E=USR(TEXT,8,10,170,ADR("Atari|")):E=USR(TEXT,12,20,255,ADR("World!|"))' \
-		'63 E=USR(WIDE,0,35,3,ADR("Hello|")):E=USR(WIDE,4,45,3,ADR("Atari|")):E=USR(WIDE,8,55,3,ADR("WXYZ!|"))' \
+		'62 E=USR(TEXT,1,4,0,85,ADR("Hello|")):E=USR(TEXT,0,8,10,170,ADR("Atari|")):E=USR(TEXT,12,20,255,ADR("World!|"))' \
+		'63 E=USR(WIDE,0,35,1,ADR("Hello|")):E=USR(WIDE,4,45,2,ADR("Atari|")):E=USR(WIDE,8,55,3,ADR("World!|"))' \
 		'70 RET.' >>$(OUT)
 
 test: TEST.LST mclean
