@@ -115,3 +115,13 @@ PMBASE          =       $D407
         ora BTMP        ; OR with screen bits
         sta (DDST),y    ; Write back to screen
         .endmacro
+
+;
+; IncWord
+;
+        .macro IncWord adr
+        inc adr
+        bne @ne
+        inc adr+1
+@ne:
+        .endmacro

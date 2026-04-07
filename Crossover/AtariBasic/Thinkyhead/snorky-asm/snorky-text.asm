@@ -6,24 +6,40 @@
 
         .include "snorky.inc"
 
-; Use FR0 for scratch storage
+RELOC = 1
+
+        .ifdef WIDE
+;WIDELOOKUP = 1
+        .endif
 
         ; 9 bytes in front of FR0
         .ORG $CB
         .segment "BSS"
-STRG:   .res 2 ; $CB
-DSRC:   .res 2 ; $CD
-DDST:   .res 2 ; $CF
-YOFF:   .res 2 ; $D1
-FONT:   .res 2 ; $D3
-BMASK:  .res 1 ; $D5
+BMASK:  .res 1 ; $CB
+STRG:   .res 2 ; $CC
+DSRC:   .res 2 ; $CE
+DDST:   .res 2 ; $D0
+YOFF:   .res 2 ; $D2
+
+        ; Use FR0 for scratch storage
+FONT:   .res 2 ; $D4
 
         .ifdef WIDE
+
         .ifdef WIDEFLAG
 FLWIDE: .res 1 ; $D6
         .endif
-CBITS:  .res 2 ; $D7
+
+        .ifdef WIDELOOKUP
+        .ifdef RELOC
+WLOOK:  .res 2 ; $D7
         .endif
+        .else  ; !WIDELOOKUP
+CBITS:  .res 2 ; $D7
+        .endif ; !WIDELOOKUP
+
+        .endif ; WIDE
+
 
         .ORG $0600
         .segment "CODE"
@@ -41,12 +57,26 @@ DrawString:
         pla             ; ARGC from USR()
 
         .ifdef WIDEFLAG
-        cmp #5          ; A 6th arg indicates wide
+        cmp #5          ; A 5th arg indicates wide, or not
         bne _noflag
         pla
         pla
         sta FLWIDE
 _noflag:
+        .endif
+
+
+        .ifdef WIDELOOKUP
+        .ifdef RELOC
+        ; WLOOK = widebits
+        ;clc
+        lda FR0
+        adc #widebits-DrawString
+        sta WLOOK
+        lda FR0+1
+        adc #0
+        sta WLOOK+1
+        .endif
         .endif
 
         ; DDST = SAVMSC - Get Screen Address
@@ -100,19 +130,21 @@ _times4:
         lda DDST
         sta YOFF
 
-        ; BMASK = (C | C<<2 | C<<4 | C<<6) - Get Color and clone low bits 3 times
-
         pla
+        sta FONT        ; Set to 0 here to save two bytes below
         pla
 
         .ifdef WIDEFLAG
 
-        sta BMASK ; provide mask (color * $55)
+        sta BMASK ; get pre-made mask (color * $55)
 
         .else
 
+        ; Get Color and clone low bits 3 times
+        ; BMASK = (C | C<<2 | C<<4 | C<<6)
+
         and #%11
-        sta BMASK ; x 1
+        sta BMASK
         ldy #3
 _clone2:
         asl
@@ -133,8 +165,8 @@ _clone2:
         sta STRG
 
         ; FONT = CHBAS * 256 - Character Set address
-        lda #0
-        sta FONT
+        ;lda #0
+        ;sta FONT
         lda CHBAS
         sta FONT+1
 
@@ -181,17 +213,13 @@ _gotc:
         ;and #$80
 
 ;
-; Draw the character
+; Draw the character, erasing previous contents
 ;
 _draw_char:
         ldx #8
 _dcloop:
         lda (DSRC),y    ; A = DSRC[0] - Character glyph bits
-
-        inc DSRC        ; DSRC++
-        bne _dc2
-        inc DSRC+1
-_dc2:
+        IncWord DSRC    ; DSRC++
 
         .ifdef WIDE
 
@@ -199,10 +227,43 @@ _dc2:
         ldy FLWIDE
         bne _wide
         sta (DDST),y
-        beq _nextline
+        beq _nextline   ; bra _nextline
         .endif
 
 _wide:
+        .ifdef WIDELOOKUP
+
+        pha             ; Save char bits
+
+        lsr
+        lsr
+        lsr
+        lsr
+        tay             ; Y = A >> 4
+        .ifdef RELOC
+        lda (WLOOK),y
+        .else
+        lda widebits,y
+        .endif
+        and BMASK
+        ldy #0
+        sta (DDST),y    ; DDST[0] = WLOOK[Y] & BMASK
+
+        pla             ; Get char bits
+
+        and #$0F
+        tay             ; Y = A & $0F
+        .ifdef RELOC
+        lda (WLOOK),y
+        .else
+        lda widebits,y
+        .endif
+        and BMASK
+        ldy #1
+        sta (DDST),y    ; DDST[1] = WLOOK[Y] & BMASK
+
+        .else  ; !WIDELOOKUP
+
         ldy #8          ; 8 bits wide
 _loop8:
         asl             ; Shift out HI
@@ -215,20 +276,23 @@ _loop8:
         dey
         bne _loop8
 
-        lda CBITS
-        and BMASK
-        sta (DDST),y    ; DDST = CBITS[0] & BMASK
+        iny
         lda CBITS+1
         and BMASK
-        iny
-        sta (DDST),y    ; DDST + 1 = CBITS[1] & BMASK
+        sta (DDST),y    ; DDST[1] |= CBITS[1] & BMASK
+
         dey
+        lda CBITS
+        and BMASK
+        sta (DDST),y    ; DDST[0] |= CBITS[0] & BMASK
+
+        .endif  ; !WIDELOOKUP
 
         .else   ; !WIDE
 
         sta (DDST),y
 
-        .endif
+        .endif  ; !WIDE
 
 _nextline:
         lda #40
@@ -247,10 +311,8 @@ _exit:  rts             ; closer _exit
 ; Next string character
 ;
 _nextchar:
-        inc STRG        ; Increment source
-        bne _dc3
-        inc STRG+1
-_dc3:
+        IncWord STRG    ; Increment source
+
         .ifdef WIDE
 
         .ifdef WIDEFLAG
@@ -274,10 +336,9 @@ _dc3:
 
         .else
 
-        inc YOFF        ; Increment dest top
-        bne _dc4
-        inc YOFF+1
-_dc4:   lda YOFF        ; Top of char for next loop
+        IncWord YOFF    ; Increment dest top
+
+        lda YOFF        ; Top of char for next loop
         sta DDST
         lda YOFF+1
 
@@ -292,4 +353,12 @@ _dc4:   lda YOFF        ; Top of char for next loop
 _exit:  rts
         .endif
 
-        .endproc
+
+        .ifdef WIDELOOKUP
+        ; Map 4 pixels to 8 bits
+widebits:
+        .byte $00,$03,$0c,$0f,$30,$33,$4c,$3f
+        .byte $c0,$c3,$cc,$cf,$f0,$f3,$fc,$ff
+        .endif
+
+        .endproc ; draw_string
