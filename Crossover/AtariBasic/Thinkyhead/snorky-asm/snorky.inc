@@ -25,9 +25,9 @@ PMBASE          =       $D407
 ; SetWordVal dest,word
 ;
         .macro SetWordVal adr,word
-        lda #<word
+        lda #<(word)
         sta adr
-        lda #>word
+        lda #>(word)
         sta adr+1
         .endmacro
 
@@ -114,6 +114,22 @@ PMBASE          =       $D407
         and (DSRC),y    ; Apply source bits
         ora BTMP        ; OR with screen bits
         sta (DDST),y    ; Write back to screen
+        .endmacro
+
+;
+; PushByte
+;
+        .macro PushByte byte
+        lda byte
+        pha
+        .endmacro
+
+;
+; PushWord - Push LO, HI on the stack
+;
+        .macro PushWord word
+        PushByte #<(word)
+        PushByte #>(word)
         .endmacro
 
 ;
