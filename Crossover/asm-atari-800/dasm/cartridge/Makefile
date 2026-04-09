@@ -9,7 +9,7 @@ CARTTYPE=1 	# 1 = Standard 8K ; 2 = 16K ; 4 = 32K 5200
 default : $(GAME).car
 
 $(GAME).car : $(GAME).dasm
-	dasm $(GAME).dasm -f3 -o$(GAME).car -I$(VCS) -E2
+	dasm $(GAME).dasm -f3 -o$(GAME).car -I".." -E2
 
 run : $(GAME).car
 	atari800 -atari -nobasic -cart-type $(CARTTYPE) -cart $(GAME).car $(RUNARGS)

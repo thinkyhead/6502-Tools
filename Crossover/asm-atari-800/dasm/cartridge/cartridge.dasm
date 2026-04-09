@@ -8,14 +8,16 @@
 ; Modified by Thinkyhead 2026
 ;
         processor 6502
-	include "atari.inc"
+        include "atari.inc"
 
 ;=========== Defines ===========
-line	equ 	$20                  ;Current DLI line
-pm0pos	equ	$21                  ;Current pos of P0
+line    equ     $20                  ;Current DLI line
+pm0pos  equ     $21                  ;Current pos of P0
+
+COMPACT_DLIST equ 0
 
 PTR1    = $80
-CTR1    = $82
+CSIZ    = $82
 
 STRG    = $CB
 DLIN    = $CD
@@ -26,10 +28,10 @@ YOFF    = FR0+4
 DSRC    = FR0+6
 BMASK   = FR0+7
 
-DLRAM   = SCREEN - dlist_size           ; $1100
-SCREEN  = $1200                         ; $1200
-SCREEN2 = SCREEN + 94 * 40 		; $0EB0 + $1200 = $1FB0
-SSIZE   = 192*40 			; $1E00 + $1200 = $3000
+DLRAM   = SCREEN - dlist_size           ; $1086
+SCREEN  = SCREEN2 - 94 * 40             ; Screen RAM $1150..$1FFF
+SCREEN2 = $2000                         ; Screen RAM $2000..$2F4F
+SSIZE   = 192*40                        ; $1E00
 
 PMRAM   = $3000
 PM0     = PMRAM + $400
@@ -39,52 +41,99 @@ OURFONT = $BC00
 
 ;======== Start of Code ========
 
-	org     $A000           ;Start of cartridge area
+        org     $A000           ;Start of cartridge area
 Start
 
-;===== Set up Display List =====
+        .if COMPACT_DLIST = 1
 
-	lda     #<dlist
-        sta     DLIN
-        lda     #>dlist
-        sta     DLIN+1
+;===== Build Display List from Description =====
+
+        ldx #0                  ;Source index
+        ldy #0                  ;Destination index
+
+        ; Get count and copy
+        jsr dlcopy
+        ; Get count and set $0E
+        jsr dlgline
+        ; Get count and copy
+        jsr dlcopy
+        ; Get count and set $0E
+        jsr dlgline
+
+        beq dlready
+
+        ; Get count and copy
+dlcopy  lda dlist_desc,x
+        inx
+        sta CSIZ                ;Copy countdown
+cpyloop lda dlist_desc,x
+        inx
+        sta DLRAM,y
+        iny
+        dec CSIZ
+        bne cpyloop
+        rts
+
+        ; Get count and set $0E
+dlgline lda dlist_desc,x
+        inx
+        sta CSIZ
+        lda #$0E
+setloop sta DLRAM,y
+        iny
+        dec CSIZ
+        bne setloop
+        rts
+
+        .else
+
+;===== Copy Display List =====
+
         lda     #<DLRAM
         sta     DLOUT
         lda     #>DLRAM
         sta     DLOUT+1
+
+        lda     #<dlist
+        sta     DLIN
+        lda     #>dlist
+        sta     DLIN+1
+
         ;ldx     #>dlist_size    ;Number of bytes in list
-	ldy     #0
+        ldy     #0
 dlloop                          ;Copy display list to RAM
         lda     (DLIN),y        ;Get byte
         sta     (DLOUT),y       ;Copy to RAM
         iny                     ;Next byte index
-        ;bne 	nxt1            ;Rolled around?
+        ;bne    nxt1            ;Rolled around?
         ;inc     DLIN+1
         ;inc     DLOUT+1
         ;dex                    ;Count down pages
-nxt1    cpy 	#<dlist_size    ;Index matching last LO?
-        bne 	dlloop          ;No, keep looping
-        ;cpx 	#0              ;Last page?
-        ;bne 	dlloop          ;No, keep looping
+nxt1    cpy     #<dlist_size    ;Index matching last LO?
+        bne     dlloop          ;No, keep looping
+        ;cpx    #0                    ;Last page?
+        ;bne    dlloop          ;No, keep looping
+
+        .endif
 
 ;======== Clear Display ========
 
-        lda     #<SCREEN
+dlready lda     #<SCREEN
         sta     PTR1
         lda     #>SCREEN        ;Screen memory starts at $1800
         sta     PTR1+1
         lda     #$b0
-        ldy    	#0
+        ldy     #0
         ldx     #>SSIZE
 crloop5 sta     (PTR1),y        ;Store data
         iny
-        bne 	nxt2
+        bne     nxt2
         inc     PTR1+1
         dex
 nxt2    cpy     #<SSIZE
-        bne 	crloop5
-        cpx 	#0
-        bne 	crloop5
+        bne     crloop5
+        cpx     #0
+        bne     crloop5
 
 ;=== Setup Hardware Registers ==
 
@@ -103,14 +152,14 @@ carryclear
         ;sta     CHBAS
         lda     #$22            ;Enable DMA
         sta     SDMCTL
-	; load display list interrupt address
-	lda	#<dli
-	sta	VDSLST
-	lda	#>dli
-	sta	VDSLST+1
-	; activate display list interrupt and vertical blank interrupt
-	lda	#$C0
-	sta	NMIEN
+        ; load display list interrupt address
+        lda     #<dli
+        sta     VDSLST
+        lda     #>dli
+        sta     VDSLST+1
+        ; activate display list interrupt and vertical blank interrupt
+        lda     #$C0
+        sta     NMIEN
 
 ;== Setup Player/Missile Regs ==
 
@@ -130,14 +179,14 @@ carryclear
 
 ;=== Copy Player data to RAM ===
 
-	ldy     #7
+        ldy     #7
 pmloop1 lda     pm1,y           ;Get data
         sta     PM0+$30,y       ;Write it into RAM
         sta     PM0+$C0,y
         dey
         bpl     pmloop1
 
-	jsr DrawString
+        jsr DrawString
 
 ;========= Move player =========
 
@@ -223,7 +272,7 @@ DrawString:
 
         ; Apply X Position
 
-	lda #TEXTX
+        lda #TEXTX
         ;pla
         ;pla             ; Get X
         lsr             ; Divide by 4
@@ -270,9 +319,9 @@ _times4:
         lda DDST
         sta YOFF
 
-	; Get Color and clone low bits 3 times
+        ; Get Color and clone low bits 3 times
 
-	lda #TEXTCOLOR
+        lda #TEXTCOLOR
         ;pla
         ;pla
         and #%11
@@ -384,7 +433,33 @@ _exit:
         rts
 
 ;====== Display list data ======
-; starts at $1000
+
+        .if COMPACT_DLIST = 1
+
+; Unpacked to $1000
+
+dlist_b_size equ 93
+dlist_d_size equ 97
+
+dlist_desc
+        .byte dlist_a_size
+dlist_a .byte $70,$70,$70           ;24 blank scanlines
+        .byte $4E,<SCREEN,>SCREEN   ;Mode 14 and Load Memory Scan
+dlist_a_size = *-dlist_a
+        .byte dlist_b_size          ;93 lines of mode 14
+        .byte dlist_c_size
+dlist_c .byte $CE,<SCREEN2,>SCREEN2 ;Mode 14 with LMS and HBI
+dlist_c_size = *-dlist_c
+        .byte dlist_d_size          ;97 lines of mode 14
+        .byte dlist_e_size
+dlist_e .byte $41,<DLRAM,>DLRAM     ;Jump back to DL start in RAM
+dlist_e_size = *-dlist_e
+
+dlist_size = *-dlist_desc-5+dlist_b_size+dlist_d_size
+
+        .else
+
+; Copied to $1000
 
 dlist   .byte     $70,$70,$70      ;24 blank scanlines
         .byte     $4E,<SCREEN,>SCREEN      ;Mode 14 and Load memory scan
@@ -408,7 +483,10 @@ dlist   .byte     $70,$70,$70      ;24 blank scanlines
         .byte     $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
         .byte     $0E,$0E,$0E,$0E,$0E,$0E
         .byte     $41,<DLRAM,>DLRAM       ;Jump back to DL start in RAM
+
 dlist_size = *-dlist
+
+        .endif
 
 ;========= Player shape ========
 
