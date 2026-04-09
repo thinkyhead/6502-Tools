@@ -7,6 +7,7 @@
         .include "snorky.inc"
 
 RELOC = 1
+;TEST_CODE = 1
 
         .ifdef WIDE
 ;WIDELOOKUP = 1
@@ -360,5 +361,56 @@ widebits:
         .byte $00,$03,$0c,$0f,$30,$33,$4c,$3f
         .byte $c0,$c3,$cc,$cf,$f0,$f3,$fc,$ff
         .endif
+
+        ; Generate some test code in assembly
+        .ifdef TEST_CODE
+test_code:
+        ; X=USR(SAY, [wide], X, Y, COLOR, STRING)
+        ; Arguments are pushed in reverse order, with return address first
+        PushWord after1-1   ; Return Addr - 1
+        PushWord HelloStr
+        PushWord 3*85   ; COLOR=3
+        PushWord 0      ; Y=0
+        PushWord 4      ; X=4
+        .ifdef WIDEFLAG
+        PushWord 1      ; wide
+        .endif
+        PushByte #5
+        jmp DrawString
+
+after1:
+        PushWord after2-1   ; Return Addr - 1
+        PushWord AtariStr
+        PushWord 2*85   ; COLOR=2
+        PushWord 10     ; Y=10
+        PushWord 8      ; X=8
+        .ifdef WIDEFLAG
+        PushWord 1      ; wide
+        .endif
+        PushByte #5
+        jmp DrawString
+
+after2:
+        PushWord after3-1   ; Return Addr - 1
+        PushWord WorldStr
+        PushWord 1*85   ; COLOR=1
+        PushWord 20     ; Y=20
+        PushWord 12     ; X=12
+        .ifdef WIDEFLAG
+        ;PushWord 1     ; wide
+        .endif
+        PushByte #4
+        jmp DrawString
+
+after3:
+        rts
+HelloStr:
+        .byte "Hello|" ; TODO: Strings in screen code format in which compilers and assemblers?
+AtariStr:
+        .byte "Atari|"
+WorldStr:
+        .byte "World|"
+
+        .endif ; TEST_CODE
 
         .endproc ; draw_string
