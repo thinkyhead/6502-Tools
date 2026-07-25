@@ -35,6 +35,7 @@ mkdir -p "$HDD"
 LSTBASE=${LSTFILE##*/}
 RUNFILE=${HDD}/${SUBLFILE:-$LSTBASE}
 RUNFILE=${RUNFILE/.ATARIBAS*/.LST}
+RUNFILE=${RUNFILE/.ULST/.LST}
 
 if [[ ! $RUNFILE =~ ".LST" ]]; then
   echo "${0##*/} : Not a LST file??"

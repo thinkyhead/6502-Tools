@@ -1,4 +1,4 @@
-{ "extensions": [ "LST","ATARIBAS","ATARIBASIC" ],
+{ "extensions": [ "LST","ULST","ATARIBAS","ATARIBASIC" ],
   "word_wrap": false,
   "wrap_width": 39,
   "indent_subsequent_lines": false,

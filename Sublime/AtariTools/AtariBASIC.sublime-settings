@@ -1,4 +1,4 @@
-{ "extensions": [ "LST" ],
+{ "extensions": [ "LST","ULST" ],
   "word_wrap": false,
   "wrap_width": 39,
   "indent_subsequent_lines": false,

@@ -207,7 +207,7 @@
 ##
 name: AtariBASIC
 file_extensions:
-  - [lst]
+  - [lst,ulst]
 first_line_match: '\d+ (\?|BYE|C(OLOR|L(OSE|OAD|R)|OM|ONT|SAVE)|D(ATA|IM|OS|RAWTO)|EN(TER|D)|FOR|G(ET|O(SUB|TO)|RAPHICS)|IF|INPUT|L(ET|IST|OAD|OCATE|PRINT)|NE(W|XT)|NOTE|ON|OPEN|P(LOT|O(INT|KE|P|SITION)|RINT|UT)|RE(AD|M|STORE|TURN)|RUN|S(AVE|ETCOLOR|OUND|TATUS|TOP)|TRAP)([ :]|$)'
 scope: source.ataribasic
 variables:
