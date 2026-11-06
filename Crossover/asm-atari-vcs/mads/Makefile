@@ -1,6 +1,6 @@
-# Makefile for 2600 Clock "clock003.s" DASM code
+# Makefile for Raiders of the Lost Ark "raiders.s" DASM code
 
-GAME=clock003
+GAME=raiders
 
 VCS := /opt/homebrew/opt/dasm/machines/atari2600
 #VCS := $(HOME)/bin/vcs
